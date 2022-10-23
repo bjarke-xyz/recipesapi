@@ -32,10 +32,10 @@ spec:
           imagePullPolicy: Always
           volumeMounts:
             - name: env
-              mountPath: /.env
+              mountPath: /app/.env
               subPath: .env
             - name: serviceaccount
-              mountPath: /serviceaccount.json
+              mountPath: /app/serviceaccount.json
               subPath: serviceaccount.json
           env:
             - name: PORT
