@@ -18,7 +18,7 @@ DotNetEnv.Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
-var port = 5000;
+var port = 5001;
 if (int.TryParse(builder.Configuration["PORT"], out var _port)) port = _port;
 
 builder.WebHost.UseKestrel(serverOptions =>
@@ -110,10 +110,19 @@ app.UseCors(o => o
     .AllowAnyOrigin());
 
 app
+    .UseHttpLogging()
     .UseWebSockets()
     .UseRouting()
     .UseAuthentication()
     .UseAuthorization()
-    .UseEndpoints(endpoint => endpoint.MapGraphQL());
+    .UseEndpoints(endpoint =>
+    {
+        endpoint.MapGet("/", (ctx) =>
+        {
+            ctx.Response.Redirect("/graphql");
+            return Task.CompletedTask;
+        });
+        endpoint.MapGraphQL();
+    });
 
 app.Run();
