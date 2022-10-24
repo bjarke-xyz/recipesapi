@@ -19,7 +19,7 @@ jobs:
           registry: ${{ secrets.REGISTRY_URL }}
           username: ${{ secrets.REGISTRY_USERNAME }}
           password: ${{ secrets.REGISTRY_PASSWORD }}
-      - name: Build and push
+      - name: Build and push (API)
         id: build
         uses: docker/build-push-action@v2
         with:
@@ -37,6 +37,24 @@ jobs:
           username: "${{ secrets.NOTIFICATIONS_USERNAME }}"
           password: "${{ secrets.NOTIFICATIONS_PASSWORD }}"
           data: '{ "channels": ["discord", "email"], "message": { "message": "⚠️ recipesapi failed to build. <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}>" } }'
+      - name: Build and push (Frida)
+        id: build_frida
+        uses: docker/build-push-action@v2
+        with:
+          context: ./scripts/frida
+          file: ./scripts/frida/Dockerfile
+          builder: ${{ steps.buildx.outputs.name }}
+          push: true
+          tags: "${{ secrets.REGISTRY_URL }}/recipes-frida"
+      - name: Notify on error
+        uses: fjogeleit/http-request-action@v1
+        if: failure() && steps.build_frida.outcome == 'failure'
+        with:
+          url: "${{ secrets.NOTIFICATIONS_URL }}"
+          method: "POST"
+          username: "${{ secrets.NOTIFICATIONS_USERNAME }}"
+          password: "${{ secrets.NOTIFICATIONS_PASSWORD }}"
+          data: '{ "channels": ["discord", "email"], "message": { "message": "⚠️ recipes-frida failed to build. <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}>" } }'
   release:
     runs-on: ubuntu-latest
     needs: build
