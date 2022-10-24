@@ -4,6 +4,9 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Caching.Distributed;
 using RecipesAPI.API;
 using RecipesAPI.Auth;
+using RecipesAPI.Food;
+using RecipesAPI.Food.DAL;
+using RecipesAPI.Food.Graph;
 using RecipesAPI.Infrastructure;
 using RecipesAPI.Recipes.BLL;
 using RecipesAPI.Recipes.DAL;
@@ -60,6 +63,13 @@ builder.Services
         var keyPrefix = builder.Configuration["REDIS_PREFIX"];
         return new CacheProvider(distributedCache, keyPrefix);
     })
+    .AddSingleton<IStorageClient, StorageClient>(sp =>
+    {
+        var r2AccountId = builder.Configuration["R2_ACCOUNTID"];
+        var r2AccessKeySecret = builder.Configuration["R2_ACCESSKEYSECRET"];
+        var r2AccessKeyId = builder.Configuration["R2_ACCESSKEYID"];
+        return new StorageClient(r2AccessKeyId, r2AccessKeySecret, r2AccountId);
+    })
     .AddSingleton(sp =>
     {
         return FirestoreDb.Create(builder.Configuration["FirebaseAppId"]);
@@ -69,6 +79,8 @@ builder.Services
         var db = sp.GetRequiredService<FirestoreDb>();
         return new UserRepository(builder.Configuration["FirebaseWebApiKey"], db);
     })
+    .AddSingleton<FoodRepository>()
+    .AddSingleton<FoodService>()
     .AddSingleton<UserService>()
     .AddSingleton<RecipeRepository>()
     .AddSingleton<RecipeService>()
@@ -98,6 +110,8 @@ builder.Services
             // Recipes
             .AddTypeExtension<RecipeQueries>()
             .AddTypeExtension<RecipeMutations>()
+            // Food
+            .AddTypeExtension<FoodQueries>()
         .AddType<UploadType>()
 ;
 
