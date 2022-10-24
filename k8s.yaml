@@ -20,6 +20,9 @@ spec:
       imagePullSecrets:
         - name: regcred
       volumes:
+        - name: env
+          configMap:
+            name: env
         - name: serviceaccount
           configMap:
             name: serviceaccount
@@ -28,12 +31,12 @@ spec:
           image: registry.bjarke.xyz/dotnetrecipesapi
           imagePullPolicy: Always
           volumeMounts:
+            - name: env
+              mountPath: /app/.env
+              subPath: .env
             - name: serviceaccount
               mountPath: /app/serviceaccount.json
               subPath: serviceaccount.json
-          envFrom:
-            - configMapRef:
-              name: env
           env:
             - name: PORT
               value: "80"
@@ -96,6 +99,7 @@ spec:
     spec:
       template:
         spec:
+          restartPolicy: "Never"
           imagePullSecrets:
             - name: regcred
           volumes:
