@@ -63,7 +63,7 @@ public class RecipeService
         return cached;
     }
 
-    public async Task<Recipe?> GetRecipe(string id, CancellationToken cancellationToken)
+    public async Task<Recipe?> GetRecipe(string id, CancellationToken cancellationToken, bool showUnpublished)
     {
         var cached = await cache.Get<Recipe>(GetRecipeCacheKey(id));
         if (cached == null)
@@ -74,6 +74,10 @@ public class RecipeService
                 await cache.Put(GetRecipeCacheKey(id), cached);
             }
         }
+        if (cached?.Published == false && !showUnpublished)
+        {
+            return null;
+        }
         if (cached != null)
         {
             EnrichIngredients(cached);
@@ -81,7 +85,7 @@ public class RecipeService
         return cached;
     }
 
-    public async Task<Recipe?> GetRecipeByTitle(string title, CancellationToken cancellationToken)
+    public async Task<Recipe?> GetRecipeByTitle(string title, CancellationToken cancellationToken, bool showUnpublished)
     {
         var cached = await cache.Get<Recipe>(GetRecipeByTitleCacheKey(title));
         if (cached == null)
@@ -92,9 +96,32 @@ public class RecipeService
                 await cache.Put(GetRecipeByTitleCacheKey(title), cached);
             }
         }
+        if (cached?.Published == false && !showUnpublished)
+        {
+            return null;
+        }
         if (cached != null)
         {
             EnrichIngredients(cached);
+        }
+        return cached;
+    }
+
+    public async Task<List<Recipe>> GetRecipesByUserId(string userId, CancellationToken cancellationToken, bool showUnpublished)
+    {
+        var cached = await cache.Get<List<Recipe>>(GetRecipeByUserCacheKey(userId));
+        if (cached == null)
+        {
+            cached = await recipeRepository.GetRecipesByUserId(userId, cancellationToken);
+            await cache.Put(GetRecipeByUserCacheKey(userId), cached);
+        }
+        if (!showUnpublished)
+        {
+            cached = cached.Where(x => x.Published).ToList();
+        }
+        foreach (var recipe in cached)
+        {
+            EnrichIngredients(recipe);
         }
         return cached;
     }
@@ -110,7 +137,7 @@ public class RecipeService
         recipe.Id = id;
         await recipeRepository.SaveRecipe(recipe, cancellationToken);
         await ClearCache();
-        var savedRecipe = await GetRecipe(recipe.Id, cancellationToken);
+        var savedRecipe = await GetRecipe(recipe.Id, cancellationToken, true);
         if (savedRecipe == null)
         {
             throw new GraphQLErrorException("failed to get saved recipe");
@@ -122,27 +149,12 @@ public class RecipeService
     {
         await recipeRepository.SaveRecipe(recipe, cancellationToken);
         await ClearCache(recipe.Id, recipe.Title, recipe.UserId);
-        var savedRecipe = await GetRecipe(recipe.Id, cancellationToken);
+        var savedRecipe = await GetRecipe(recipe.Id, cancellationToken, true);
         if (savedRecipe == null)
         {
             throw new GraphQLErrorException("failed to get saved recipe");
         }
         return savedRecipe;
-    }
-
-    public async Task<List<Recipe>> GetRecipesByUserId(string userId, CancellationToken cancellationToken)
-    {
-        var cached = await cache.Get<List<Recipe>>(GetRecipeByUserCacheKey(userId));
-        if (cached == null)
-        {
-            cached = await recipeRepository.GetRecipesByUserId(userId, cancellationToken);
-            await cache.Put(GetRecipeByUserCacheKey(userId), cached);
-        }
-        foreach (var recipe in cached)
-        {
-            EnrichIngredients(recipe);
-        }
-        return cached;
     }
 
     private async Task ClearCache(string? recipeId = null, string? recipeTitle = null, string? userId = null)

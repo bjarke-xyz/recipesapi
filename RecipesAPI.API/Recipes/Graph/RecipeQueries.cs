@@ -11,9 +11,9 @@ namespace RecipesAPI.Recipes.Graph;
 public class RecipeQueries
 {
     public Task<List<Recipe>> GetRecipes([UserRoles] List<Role> userRoles, [Service] RecipeService recipeService, CancellationToken cancellationToken) => recipeService.GetRecipes(cancellationToken, userRoles?.Contains(Role.ADMIN) ?? false);
-    public Task<Recipe?> GetRecipe(string id, [Service] RecipeService recipeService, CancellationToken cancellationToken) => recipeService.GetRecipe(id, cancellationToken);
-    public Task<Recipe?> GetRecipeByTitle(string title, [Service] RecipeService recipeService, CancellationToken cancellationToken) => recipeService.GetRecipeByTitle(title, cancellationToken);
-
+    public Task<Recipe?> GetRecipe(string id, [UserRoles] List<Role> userRoles, [Service] RecipeService recipeService, CancellationToken cancellationToken) => recipeService.GetRecipe(id, cancellationToken, userRoles?.Contains(Role.ADMIN) ?? false);
+    public Task<Recipe?> GetRecipeByTitle(string title, [UserRoles] List<Role> userRoles, [Service] RecipeService recipeService, CancellationToken cancellationToken) => recipeService.GetRecipeByTitle(title, cancellationToken, userRoles?.Contains(Role.ADMIN) ?? false);
+    public Task<List<Recipe>> GetRecipesByUser(string userId, [UserId] string loggedInId, [UserRoles] List<Role> userRoles, [Service] RecipeService recipeService, CancellationToken cancellationToken) => recipeService.GetRecipesByUserId(userId, cancellationToken, (userRoles?.Contains(Role.ADMIN) ?? false) || userId == loggedInId);
 }
 
 [ExtendObjectType(typeof(RecipeIngredient))]
@@ -23,7 +23,6 @@ public class RecipeIngredientQueries
     {
         if (string.IsNullOrEmpty(recipeIngredient.Title)) return null;
 
-        // TODO: fix search
         var foodData = await foodService.SearchFoodData(recipeIngredient.Title, cancellationToken);
         return foodData.FirstOrDefault();
     }

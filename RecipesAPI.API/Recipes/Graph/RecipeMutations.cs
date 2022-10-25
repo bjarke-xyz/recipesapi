@@ -22,7 +22,7 @@ public class RecipeMutations
     [RoleAuthorize(RoleEnums = new[] { Role.USER })]
     public async Task<Recipe> UpdateRecipe(string id, RecipeInput input, [UserId] string userId, [UserRoles] List<Role> userRoles, [Service] RecipeService recipeService, CancellationToken cancellationToken)
     {
-        var existingRecipe = await recipeService.GetRecipe(id, cancellationToken);
+        var existingRecipe = await recipeService.GetRecipe(id, cancellationToken, true);
         if (existingRecipe == null)
         {
             throw new GraphQLErrorException($"recipe with id {id} not found");

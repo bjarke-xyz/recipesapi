@@ -29,11 +29,11 @@ public class AuthInterceptor : DefaultHttpRequestInterceptor
                 var identity = new ClaimsIdentity();
                 identity.AddClaims(userInfo.Roles.Select(role => new Claim(ClaimTypes.Role, role.ToString())));
                 context.User.AddIdentity(identity);
-                requestBuilder.SetProperty(UserIdAttribute.DictKey, userId);
                 userRoles = userInfo.Roles;
             }
         }
         requestBuilder.SetProperty(UserRolesAttribute.DictKey, userRoles);
+        requestBuilder.SetProperty(UserIdAttribute.DictKey, userId);
         await base.OnCreateAsync(context, requestExecutor, requestBuilder, cancellationToken);
     }
 
