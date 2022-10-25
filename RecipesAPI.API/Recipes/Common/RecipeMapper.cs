@@ -12,7 +12,11 @@ public static class RecipeMapper
         cfg.CreateMap<RecipePartDto, RecipePart>();
         cfg.CreateMap<RecipeIngredientDto, RecipeIngredient>();
 
-        cfg.CreateMap<Recipe, RecipeDto>();
+        cfg.CreateMap<Recipe, RecipeDto>()
+            .ForMember(dto => dto.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt.ToString("O")))
+            .ForMember(dto => dto.LastModifiedAt, opt => opt.MapFrom(src => src.LastModifiedAt.ToString("O")))
+            .ForMember(dto => dto.ModeratedAt, opt => opt.MapFrom(src => src.ModeratedAt.HasValue ? src.ModeratedAt.Value.ToString("O") : null))
+            ;
         cfg.CreateMap<RecipePart, RecipePartDto>();
         cfg.CreateMap<RecipeIngredient, RecipeIngredientDto>();
 
