@@ -110,6 +110,7 @@ builder.Services
             // Recipes
             .AddTypeExtension<RecipeQueries>()
             .AddTypeExtension<RecipeMutations>()
+            .AddTypeExtension<RecipeIngredientQueries>()
             // Food
             .AddTypeExtension<FoodQueries>()
         .AddType<UploadType>()

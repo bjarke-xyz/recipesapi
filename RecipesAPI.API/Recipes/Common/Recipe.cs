@@ -1,3 +1,5 @@
+using RecipesAPI.Food.Common;
+
 namespace RecipesAPI.Recipes.Common;
 
 public class Recipe
