@@ -86,6 +86,7 @@ builder.Services
     .AddSingleton<RecipeRepository>()
     .AddSingleton<RecipeService>()
     .AddSingleton<ParserService>()
+    .AddHostedService<CacheRefreshBackgroundService>()
     .AddStackExchangeRedisCache(options =>
     {
         var endpointCollection = new EndPointCollection();
