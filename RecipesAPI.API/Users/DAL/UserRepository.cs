@@ -12,6 +12,8 @@ public class UserRepository
     private readonly HttpClient httpClient;
     private readonly FirestoreDb db;
 
+    private const string usersCollection = "users";
+
     public UserRepository(string firebaseWebApiKey, FirestoreDb db)
     {
         this.firebaseWebApiKey = firebaseWebApiKey;
@@ -68,7 +70,7 @@ public class UserRepository
 
     public async Task<UserInfo?> GetUserInfo(string userId, CancellationToken cancellationToken)
     {
-        var docRef = db.Collection("users").Document(userId);
+        var docRef = db.Collection(usersCollection).Document(userId);
         var snapshot = await docRef.GetSnapshotAsync();
         if (!snapshot.Exists)
         {
@@ -87,6 +89,14 @@ public class UserRepository
             DisplayName = displayName,
         };
         var userRecord = await FirebaseAuth.DefaultInstance.CreateUserAsync(args, cancellationToken);
+        var userInfo = new UserInfoDto
+        {
+            UserId = userRecord.Uid,
+            Role = "user",
+            Roles = new List<string> { Role.USER.ToString() },
+        };
+        await db.Collection(usersCollection).Document(userInfo.UserId).SetAsync(userInfo, null, cancellationToken);
+
         return MapUserRecord(userRecord);
     }
 
@@ -181,6 +191,9 @@ public class UserInfoDto
 {
     [FirestoreProperty("userId")]
     public string UserId { get; set; } = default!;
+
+    [FirestoreProperty("role")]
+    public string Role { get; set; } = default!;
 
     [FirestoreProperty("roles")]
     public List<string> Roles { get; set; } = new List<string>();

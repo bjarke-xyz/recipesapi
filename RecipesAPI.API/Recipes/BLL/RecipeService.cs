@@ -1,4 +1,5 @@
 using RecipesAPI.Exceptions;
+using RecipesAPI.Food;
 using RecipesAPI.Infrastructure;
 using RecipesAPI.Recipes.Common;
 using RecipesAPI.Recipes.DAL;
@@ -9,25 +10,55 @@ public class RecipeService
 {
     private readonly RecipeRepository recipeRepository;
     private readonly ICacheProvider cache;
+    private readonly ParserService parserService;
 
     public const string GetRecipesCacheKey = "GetRecipes";
     public string GetRecipeCacheKey(string id) => $"GetRecipe:{id}";
     public string GetRecipeByTitleCacheKey(string title) => $"GetRecipeByTitle:{title}";
     public string GetRecipeByUserCacheKey(string userId) => $"GetRecipeByUser:{userId}";
 
-    public RecipeService(RecipeRepository recipeRepository, ICacheProvider cache)
+    public RecipeService(RecipeRepository recipeRepository, ICacheProvider cache, ParserService parserService, FoodService foodService)
     {
         this.recipeRepository = recipeRepository;
         this.cache = cache;
+        this.parserService = parserService;
     }
 
-    public async Task<List<Recipe>> GetRecipes(CancellationToken cancellationToken)
+    private void EnrichIngredients(Recipe recipe)
+    {
+        foreach (var part in recipe.Parts)
+        {
+            foreach (var ingredient in part.Ingredients)
+            {
+                if (string.IsNullOrEmpty(ingredient.Title)) continue;
+                var parsedIngredient = parserService.Parse(ingredient.Title);
+                if (parsedIngredient != null)
+                {
+                    ingredient.Original = parsedIngredient.Original;
+                    ingredient.Title = parsedIngredient.Title;
+                    ingredient.Volume = parsedIngredient.Volume;
+                    ingredient.Unit = parsedIngredient.Unit;
+                    ingredient.Meta = parsedIngredient.Meta;
+                }
+            }
+        }
+    }
+
+    public async Task<List<Recipe>> GetRecipes(CancellationToken cancellationToken, bool showUnpublished)
     {
         var cached = await cache.Get<List<Recipe>>(GetRecipesCacheKey);
         if (cached == null)
         {
             cached = await recipeRepository.GetRecipes(cancellationToken);
             await cache.Put<List<Recipe>>(GetRecipesCacheKey, cached);
+        }
+        if (!showUnpublished)
+        {
+            cached = cached.Where(x => x.Published).ToList();
+        }
+        foreach (var recipe in cached)
+        {
+            EnrichIngredients(recipe);
         }
         return cached;
     }
@@ -43,6 +74,10 @@ public class RecipeService
                 await cache.Put(GetRecipeCacheKey(id), cached);
             }
         }
+        if (cached != null)
+        {
+            EnrichIngredients(cached);
+        }
         return cached;
     }
 
@@ -56,6 +91,10 @@ public class RecipeService
             {
                 await cache.Put(GetRecipeByTitleCacheKey(title), cached);
             }
+        }
+        if (cached != null)
+        {
+            EnrichIngredients(cached);
         }
         return cached;
     }
@@ -98,6 +137,10 @@ public class RecipeService
         {
             cached = await recipeRepository.GetRecipesByUserId(userId, cancellationToken);
             await cache.Put(GetRecipeByUserCacheKey(userId), cached);
+        }
+        foreach (var recipe in cached)
+        {
+            EnrichIngredients(recipe);
         }
         return cached;
     }

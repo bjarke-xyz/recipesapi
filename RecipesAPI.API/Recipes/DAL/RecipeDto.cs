@@ -17,11 +17,14 @@ public class RecipeDto
     [FirestoreProperty("userId")]
     public string UserId { get; set; } = default!;
     [FirestoreProperty("createdDateTime")]
-    public DateTime CreatedAt { get; set; }
+    public string CreatedAt { get; set; } = default!;
+    // public DateTime CreatedAt { get; set; }
     [FirestoreProperty("moderatedDateTime")]
-    public DateTime? ModeratedAt { get; set; }
+    public string? ModeratedAt { get; set; }
+    // public DateTime? ModeratedAt { get; set; }
     [FirestoreProperty("lastModifiedDateTime")]
-    public DateTime LastModifiedAt { get; set; }
+    public string LastModifiedAt { get; set; } = default!;
+    // public DateTime LastModifiedAt { get; set; }
     [FirestoreProperty("published")]
     public bool Published { get; set; }
     [FirestoreProperty("tips")]

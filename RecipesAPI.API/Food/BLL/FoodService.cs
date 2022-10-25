@@ -40,26 +40,71 @@ public class FoodService
     {
         var foodData = await GetFoodData(cancellationToken);
         if (foodData == null) return new List<FoodItem>();
-        var results = new List<FoodItem>();
+        var queue = new PriorityQueue<FoodItem, int>();
         foreach (var item in foodData)
         {
-            if (string.Equals(item.FoodName.Da, query, StringComparison.OrdinalIgnoreCase))
+            var (matched, rank) = HasMatch(item.FoodName.Da, query);
+            if (matched)
             {
-                results.Add(item);
+                queue.Enqueue(item, rank);
             }
-            else if (string.Equals(item.FoodName.En, query, StringComparison.OrdinalIgnoreCase))
+            else
             {
-                results.Add(item);
-            }
-            else if (item.FoodName.Da.Contains(query, StringComparison.InvariantCultureIgnoreCase))
-            {
-                results.Add(item);
-            }
-            else if (item.FoodName.En.Contains(query, StringComparison.InvariantCultureIgnoreCase))
-            {
-                results.Add(item);
+                (matched, rank) = HasMatch(item.FoodName.En, query);
+                if (matched)
+                {
+                    queue.Enqueue(item, rank);
+                }
             }
         }
-        return results;
+        var result = new List<FoodItem>();
+        while (queue.Count > 0)
+        {
+            var potentialFood = queue.Dequeue();
+            result.Add(potentialFood);
+        }
+        return result;
+    }
+
+    private (bool match, int rank) HasMatch(string foodName, string query)
+    {
+        var foodNameParts = foodName.Split(",", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+        foreach (var foodNamePart in foodNameParts)
+        {
+            if (string.Equals(foodNamePart, query))
+            {
+                return (true, 0);
+            }
+            else if (string.Equals(foodNamePart, query, StringComparison.OrdinalIgnoreCase))
+            {
+                return (true, 10);
+            }
+            else if (foodNamePart.Contains(query))
+            {
+                return (true, 20);
+            }
+            else if (foodNamePart.Contains(query, StringComparison.OrdinalIgnoreCase))
+            {
+                return (true, 30);
+            }
+        }
+
+        if (string.Equals(foodName, query))
+        {
+            return (true, 100);
+        }
+        else if (string.Equals(foodName, query, StringComparison.OrdinalIgnoreCase))
+        {
+            return (true, 200);
+        }
+        else if (foodName.Contains(query))
+        {
+            return (true, 300);
+        }
+        else if (foodName.Contains(query, StringComparison.OrdinalIgnoreCase))
+        {
+            return (true, 400);
+        }
+        return (false, 0);
     }
 }

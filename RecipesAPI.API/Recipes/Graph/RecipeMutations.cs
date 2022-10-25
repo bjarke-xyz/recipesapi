@@ -42,4 +42,10 @@ public class RecipeMutations
         var updatedRecipe = await recipeService.UpdateRecipe(recipe, cancellationToken);
         return updatedRecipe;
     }
+
+    public RecipeIngredient? ParseIngredient(string ingredient, [Service] ParserService parserService)
+    {
+        var parsedIngredient = parserService.Parse(ingredient);
+        return parsedIngredient;
+    }
 }

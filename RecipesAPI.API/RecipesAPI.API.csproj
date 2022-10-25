@@ -17,6 +17,7 @@
     <PackageReference Include="HotChocolate.AspNetCore.Authorization" Version="12.15.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.10" />
     <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="6.0.10" />
+    <PackageReference Include="RecipeIngredientParser.Core" Version="2.0.0" />
   </ItemGroup>
 
 </Project>

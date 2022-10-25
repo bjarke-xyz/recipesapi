@@ -20,6 +20,7 @@ public class AuthInterceptor : DefaultHttpRequestInterceptor
     public override async ValueTask OnCreateAsync(HttpContext context, IRequestExecutor requestExecutor, IQueryRequestBuilder requestBuilder, CancellationToken cancellationToken)
     {
         var userId = context.User.FindFirstValue(ClaimTypes.NameIdentifier);
+        List<Role>? userRoles = null;
         if (!string.IsNullOrEmpty(userId))
         {
             var userInfo = await userService.GetUserInfo(userId, cancellationToken);
@@ -29,9 +30,10 @@ public class AuthInterceptor : DefaultHttpRequestInterceptor
                 identity.AddClaims(userInfo.Roles.Select(role => new Claim(ClaimTypes.Role, role.ToString())));
                 context.User.AddIdentity(identity);
                 requestBuilder.SetProperty(UserIdAttribute.DictKey, userId);
-                requestBuilder.SetProperty(UserRolesAttribute.DictKey, userInfo.Roles);
+                userRoles = userInfo.Roles;
             }
         }
+        requestBuilder.SetProperty(UserRolesAttribute.DictKey, userRoles);
         await base.OnCreateAsync(context, requestExecutor, requestBuilder, cancellationToken);
     }
 

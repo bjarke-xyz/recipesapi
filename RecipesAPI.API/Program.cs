@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Caching.Distributed;
 using RecipesAPI.API;
 using RecipesAPI.Auth;
+using RecipesAPI.Exceptions;
 using RecipesAPI.Food;
 using RecipesAPI.Food.DAL;
 using RecipesAPI.Food.Graph;
@@ -84,6 +85,7 @@ builder.Services
     .AddSingleton<UserService>()
     .AddSingleton<RecipeRepository>()
     .AddSingleton<RecipeService>()
+    .AddSingleton<ParserService>()
     .AddStackExchangeRedisCache(options =>
     {
         var endpointCollection = new EndPointCollection();
@@ -100,6 +102,14 @@ builder.Services
     .AddGraphQLServer()
         .ModifyRequestOptions(opt => opt.IncludeExceptionDetails = builder.Environment.IsDevelopment())
         .AddDiagnosticEventListener<ErrorLoggingDiagnosticsEventListener>()
+        .AddErrorFilter(error =>
+        {
+            if (error.Exception is GraphQLErrorException)
+            {
+                return error.WithMessage(error.Exception.Message).RemoveExtensions();
+            }
+            return error;
+        })
         .AddAuthorization()
         .AddHttpRequestInterceptor<AuthInterceptor>()
         .AddQueryType()
