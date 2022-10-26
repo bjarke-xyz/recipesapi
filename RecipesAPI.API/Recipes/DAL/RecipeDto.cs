@@ -14,7 +14,7 @@ public class RecipeDto
     public string? Description { get; set; }
     [FirestoreProperty("imageId")]
     public string? ImageId { get; set; }
-    [FirestoreProperty("userId")]
+    [FirestoreProperty("createdByUser")]
     public string UserId { get; set; } = default!;
     [FirestoreProperty("createdDateTime")]
     public string CreatedAt { get; set; } = default!;

@@ -25,9 +25,14 @@ public static class RecipeMapper
         cfg.CreateMap<RecipePartIngredientInput, RecipeIngredient>();
     }).CreateMapper();
 
-    public static Recipe MapDto(RecipeDto dto)
+    public static Recipe MapDto(RecipeDto dto, string docId)
     {
-        return mapper.Map<RecipeDto, Recipe>(dto);
+        var recipe = mapper.Map<RecipeDto, Recipe>(dto);
+        if (string.IsNullOrEmpty(recipe.Id))
+        {
+            recipe.Id = docId;
+        }
+        return recipe;
     }
 
     public static RecipeDto Map(Recipe recipe)

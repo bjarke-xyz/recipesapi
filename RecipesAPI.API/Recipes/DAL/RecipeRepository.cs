@@ -22,7 +22,7 @@ public class RecipeRepository
         foreach (var doc in snapshot.Documents)
         {
             var dto = doc.ConvertTo<RecipeDto>();
-            var recipe = RecipeMapper.MapDto(dto);
+            var recipe = RecipeMapper.MapDto(dto, doc.Id);
             recipes.Add(recipe);
         }
         return recipes;
@@ -36,7 +36,7 @@ public class RecipeRepository
             return null;
         }
         var dto = doc.ConvertTo<RecipeDto>();
-        return RecipeMapper.MapDto(dto);
+        return RecipeMapper.MapDto(dto, doc.Id);
     }
 
     public async Task<Recipe?> GetRecipeByTitle(string title, CancellationToken cancellationToken)
@@ -48,7 +48,7 @@ public class RecipeRepository
         }
         var doc = snapshot.Documents.First();
         var dto = doc.ConvertTo<RecipeDto>();
-        return RecipeMapper.MapDto(dto);
+        return RecipeMapper.MapDto(dto, doc.Id);
     }
 
     public async Task SaveRecipe(Recipe recipe, CancellationToken cancellationToken)
@@ -67,12 +67,12 @@ public class RecipeRepository
 
     public async Task<List<Recipe>> GetRecipesByUserId(string userId, CancellationToken cancellationToken)
     {
-        var snapshot = await db.Collection(recipeCollection).WhereEqualTo("userId", userId).GetSnapshotAsync();
+        var snapshot = await db.Collection(recipeCollection).WhereEqualTo("createdByUser", userId).GetSnapshotAsync();
         var recipes = new List<Recipe>();
         foreach (var doc in snapshot.Documents)
         {
             var dto = doc.ConvertTo<RecipeDto>();
-            var recipe = RecipeMapper.MapDto(dto);
+            var recipe = RecipeMapper.MapDto(dto, doc.Id);
             recipes.Add(recipe);
         }
         return recipes;
