@@ -25,3 +25,10 @@ public class TokenPayload
     public string IdToken { get; set; } = default!;
     public string RefreshToken { get; set; } = default!;
 }
+
+public class Stats
+{
+    public int RecipeCount { get; set; }
+    public int UserCount { get; set; }
+    public int ChefCount { get; set; }
+}

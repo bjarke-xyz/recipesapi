@@ -63,7 +63,7 @@ public class RecipeService
         return cached;
     }
 
-    public async Task<Recipe?> GetRecipe(string id, CancellationToken cancellationToken, bool showUnpublished)
+    public async Task<Recipe?> GetRecipe(string id, CancellationToken cancellationToken, bool showUnpublished, string? userId = null)
     {
         var cached = await cache.Get<Recipe>(GetRecipeCacheKey(id));
         if (cached == null)
@@ -74,7 +74,7 @@ public class RecipeService
                 await cache.Put(GetRecipeCacheKey(id), cached);
             }
         }
-        if (cached?.Published == false && !showUnpublished)
+        if (cached != null && cached.Published == false && (!showUnpublished || cached.UserId == userId))
         {
             return null;
         }

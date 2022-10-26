@@ -17,8 +17,14 @@ using RecipesAPI.Users.BLL;
 using RecipesAPI.Users.DAL;
 using RecipesAPI.Users.Graph;
 using StackExchange.Redis;
+using Serilog;
 
 DotNetEnv.Env.Load();
+
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .CreateBootstrapLogger();
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,15 +36,7 @@ builder.WebHost.UseKestrel(serverOptions =>
     serverOptions.ListenAnyIP(port);
 });
 
-builder.Logging.ClearProviders();
-if (builder.Environment.IsDevelopment())
-{
-    builder.Logging.AddConsole();
-}
-else
-{
-    builder.Logging.AddJsonConsole();
-}
+builder.Host.UseSerilog((ctx, lc) => lc.WriteTo.Console());
 
 FirebaseApp.Create();
 
@@ -136,8 +134,8 @@ app.UseCors(o => o
     .AllowAnyOrigin());
 
 app
-    .UseHttpLogging()
     .UseWebSockets()
+    .UseSerilogRequestLogging()
     .UseRouting()
     .UseAuthentication()
     .UseAuthorization()
@@ -151,4 +149,17 @@ app
         endpoint.MapGraphQL();
     });
 
-app.Run();
+try
+{
+    Log.Information("Starting API");
+    app.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Unhandled exception");
+}
+finally
+{
+    Log.Information("Shutdown complete");
+    Log.CloseAndFlush();
+}
