@@ -64,16 +64,21 @@ builder.Services
         var keyPrefix = builder.Configuration["REDIS_PREFIX"];
         return new CacheProvider(distributedCache, keyPrefix);
     })
-    .AddSingleton<IStorageClient, StorageClient>(sp =>
-    {
-        var r2AccountId = builder.Configuration["R2_ACCOUNTID"];
-        var r2AccessKeySecret = builder.Configuration["R2_ACCESSKEYSECRET"];
-        var r2AccessKeyId = builder.Configuration["R2_ACCESSKEYID"];
-        return new StorageClient(r2AccessKeyId, r2AccessKeySecret, r2AccountId);
-    })
+    // .AddSingleton<IStorageClient, S3StorageClient>(sp =>
+    // {
+    //     var r2AccountId = builder.Configuration["R2_ACCOUNTID"];
+    //     var r2AccessKeySecret = builder.Configuration["R2_ACCESSKEYSECRET"];
+    //     var r2AccessKeyId = builder.Configuration["R2_ACCESSKEYID"];
+    //     return new S3StorageClient(r2AccessKeyId, r2AccessKeySecret, r2AccountId);
+    // })
+    .AddSingleton<IStorageClient, GoogleStorageClient>()
     .AddSingleton(sp =>
     {
         return FirestoreDb.Create(builder.Configuration["FirebaseAppId"]);
+    })
+    .AddSingleton(sp =>
+    {
+        return Google.Cloud.Storage.V1.StorageClient.Create();
     })
     .AddSingleton(sp =>
     {

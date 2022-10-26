@@ -56,7 +56,7 @@ public class RecipeMutations
         var fileDto = new FileDto
         {
             Id = fileId,
-            Bucket = "recipesapi",
+            Bucket = "recipes-5000.appspot.com",
             Key = $"images/{fileId}",
             FileName = file.Name,
             Size = file.Length!.Value,

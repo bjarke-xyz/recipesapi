@@ -43,7 +43,8 @@ public class FileService
 
     public string GetPublicUrl(FileDto file)
     {
-        return $"https://pub-fc8159a8900d44e2b3f022917f202fc1.r2.dev/{file.Key}";
+        // return $"https://pub-fc8159a8900d44e2b3f022917f202fc1.r2.dev/{file.Key}";
+        return $"https://storage.googleapis.com/{file.Bucket}/{file.Key}";
     }
 
     public async Task<FileDto?> SaveFile(FileDto file, Stream content, CancellationToken cancellationToken)
