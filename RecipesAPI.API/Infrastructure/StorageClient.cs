@@ -30,6 +30,18 @@ public class StorageClient : IStorageClient
         var response = await s3Client.PutObjectAsync(request, cancellationToken);
     }
 
+    public async Task PutStream(string bucket, string key, Stream data, CancellationToken cancellationToken)
+    {
+        var request = new PutObjectRequest
+        {
+            Key = key,
+            InputStream = data,
+            BucketName = bucket,
+            DisablePayloadSigning = true,
+        };
+        var response = await s3Client.PutObjectAsync(request, cancellationToken);
+    }
+
     public async Task<byte[]?> Get(string bucket, string key, CancellationToken cancellationToken)
     {
         var response = await s3Client.GetObjectAsync(bucket, key, cancellationToken);
@@ -46,12 +58,14 @@ public class StorageClient : IStorageClient
         if (response == null) return null;
         return response.ResponseStream;
     }
+
 }
 
 
 public interface IStorageClient
 {
     Task Put(string bucket, string key, byte[] data, CancellationToken cancellationToken);
+    Task PutStream(string bucket, string key, Stream data, CancellationToken cancellationToken);
     Task<byte[]?> Get(string bucket, string key, CancellationToken cancellationToken);
     Task<Stream?> GetStream(string bucket, string key, CancellationToken cancellationToken);
 }

@@ -74,7 +74,7 @@ public class RecipeService
                 await cache.Put(GetRecipeCacheKey(id), cached);
             }
         }
-        if (cached != null && cached.Published == false && (!showUnpublished || cached.UserId == userId))
+        if (cached != null && cached.Published == false && (!showUnpublished || cached.UserId != userId))
         {
             return null;
         }

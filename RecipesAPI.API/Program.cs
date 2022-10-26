@@ -18,6 +18,9 @@ using RecipesAPI.Users.DAL;
 using RecipesAPI.Users.Graph;
 using StackExchange.Redis;
 using Serilog;
+using RecipesAPI.Files.DAL;
+using RecipesAPI.Files.BLL;
+using RecipesAPI.Files.Http;
 
 DotNetEnv.Env.Load();
 
@@ -84,7 +87,10 @@ builder.Services
     .AddSingleton<RecipeRepository>()
     .AddSingleton<RecipeService>()
     .AddSingleton<ParserService>()
+    .AddSingleton<FileRepository>()
+    .AddSingleton<FileService>()
     .AddHostedService<CacheRefreshBackgroundService>()
+    .AddHttpContextAccessor()
     .AddStackExchangeRedisCache(options =>
     {
         var endpointCollection = new EndPointCollection();
@@ -120,6 +126,7 @@ builder.Services
             .AddTypeExtension<RecipeQueries>()
             .AddTypeExtension<RecipeMutations>()
             .AddTypeExtension<RecipeIngredientQueries>()
+            .AddTypeExtension<ExtendedRecipeQueries>()
             // Food
             .AddTypeExtension<FoodQueries>()
         .AddType<UploadType>()
@@ -146,6 +153,7 @@ app
             ctx.Response.Redirect("/graphql");
             return Task.CompletedTask;
         });
+        endpoint.MapGet("/images/{id}", ImageHandler.GetImage);
         endpoint.MapGraphQL();
     });
 

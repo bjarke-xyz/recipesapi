@@ -8,7 +8,6 @@ public class Recipe
     public string Title { get; set; } = default!;
     public string? Description { get; set; }
     public string? ImageId { get; set; }
-    // public Image Image { get; set; }
     public string UserId { get; set; } = default!;
     public DateTime CreatedAt { get; set; }
     public DateTime? ModeratedAt { get; set; }
@@ -29,9 +28,16 @@ public class RecipePart
 public class RecipeIngredient
 {
     public string Original { get; set; } = default!;
-    public int? Id { get; set; }
     public string? Title { get; set; }
     public double? Volume { get; set; }
     public string? Unit { get; set; }
     public List<string> Meta { get; set; } = default!;
+}
+
+public class Image
+{
+    public string Src { get; set; } = default!;
+    public string Type { get; set; } = default!;
+    public long Size { get; set; } = default!;
+    public string Name { get; set; } = default!;
 }
