@@ -14,6 +14,12 @@ public class RecipeQueries
     public Task<Recipe?> GetRecipe(string id, [UserRoles] List<Role> userRoles, [Service] RecipeService recipeService, CancellationToken cancellationToken) => recipeService.GetRecipe(id, cancellationToken, userRoles?.Contains(Role.ADMIN) ?? false);
     public Task<Recipe?> GetRecipeByTitle(string title, [UserRoles] List<Role> userRoles, [Service] RecipeService recipeService, CancellationToken cancellationToken) => recipeService.GetRecipeByTitle(title, cancellationToken, userRoles?.Contains(Role.ADMIN) ?? false);
     public Task<List<Recipe>> GetRecipesByUser(string userId, [UserId] string loggedInId, [UserRoles] List<Role> userRoles, [Service] RecipeService recipeService, CancellationToken cancellationToken) => recipeService.GetRecipesByUserId(userId, cancellationToken, (userRoles?.Contains(Role.ADMIN) ?? false) || userId == loggedInId);
+
+    public RecipeIngredient? ParseIngredient(string ingredient, [Service] ParserService parserService)
+    {
+        var parsedIngredient = parserService.Parse(ingredient);
+        return parsedIngredient;
+    }
 }
 
 [ExtendObjectType(typeof(RecipeIngredient))]
