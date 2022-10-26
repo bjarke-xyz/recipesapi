@@ -20,7 +20,6 @@ using StackExchange.Redis;
 using Serilog;
 using RecipesAPI.Files.DAL;
 using RecipesAPI.Files.BLL;
-using RecipesAPI.Files.Http;
 
 DotNetEnv.Env.Load();
 
@@ -153,7 +152,6 @@ app
             ctx.Response.Redirect("/graphql");
             return Task.CompletedTask;
         });
-        endpoint.MapGet("/images/{id}", ImageHandler.GetImage);
         endpoint.MapGraphQL();
     });
 

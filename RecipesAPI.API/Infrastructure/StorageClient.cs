@@ -17,26 +17,14 @@ public class StorageClient : IStorageClient
         });
     }
 
-    public async Task Put(string bucket, string key, byte[] data, CancellationToken cancellationToken)
-    {
-        using var ms = new MemoryStream(data);
-        var request = new PutObjectRequest
-        {
-            Key = key,
-            InputStream = ms,
-            BucketName = bucket,
-            DisablePayloadSigning = true,
-        };
-        var response = await s3Client.PutObjectAsync(request, cancellationToken);
-    }
-
-    public async Task PutStream(string bucket, string key, Stream data, CancellationToken cancellationToken)
+    public async Task PutStream(string bucket, string key, Stream data, string contentType, CancellationToken cancellationToken)
     {
         var request = new PutObjectRequest
         {
             Key = key,
             InputStream = data,
             BucketName = bucket,
+            ContentType = contentType,
             DisablePayloadSigning = true,
         };
         var response = await s3Client.PutObjectAsync(request, cancellationToken);
@@ -64,8 +52,7 @@ public class StorageClient : IStorageClient
 
 public interface IStorageClient
 {
-    Task Put(string bucket, string key, byte[] data, CancellationToken cancellationToken);
-    Task PutStream(string bucket, string key, Stream data, CancellationToken cancellationToken);
+    Task PutStream(string bucket, string key, Stream data, string contentType, CancellationToken cancellationToken);
     Task<byte[]?> Get(string bucket, string key, CancellationToken cancellationToken);
     Task<Stream?> GetStream(string bucket, string key, CancellationToken cancellationToken);
 }

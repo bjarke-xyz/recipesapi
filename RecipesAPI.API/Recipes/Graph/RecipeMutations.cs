@@ -49,40 +49,48 @@ public class RecipeMutations
         return (true, contentType);
     }
 
+    private static async Task<string> UploadImage(IFile file, FileService fileService, CancellationToken cancellationToken)
+    {
+        var (_, contenType) = ValidateImage(file);
+        var fileId = Guid.NewGuid().ToString();
+        var fileDto = new FileDto
+        {
+            Id = fileId,
+            Bucket = "recipesapi",
+            Key = $"images/{fileId}",
+            FileName = file.Name,
+            Size = file.Length!.Value,
+            ContentType = contenType,
+        };
+        try
+        {
+            using var stream = file.OpenReadStream();
+            await fileService.SaveFile(fileDto, stream, cancellationToken);
+            return fileId;
+        }
+        catch (Exception ex)
+        {
+            throw new GraphQLErrorException($"Failed to save image: {ex.Message}", ex);
+        }
+    }
+
     [RoleAuthorize(RoleEnums = new[] { Role.USER })]
     public async Task<Recipe> CreateRecipe(RecipeInput input, [UserId] string userId, [Service] RecipeService recipeService, [Service] FileService fileService, CancellationToken cancellationToken)
     {
+        string? imageId = null;
         if (input.Image != null)
         {
-            var (_, contenType) = ValidateImage(input.Image);
-            var fileId = Guid.NewGuid().ToString();
-            var fileDto = new FileDto
-            {
-                Id = fileId,
-                Bucket = "recipesapi",
-                Key = $"images/{fileId}",
-                FileName = input.Image.Name,
-                Size = input.Image.Length!.Value,
-                ContentType = contenType,
-            };
-            try
-            {
-                using var stream = input.Image.OpenReadStream();
-                await fileService.SaveFile(fileDto, stream, cancellationToken);
-            }
-            catch (Exception ex)
-            {
-                throw new GraphQLErrorException($"Failed to save image: {ex.Message}", ex);
-            }
+            imageId = await UploadImage(input.Image, fileService, cancellationToken);
         }
         var recipe = RecipeMapper.MapInput(input);
+        recipe.ImageId = imageId;
         recipe.UserId = userId;
         var createdRecipe = await recipeService.CreateRecipe(recipe, cancellationToken);
         return createdRecipe;
     }
 
     [RoleAuthorize(RoleEnums = new[] { Role.USER })]
-    public async Task<Recipe> UpdateRecipe(string id, RecipeInput input, [UserId] string userId, [UserRoles] List<Role> userRoles, [Service] RecipeService recipeService, CancellationToken cancellationToken)
+    public async Task<Recipe> UpdateRecipe(string id, RecipeInput input, [UserId] string userId, [UserRoles] List<Role> userRoles, [Service] RecipeService recipeService, [Service] FileService fileService, CancellationToken cancellationToken)
     {
         var existingRecipe = await recipeService.GetRecipe(id, cancellationToken, true);
         if (existingRecipe == null)
@@ -96,15 +104,20 @@ public class RecipeMutations
                 throw new GraphQLErrorException("You do not have permission to edit this recipe");
             }
         }
+        var imageId = existingRecipe.ImageId;
         if (input.Image != null)
         {
-
+            if (input.Image != null)
+            {
+                imageId = await UploadImage(input.Image, fileService, cancellationToken);
+            }
         }
 
         var recipe = RecipeMapper.MapInput(input);
         recipe.Id = existingRecipe.Id;
         recipe.CreatedAt = existingRecipe.CreatedAt;
         recipe.UserId = existingRecipe.UserId;
+        recipe.ImageId = imageId;
         var updatedRecipe = await recipeService.UpdateRecipe(recipe, cancellationToken);
         return updatedRecipe;
     }

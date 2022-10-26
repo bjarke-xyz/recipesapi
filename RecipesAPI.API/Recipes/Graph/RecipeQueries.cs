@@ -39,26 +39,18 @@ public class RecipeIngredientQueries
 [ExtendObjectType(typeof(Recipe))]
 public class ExtendedRecipeQueries
 {
-    private static string GetBaseUrl(HttpContext httpContext)
-    {
-        var scheme = httpContext.Request.Scheme;
-        var host = httpContext.Request.Host.Host;
-        var port = httpContext.Request.Host.Port;
-        return $"{scheme}://{host}:{port ?? 443}";
-    }
-    public async Task<Image?> GetImage([Parent] Recipe recipe, [Service] IHttpContextAccessor contextAccessor, [Service] FileService fileService, CancellationToken cancellationToken)
+    public async Task<Image?> GetImage([Parent] Recipe recipe, [Service] FileService fileService, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(recipe.ImageId)) return null;
         var file = await fileService.GetFile(recipe.ImageId, cancellationToken);
         if (file == null) return null;
-        if (contextAccessor.HttpContext == null) return null;
-        var baseUrl = GetBaseUrl(contextAccessor.HttpContext);
+        var imageSrc = fileService.GetPublicUrl(file);
         return new Image
         {
             Name = file.FileName,
             Size = file.Size,
             Type = file.ContentType,
-            Src = $"{baseUrl}/images/{file.Id}",
+            Src = imageSrc,
         };
     }
 }
