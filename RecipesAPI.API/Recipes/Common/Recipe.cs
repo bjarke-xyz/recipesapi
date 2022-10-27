@@ -18,6 +18,12 @@ public class Recipe
     public List<RecipePart> Parts { get; set; } = default!;
 }
 
+public class RecipeAuthor
+{
+    public string UserId { get; set; } = default!;
+    public string Name { get; set; } = default!;
+}
+
 public class RecipePart
 {
     public string Title { get; set; } = default!;

@@ -40,6 +40,7 @@ public class UserRepository
         {
             UserId = dto.UserId,
             Roles = dto.Roles.Select(roleStr => Enum.Parse<Role>(roleStr)).ToList(),
+            Name = dto.Name,
         };
     }
 
@@ -197,4 +198,7 @@ public class UserInfoDto
 
     [FirestoreProperty("roles")]
     public List<string> Roles { get; set; } = new List<string>();
+
+    [FirestoreProperty("name")]
+    public string? Name { get; set; } = null;
 }

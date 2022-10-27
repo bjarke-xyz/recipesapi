@@ -4,6 +4,7 @@ using RecipesAPI.Food;
 using RecipesAPI.Food.Common;
 using RecipesAPI.Recipes.BLL;
 using RecipesAPI.Recipes.Common;
+using RecipesAPI.Users.BLL;
 using RecipesAPI.Users.Common;
 
 namespace RecipesAPI.Recipes.Graph;
@@ -51,6 +52,26 @@ public class ExtendedRecipeQueries
             Size = file.Size,
             Type = file.ContentType,
             Src = imageSrc,
+        };
+    }
+
+    public async Task<RecipeAuthor> GetUser([Parent] Recipe recipe, [Service] UserService userService, CancellationToken cancellationToken)
+    {
+        var user = await userService.GetUserById(recipe.UserId, cancellationToken);
+        var name = user?.DisplayName;
+        if (string.IsNullOrEmpty(name))
+        {
+            var userInfo = await userService.GetUserInfo(recipe.UserId, cancellationToken);
+            name = userInfo?.Name;
+        }
+        if (string.IsNullOrEmpty(name))
+        {
+            name = "";
+        }
+        return new RecipeAuthor
+        {
+            Name = name,
+            UserId = recipe.UserId,
         };
     }
 }

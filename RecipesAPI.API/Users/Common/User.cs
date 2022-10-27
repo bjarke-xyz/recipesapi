@@ -18,6 +18,7 @@ public class UserInfo
 {
     public string UserId { get; set; } = default!;
     public List<Role> Roles { get; set; } = default!;
+    public string? Name { get; set; } = null;
 }
 
 public class TokenPayload
