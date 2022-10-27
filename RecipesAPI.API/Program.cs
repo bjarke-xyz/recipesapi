@@ -157,6 +157,7 @@ app
             ctx.Response.Redirect("/graphql");
             return Task.CompletedTask;
         });
+        endpoint.Map("/healthcheck", () => "OK");
         endpoint.MapGraphQL();
     });
 
