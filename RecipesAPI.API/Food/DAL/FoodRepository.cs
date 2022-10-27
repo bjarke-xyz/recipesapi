@@ -10,9 +10,9 @@ namespace RecipesAPI.Food.DAL;
 
 public class FoodRepository
 {
-    private readonly IStorageClient storageClient;
+    private readonly S3StorageClient storageClient;
 
-    public FoodRepository(IStorageClient storageClient)
+    public FoodRepository(S3StorageClient storageClient)
     {
         this.storageClient = storageClient;
     }
