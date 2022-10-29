@@ -28,7 +28,7 @@ public class ParserService
         {
             return null;
         }
-        if (!double.TryParse(parseResult.Details.Amount, out var amountDouble) && parseResult.Details.Amount.Contains("/"))
+        if (!double.TryParse(parseResult.Details.Amount ?? "", out var amountDouble) && parseResult.Details.Amount?.Contains("/") == true)
         {
             var fractionalToken = parseResult.Metadata.Tokens.FirstOrDefault(x => x is FractionalAmountToken) as FractionalAmountToken;
             if (fractionalToken != null)
