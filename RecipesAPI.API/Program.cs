@@ -20,6 +20,8 @@ using StackExchange.Redis;
 using Serilog;
 using RecipesAPI.Files.DAL;
 using RecipesAPI.Files.BLL;
+using RecipesAPI.Admin.BLL;
+using RecipesAPI.Admin.Graph;
 
 DotNetEnv.Env.Load();
 
@@ -42,6 +44,18 @@ builder.Host.UseSerilog((ctx, lc) => lc.WriteTo.Console());
 
 FirebaseApp.Create();
 
+StackExchange.Redis.ConfigurationOptions GetRedisConfigurationOptions(WebApplicationBuilder b)
+{
+    var configuration = new StackExchange.Redis.ConfigurationOptions
+    {
+        User = b.Configuration["REDIS_USER"],
+        Password = b.Configuration["REDIS_PASSWORD"],
+        ClientName = "RecipesApi",
+    };
+    configuration.EndPoints.Add($"{b.Configuration["REDIS_HOST"]}:{b.Configuration["REDIS_PORT"]}");
+    return configuration;
+}
+
 builder.Services
     .AddRouting()
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -62,7 +76,8 @@ builder.Services
     {
         var distributedCache = sp.GetRequiredService<IDistributedCache>();
         var keyPrefix = builder.Configuration["REDIS_PREFIX"];
-        return new CacheProvider(distributedCache, keyPrefix);
+        var redis = sp.GetRequiredService<IConnectionMultiplexer>();
+        return new CacheProvider(distributedCache, keyPrefix, redis);
     })
     .AddSingleton<S3StorageClient>(sp =>
     {
@@ -88,23 +103,24 @@ builder.Services
     .AddSingleton<FoodRepository>()
     .AddSingleton<FoodService>()
     .AddSingleton<UserService>()
+    .AddSingleton<ICacheKeyGetter>(sp => sp.GetRequiredService<UserService>())
     .AddSingleton<RecipeRepository>()
     .AddSingleton<RecipeService>()
+    .AddSingleton<ICacheKeyGetter>(sp => sp.GetRequiredService<RecipeService>())
     .AddSingleton<ParserService>()
     .AddSingleton<FileRepository>()
     .AddSingleton<FileService>()
+    .AddSingleton<ICacheKeyGetter>(sp => sp.GetRequiredService<FileService>())
+    .AddSingleton<AdminService>()
     .AddHostedService<CacheRefreshBackgroundService>()
     .AddHttpContextAccessor()
+    .AddSingleton<IConnectionMultiplexer>(sp =>
+    {
+        return ConnectionMultiplexer.Connect(GetRedisConfigurationOptions(builder));
+    })
     .AddStackExchangeRedisCache(options =>
     {
-        var endpointCollection = new EndPointCollection();
-        options.ConfigurationOptions = new StackExchange.Redis.ConfigurationOptions
-        {
-            User = builder.Configuration["REDIS_USER"],
-            Password = builder.Configuration["REDIS_PASSWORD"],
-            ClientName = "RecipesApi",
-        };
-        options.ConfigurationOptions.EndPoints.Add($"{builder.Configuration["REDIS_HOST"]}:{builder.Configuration["REDIS_PORT"]}");
+        options.ConfigurationOptions = GetRedisConfigurationOptions(builder);
     })
     .AddDistributedMemoryCache()
     .AddCors()
@@ -133,6 +149,9 @@ builder.Services
             .AddTypeExtension<ExtendedRecipeQueries>()
             // Food
             .AddTypeExtension<FoodQueries>()
+            // Admin
+            .AddTypeExtension<AdminQueries>()
+            .AddTypeExtension<AdminMutations>()
         .AddType<UploadType>()
 ;
 

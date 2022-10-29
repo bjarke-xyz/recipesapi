@@ -1,10 +1,11 @@
+using RecipesAPI.Admin.Common;
 using RecipesAPI.Infrastructure;
 using RecipesAPI.Users.Common;
 using RecipesAPI.Users.DAL;
 
 namespace RecipesAPI.Users.BLL;
 
-public class UserService
+public class UserService : ICacheKeyGetter
 {
     private readonly DAL.UserRepository userRepository;
     private readonly ICacheProvider cache;
@@ -17,6 +18,19 @@ public class UserService
     {
         this.userRepository = userRepository;
         this.cache = cache;
+    }
+
+    public CacheKeyInfo GetCacheKeyInfo()
+    {
+        return new CacheKeyInfo
+        {
+            CacheKeyPrefixes = new List<string>{
+                GetUsersCacheKey,
+                UserByIdCacheKey(""),
+                UserInfoByIdCacheKey(""),
+            },
+            ResourceType = CachedResourceTypeHelper.USERS,
+        };
     }
 
     public async Task<List<User>> GetUsers(CancellationToken cancellationToken)
@@ -91,4 +105,5 @@ public class UserService
             await cache.Remove(UserInfoByIdCacheKey(userId));
         }
     }
+
 }

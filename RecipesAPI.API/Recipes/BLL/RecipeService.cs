@@ -1,3 +1,4 @@
+using RecipesAPI.Admin.Common;
 using RecipesAPI.Exceptions;
 using RecipesAPI.Food;
 using RecipesAPI.Infrastructure;
@@ -6,7 +7,7 @@ using RecipesAPI.Recipes.DAL;
 
 namespace RecipesAPI.Recipes.BLL;
 
-public class RecipeService
+public class RecipeService : ICacheKeyGetter
 {
     private readonly RecipeRepository recipeRepository;
     private readonly ICacheProvider cache;
@@ -22,6 +23,21 @@ public class RecipeService
         this.recipeRepository = recipeRepository;
         this.cache = cache;
         this.parserService = parserService;
+    }
+
+    public CacheKeyInfo GetCacheKeyInfo()
+    {
+        return new CacheKeyInfo
+        {
+            CacheKeyPrefixes = new List<string>
+            {
+                GetRecipesCacheKey,
+                GetRecipeCacheKey(""),
+                GetRecipeByTitleCacheKey(""),
+                GetRecipeByUserCacheKey(""),
+            },
+            ResourceType = CachedResourceTypeHelper.RECIPES,
+        };
     }
 
     private void EnrichIngredients(Recipe recipe)
@@ -173,4 +189,5 @@ public class RecipeService
             await cache.Remove(GetRecipeByUserCacheKey(userId));
         }
     }
+
 }

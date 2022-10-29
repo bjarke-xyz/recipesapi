@@ -1,9 +1,10 @@
+using RecipesAPI.Admin.Common;
 using RecipesAPI.Files.DAL;
 using RecipesAPI.Infrastructure;
 
 namespace RecipesAPI.Files.BLL;
 
-public class FileService
+public class FileService : ICacheKeyGetter
 {
     private readonly FileRepository fileRepository;
     private readonly ICacheProvider cache;
@@ -16,6 +17,17 @@ public class FileService
         this.fileRepository = fileRepository;
         this.cache = cache;
         this.storageClient = storageClient;
+    }
+
+    public CacheKeyInfo GetCacheKeyInfo()
+    {
+        return new CacheKeyInfo
+        {
+            CacheKeyPrefixes = new List<string>{
+                FileCacheKey("")
+            },
+            ResourceType = CachedResourceTypeHelper.FILES,
+        };
     }
 
     public async Task<FileDto?> GetFile(string id, CancellationToken cancellationToken)
@@ -62,4 +74,5 @@ public class FileService
         }
         return createdFile;
     }
+
 }
