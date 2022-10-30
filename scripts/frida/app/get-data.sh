@@ -1,9 +1,7 @@
 #!/usr/bin/env bash
 
-rclone lsf r2:
-
 file_url="$(curl -I https://frida.fooddata.dk/download --silent | grep Location | tr -d '\r\n' | sed 's/^Location: //')"
-filename="/app/output/$(basename $file_url)"
+filename="/app/output/tmp/$(basename $file_url)"
 if [ ! -f $filename ]
 then
     curl $(echo "$file_url") --silent -o "$filename"
@@ -12,10 +10,7 @@ else
     exit 0
 fi
 
-# rm -f /app/output/data.*
-unzip -o "$filename" -d /app/output/fridafiles
 mkdir -p /app/output/final
-in2csv --sheet "Data_Normalised" /app/output/fridafiles/*.xlsx > /app/output/final/data.csv
-# csvjson /app/output/data.csv > /app/output/final/data.json
-
-rclone sync /app/output/final r2:frida
+mkdir -p /app/output/tmp
+unzip -o "$filename" -d /app/output/tmp/fridafiles
+in2csv --sheet "Data_Normalised" /app/output/tmp/fridafiles/*.xlsx > /app/output/final/frida.csv

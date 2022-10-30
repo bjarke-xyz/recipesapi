@@ -1,3 +1,6 @@
+scripts/frida/output/tmp
+RecipesAPI.API/bin
+RecipesAPI.API/obj
 
 # Created by https://www.gitignore.io/api/csharp
 

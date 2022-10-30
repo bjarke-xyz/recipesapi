@@ -10,24 +10,19 @@ namespace RecipesAPI.Food.DAL;
 
 public class FoodRepository
 {
-    private readonly S3StorageClient storageClient;
+    private readonly string fridaCsvFilePath;
 
-    public FoodRepository(S3StorageClient storageClient)
+    public FoodRepository(string fridaCsvFilePath)
     {
-        this.storageClient = storageClient;
+        this.fridaCsvFilePath = fridaCsvFilePath;
     }
 
-    public async Task<List<FoodDto>> GetFoodData(CancellationToken cancellationToken)
+    public Task<List<FoodDto>> GetFoodData(CancellationToken cancellationToken)
     {
-        var stream = await this.storageClient.GetStream("frida", "data.csv", cancellationToken);
-        if (stream == null)
-        {
-            throw new GraphQLErrorException("No frida data found");
-        }
-        using var reader = new StreamReader(stream);
+        using var reader = new StreamReader(fridaCsvFilePath);
         using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
         var records = csv.GetRecords<FoodDto>();
-        return records.ToList();
+        return Task.FromResult(records.ToList());
     }
 }
 

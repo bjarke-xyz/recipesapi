@@ -100,7 +100,15 @@ builder.Services
         var db = sp.GetRequiredService<FirestoreDb>();
         return new UserRepository(builder.Configuration["FirebaseWebApiKey"], db);
     })
-    .AddSingleton<FoodRepository>()
+    .AddSingleton<FoodRepository>(sp =>
+    {
+        var csvPath = "../scripts/frida/output/final/frida.csv";
+        if (builder.Environment.IsProduction())
+        {
+            csvPath = "/data/frida.csv";
+        }
+        return new FoodRepository(csvPath);
+    })
     .AddSingleton<FoodService>()
     .AddSingleton<UserService>()
     .AddSingleton<ICacheKeyGetter>(sp => sp.GetRequiredService<UserService>())

@@ -11,8 +11,6 @@ public class FoodService
 
     private List<FoodItem>? localCache = null;
 
-    public const string FoodCacheKey = "GetFoodData";
-
     public FoodService(FoodRepository foodRepository, ICacheProvider cache)
     {
         this.foodRepository = foodRepository;
@@ -24,13 +22,8 @@ public class FoodService
         var cached = localCache;
         if (cached == null)
         {
-            cached = await cache.Get<List<FoodItem>>(FoodCacheKey);
-            if (cached == null)
-            {
-                var dtos = await foodRepository.GetFoodData(cancellationToken);
-                cached = FoodMapper.MapDtos(dtos);
-                await cache.Put(FoodCacheKey, cached, TimeSpan.FromHours(24));
-            }
+            var dtos = await foodRepository.GetFoodData(cancellationToken);
+            cached = FoodMapper.MapDtos(dtos);
             localCache = cached;
         }
         return cached;
@@ -105,6 +98,22 @@ public class FoodService
         {
             return (true, 400);
         }
-        return (false, 0);
+
+        if (query.Contains(" "))
+        {
+            var queryParts = query.Split(" ", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Reverse().ToList();
+            var spaceRank = 1;
+            foreach (var queryPart in queryParts)
+            {
+                var (matched, rank) = HasMatch(foodName, queryPart);
+                if (matched)
+                {
+                    return (true, rank + spaceRank);
+                }
+                spaceRank++;
+            }
+        }
+
+        return (false, int.MaxValue);
     }
 }
