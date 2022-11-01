@@ -12,19 +12,23 @@ namespace RecipesAPI.Recipes.Graph;
 [ExtendObjectType(OperationTypeNames.Query)]
 public class RecipeQueries
 {
-    public Task<List<Recipe>> GetRecipes([UserRoles] List<Role> userRoles, [Service] RecipeService recipeService, CancellationToken cancellationToken, bool onlyPublished = true)
+    public Task<List<Recipe>> GetRecipes([UserRoles] List<Role> userRoles, [Service] RecipeService recipeService, CancellationToken cancellationToken, RecipeFilter? filter = null)
     {
-        return recipeService.GetRecipes(cancellationToken, (userRoles?.Contains(Role.ADMIN) ?? false) && onlyPublished == false);
+        filter = filter ?? new RecipeFilter();
+        return recipeService.GetRecipes(cancellationToken, (userRoles?.Contains(Role.ADMIN) ?? false) && filter.Published == false);
     }
     public Task<Recipe?> GetRecipe(string id, [UserId] string loggedInId, [UserRoles] List<Role> userRoles, [Service] RecipeService recipeService, CancellationToken cancellationToken)
     {
         return recipeService.GetRecipe(id, cancellationToken, userRoles?.Contains(Role.ADMIN) ?? false, userId: loggedInId);
     }
+
+    [Obsolete]
     public Task<Recipe?> GetRecipeByTitle(string title, [UserRoles] List<Role> userRoles, [Service] RecipeService recipeService, CancellationToken cancellationToken)
     {
         return recipeService.GetRecipeByTitle(title, cancellationToken, userRoles?.Contains(Role.ADMIN) ?? false);
     }
 
+    [Obsolete("Use User.Recipes instead")]
     public Task<List<Recipe>> GetRecipesByUser(string userId, [UserId] string loggedInId, [UserRoles] List<Role> userRoles, [Service] RecipeService recipeService, CancellationToken cancellationToken)
     {
         return recipeService.GetRecipesByUserId(userId, cancellationToken, (userRoles?.Contains(Role.ADMIN) ?? false) || userId == loggedInId);

@@ -150,6 +150,7 @@ builder.Services
         .AddMutationType()
             // Users
             .AddTypeExtension<UserQueries>()
+            .AddTypeExtension<ExtendedUserQueries>()
             .AddTypeExtension<UserMutations>()
             // Recipes
             .AddTypeExtension<RecipeQueries>()

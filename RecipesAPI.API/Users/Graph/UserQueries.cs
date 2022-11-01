@@ -5,6 +5,7 @@ using RecipesAPI.Exceptions;
 using RecipesAPI.Food;
 using RecipesAPI.Food.Common;
 using RecipesAPI.Recipes.BLL;
+using RecipesAPI.Recipes.Common;
 using RecipesAPI.Users.BLL;
 using RecipesAPI.Users.Common;
 using RecipesAPI.Users.DAL;
@@ -48,4 +49,14 @@ public class UserQueries
         };
     }
 
+}
+
+[ExtendObjectType(typeof(User))]
+public class ExtendedUserQueries
+{
+    public async Task<List<Recipe>> GetRecipes([Parent] User user, [UserId] string loggedInId, [UserRoles] List<Role> userRoles, [Service] RecipeService recipeService, CancellationToken cancellationToken)
+    {
+        var recipes = await recipeService.GetRecipesByUserId(user.Id, cancellationToken, (userRoles?.Contains(Role.ADMIN) ?? false) || user.Id == loggedInId);
+        return recipes;
+    }
 }

@@ -27,3 +27,10 @@ public class RecipePartIngredientInput
     public string? Unit { get; set; }
     public List<string>? Meta { get; set; } = default!;
 }
+
+public class RecipeFilter
+{
+    public string? UserId { get; set; }
+    public bool? Published { get; set; }
+
+}
