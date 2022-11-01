@@ -54,6 +54,16 @@ public class UserMutations
         };
     }
 
+    public async Task<bool> ResetPassword(string email, [Service] UserService userService, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(email) || !email.Contains("@"))
+        {
+            throw new GraphQLErrorException("Invalid email");
+        }
+        await userService.SendResetPasswordMail(email, cancellationToken);
+        return true;
+    }
+
 
     [RoleAuthorize(RoleEnums = new[] { Role.USER })]
     public async Task<User> UpdateMe(UpdateMeInput input, [UserId] string userId, [Service] UserService userService, CancellationToken cancellationToken)

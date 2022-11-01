@@ -1,3 +1,4 @@
+using FirebaseAdmin.Auth;
 using RecipesAPI.Admin.Common;
 using RecipesAPI.Infrastructure;
 using RecipesAPI.Users.Common;
@@ -7,6 +8,7 @@ namespace RecipesAPI.Users.BLL;
 
 public class UserService : ICacheKeyGetter
 {
+    private readonly ILogger<UserService> logger;
     private readonly DAL.UserRepository userRepository;
     private readonly ICacheProvider cache;
 
@@ -14,10 +16,11 @@ public class UserService : ICacheKeyGetter
     public string UserByIdCacheKey(string userId) => $"GetUserById:{userId}";
     public string UserInfoByIdCacheKey(string userId) => $"GetUserInfo:{userId}";
 
-    public UserService(DAL.UserRepository userRepository, ICacheProvider cache)
+    public UserService(DAL.UserRepository userRepository, ICacheProvider cache, ILogger<UserService> logger)
     {
         this.userRepository = userRepository;
         this.cache = cache;
+        this.logger = logger;
     }
 
     public CacheKeyInfo GetCacheKeyInfo()
@@ -31,6 +34,18 @@ public class UserService : ICacheKeyGetter
             },
             ResourceType = CachedResourceTypeHelper.USERS,
         };
+    }
+
+    public async Task SendResetPasswordMail(string email, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await FirebaseAuth.DefaultInstance.GeneratePasswordResetLinkAsync(email, null, cancellationToken);
+        }
+        catch (FirebaseAuthException ex)
+        {
+            logger.LogError(ex, "Failed to send reset password to {email}", email);
+        }
     }
 
     public async Task<List<User>> GetUsers(CancellationToken cancellationToken)
