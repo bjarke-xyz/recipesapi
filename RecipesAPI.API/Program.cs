@@ -22,6 +22,7 @@ using RecipesAPI.Files.DAL;
 using RecipesAPI.Files.BLL;
 using RecipesAPI.Admin.BLL;
 using RecipesAPI.Admin.Graph;
+using Prometheus;
 
 DotNetEnv.Env.Load();
 
@@ -173,6 +174,10 @@ app.UseCors(o => o
 
 app
     .UseWebSockets()
+    .UseHttpMetrics(options =>
+    {
+        options.ReduceStatusCodeCardinality();
+    })
     .UseSerilogRequestLogging()
     .UseRouting()
     .UseAuthentication()
@@ -191,6 +196,8 @@ app
 try
 {
     Log.Information("Starting API");
+    var metricServer = new KestrelMetricServer(port: 1234);
+    metricServer.Start();
     app.Run();
 }
 catch (Exception ex)
