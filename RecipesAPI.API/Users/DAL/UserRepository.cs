@@ -36,12 +36,21 @@ public class UserRepository
     private UserInfo? MapDto(UserInfoDto? dto)
     {
         if (dto == null) return null;
-        return new UserInfo
+        var userInfo = new UserInfo
         {
             UserId = dto.UserId,
             Roles = dto.Roles.Select(roleStr => Enum.Parse<Role>(roleStr)).ToList(),
             Name = dto.Name,
         };
+        if (userInfo.Roles.Count == 0 && !string.IsNullOrEmpty(dto.Role))
+        {
+            if (Enum.TryParse<Role>(dto.Role.ToUpper(), out var role))
+            {
+                userInfo.Roles = new List<Role> { role };
+            }
+        }
+
+        return userInfo;
     }
 
     public async Task<List<User>> GetUsers(CancellationToken cancellationToken)
@@ -78,7 +87,35 @@ public class UserRepository
             return null;
         }
         var dto = snapshot.ConvertTo<UserInfoDto>();
+        if (string.IsNullOrEmpty(dto.UserId))
+        {
+            dto.UserId = docRef.Id;
+        }
         return MapDto(dto);
+    }
+
+    public async Task<List<UserInfo>> GetUserInfos(List<string> userIds, CancellationToken cancellationToken)
+    {
+        if (userIds == null || userIds.Count == 0)
+        {
+            return new List<UserInfo>();
+        }
+        var snapshot = await db.Collection(usersCollection).WhereIn(FieldPath.DocumentId, userIds).GetSnapshotAsync();
+        var userInfos = new List<UserInfo>();
+        foreach (var doc in snapshot.Documents)
+        {
+            var dto = doc.ConvertTo<UserInfoDto>();
+            if (string.IsNullOrEmpty(dto.UserId))
+            {
+                dto.UserId = doc.Id;
+            }
+            var userInfo = MapDto(dto);
+            if (userInfo != null)
+            {
+                userInfos.Add(userInfo);
+            }
+        }
+        return userInfos;
     }
 
     public async Task<User?> CreateUser(string email, string password, string displayName, CancellationToken cancellationToken)

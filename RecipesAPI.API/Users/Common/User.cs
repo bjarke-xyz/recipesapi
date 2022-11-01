@@ -3,9 +3,11 @@ namespace RecipesAPI.Users.Common;
 public class User
 {
     public string Id { get; set; } = default!;
-    public string DisplayName { get; set; } = default!;
+    public string? DisplayName { get; set; }
     public string Email { get; set; } = default!;
     public bool EmailVerified { get; set; }
+    public string Role { get; set; } = default!;
+    public List<Role> Roles { get; set; } = default!;
 }
 
 public enum Role

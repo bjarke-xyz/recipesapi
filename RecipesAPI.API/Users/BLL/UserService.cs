@@ -41,6 +41,16 @@ public class UserService : ICacheKeyGetter
             cached = await userRepository.GetUsers(cancellationToken);
             await cache.Put(GetUsersCacheKey, cached);
         }
+        var userInfos = await GetUserInfos(cached.Select(x => x.Id).ToList(), cancellationToken);
+        foreach (var user in cached)
+        {
+            if (userInfos.TryGetValue(user.Id, out var userInfo) && userInfo != null)
+            {
+                user.DisplayName = user.DisplayName ?? userInfo.Name;
+                user.Role = userInfo.Roles.FirstOrDefault().ToString();
+                user.Roles = userInfo.Roles;
+            }
+        }
         return cached;
     }
 
@@ -56,6 +66,35 @@ public class UserService : ICacheKeyGetter
             }
         }
         return cached;
+    }
+
+    public async Task<Dictionary<string, UserInfo>> GetUserInfos(List<string> userIds, CancellationToken cancellationToken)
+    {
+        var cachedUserInfos = new List<UserInfo>();
+        foreach (var userId in userIds)
+        {
+            var cached = await cache.Get<UserInfo>(UserInfoByIdCacheKey(userId));
+            if (cached != null)
+            {
+                cachedUserInfos.Add(cached);
+            }
+        }
+        var userIdsNotFoundInCache = userIds.Except(cachedUserInfos.Select(x => x.UserId)).ToList();
+        var nonCached = await userRepository.GetUserInfos(userIdsNotFoundInCache, cancellationToken);
+        foreach (var userInfo in nonCached)
+        {
+            await cache.Put(UserInfoByIdCacheKey(userInfo.UserId), userInfo);
+        }
+        var resultDict = new Dictionary<string, UserInfo>();
+        foreach (var userInfo in cachedUserInfos)
+        {
+            resultDict[userInfo.UserId] = userInfo;
+        }
+        foreach (var userInfo in nonCached)
+        {
+            resultDict[userInfo.UserId] = userInfo;
+        }
+        return resultDict;
     }
 
     public async Task<UserInfo?> GetUserInfo(string userId, CancellationToken cancellationToken)
