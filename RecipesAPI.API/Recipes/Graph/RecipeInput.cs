@@ -25,5 +25,5 @@ public class RecipePartIngredientInput
     public string? Title { get; set; }
     public double? Volume { get; set; }
     public string? Unit { get; set; }
-    public List<string> Meta { get; set; } = default!;
+    public List<string>? Meta { get; set; } = default!;
 }

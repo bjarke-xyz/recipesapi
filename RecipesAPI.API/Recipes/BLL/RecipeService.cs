@@ -46,8 +46,8 @@ public class RecipeService : ICacheKeyGetter
         {
             foreach (var ingredient in part.Ingredients)
             {
-                if (string.IsNullOrEmpty(ingredient.Title)) continue;
-                var parsedIngredient = parserService.Parse(ingredient.Title);
+                if (string.IsNullOrEmpty(ingredient.Title) && string.IsNullOrEmpty(ingredient.Original)) continue;
+                var parsedIngredient = parserService.Parse(ingredient.Title ?? ingredient.Original);
                 if (parsedIngredient != null)
                 {
                     ingredient.Original = parsedIngredient.Original;
@@ -153,7 +153,7 @@ public class RecipeService : ICacheKeyGetter
         recipe.Id = id;
         await recipeRepository.SaveRecipe(recipe, cancellationToken);
         await ClearCache();
-        var savedRecipe = await GetRecipe(recipe.Id, cancellationToken, true);
+        var savedRecipe = await GetRecipe(recipe.Id, cancellationToken, true, recipe.UserId);
         if (savedRecipe == null)
         {
             throw new GraphQLErrorException("failed to get saved recipe");
@@ -165,7 +165,7 @@ public class RecipeService : ICacheKeyGetter
     {
         await recipeRepository.SaveRecipe(recipe, cancellationToken);
         await ClearCache(recipe.Id, recipe.Title, recipe.UserId);
-        var savedRecipe = await GetRecipe(recipe.Id, cancellationToken, true);
+        var savedRecipe = await GetRecipe(recipe.Id, cancellationToken, true, recipe.UserId);
         if (savedRecipe == null)
         {
             throw new GraphQLErrorException("failed to get saved recipe");

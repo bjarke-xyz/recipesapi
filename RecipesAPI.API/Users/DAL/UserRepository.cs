@@ -49,6 +49,10 @@ public class UserRepository
                 userInfo.Roles = new List<Role> { role };
             }
         }
+        if (userInfo.Roles.Count == 1 && userInfo.Roles[0] == Role.ADMIN)
+        {
+            userInfo.Roles.Add(Role.USER);
+        }
 
         return userInfo;
     }
