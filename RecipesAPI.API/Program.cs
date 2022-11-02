@@ -88,6 +88,14 @@ builder.Services
         return new S3StorageClient(r2AccessKeyId, r2AccessKeySecret, r2AccountId);
     })
     .AddSingleton<IStorageClient, GoogleStorageClient>()
+    .AddSingleton<IEmailService, EmailService>(sp =>
+    {
+        var apiUrl = builder.Configuration["EMAILSERVICE_URL"];
+        var apiUser = builder.Configuration["EMAILSERVICE_USER"];
+        var apiPassword = builder.Configuration["EMAILSERVICE_PASSWORD"];
+        var logger = sp.GetRequiredService<ILogger<EmailService>>();
+        return new EmailService(apiUrl, apiUser, apiPassword, logger);
+    })
     .AddSingleton(sp =>
     {
         return FirestoreDb.Create(builder.Configuration["FirebaseAppId"]);

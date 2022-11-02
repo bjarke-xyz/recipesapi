@@ -1,5 +1,6 @@
 using FirebaseAdmin.Auth;
 using RecipesAPI.Admin.Common;
+using RecipesAPI.Exceptions;
 using RecipesAPI.Infrastructure;
 using RecipesAPI.Users.Common;
 using RecipesAPI.Users.DAL;
@@ -11,16 +12,18 @@ public class UserService : ICacheKeyGetter
     private readonly ILogger<UserService> logger;
     private readonly DAL.UserRepository userRepository;
     private readonly ICacheProvider cache;
+    private readonly IEmailService emailService;
 
     public const string GetUsersCacheKey = "GetUsers";
     public string UserByIdCacheKey(string userId) => $"GetUserById:{userId}";
     public string UserInfoByIdCacheKey(string userId) => $"GetUserInfo:{userId}";
 
-    public UserService(DAL.UserRepository userRepository, ICacheProvider cache, ILogger<UserService> logger)
+    public UserService(DAL.UserRepository userRepository, ICacheProvider cache, ILogger<UserService> logger, IEmailService emailService)
     {
         this.userRepository = userRepository;
         this.cache = cache;
         this.logger = logger;
+        this.emailService = emailService;
     }
 
     public CacheKeyInfo GetCacheKeyInfo()
@@ -40,7 +43,9 @@ public class UserService : ICacheKeyGetter
     {
         try
         {
-            await FirebaseAuth.DefaultInstance.GeneratePasswordResetLinkAsync(email, null, cancellationToken);
+            var passwordResetLink = await FirebaseAuth.DefaultInstance.GeneratePasswordResetLinkAsync(email, null, cancellationToken);
+            ArgumentNullException.ThrowIfNull(passwordResetLink);
+            await emailService.SendEmail(email, "Reset password", $"Nogen har bedt om at resette dit password. Tryk på linket for at fortsætte: {passwordResetLink}");
         }
         catch (FirebaseAuthException ex)
         {
@@ -130,14 +135,41 @@ public class UserService : ICacheKeyGetter
     {
         var user = await userRepository.CreateUser(email, password, displayName, cancellationToken);
         await ClearCache();
+        await SendConfirmEmail(email, includeWelcome: true);
         return user;
     }
 
     public async Task<User?> UpdateUser(string userId, string email, string displayName, CancellationToken cancellationToken)
     {
+        var userBeforeUpdate = await GetUserById(userId, cancellationToken);
+        if (userBeforeUpdate == null)
+        {
+            throw new GraphQLErrorException($"User with id {userId} not found");
+        }
         var user = await userRepository.UpdateUser(userId, email, displayName, cancellationToken);
         await ClearCache(userId);
+        if (user != null && user.Email != userBeforeUpdate.Email)
+        {
+            await SendConfirmEmail(user.Email, includeWelcome: false);
+        }
         return user;
+    }
+
+    private async Task SendConfirmEmail(string email, bool includeWelcome)
+    {
+        var verifyEmailLink = await FirebaseAuth.DefaultInstance.GenerateEmailVerificationLinkAsync(email);
+        if (!string.IsNullOrEmpty(verifyEmailLink))
+        {
+            try
+            {
+                await emailService.SendEmail(email, "Bekræft email", $"{(includeWelcome ? "Velkommen til gastrik. " : "")}Bekræft venligst din email ved at trykke på linket: {verifyEmailLink}");
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "failed to send email confirmation email to {to}", email);
+            }
+        }
+
     }
 
     public Task<VerifyPasswordResponse> SignIn(string email, string password, CancellationToken cancellationToken)
