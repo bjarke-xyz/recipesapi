@@ -150,7 +150,10 @@ builder.Services
             {
                 return error.WithMessage(error.Exception.Message).RemoveExtensions();
             }
-            return error;
+            else
+            {
+                return error.WithMessage("An error has occurred");
+            }
         })
         .AddAuthorization()
         .AddHttpRequestInterceptor<AuthInterceptor>()

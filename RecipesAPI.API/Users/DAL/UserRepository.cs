@@ -57,6 +57,19 @@ public class UserRepository
         return userInfo;
     }
 
+    private UserInfoDto? MapDto(UserInfo? userInfo)
+    {
+        if (userInfo == null) return null;
+        var dto = new UserInfoDto
+        {
+            Name = userInfo.Name,
+            Role = userInfo.Roles.FirstOrDefault().ToString().ToUpper(),
+            Roles = userInfo.Roles.Select(x => x.ToString().ToUpper()).ToList(),
+            UserId = userInfo.UserId
+        };
+        return dto;
+    }
+
     public async Task<List<User>> GetUsers(CancellationToken cancellationToken)
     {
         var users = new List<User>();
@@ -142,7 +155,7 @@ public class UserRepository
         return MapUserRecord(userRecord);
     }
 
-    public async Task<User?> UpdateUser(string userId, string email, string displayName, CancellationToken cancellationToken)
+    public async Task<User?> UpdateUser(string userId, string email, string displayName, string? password, CancellationToken cancellationToken)
     {
         var args = new UserRecordArgs
         {
@@ -150,8 +163,23 @@ public class UserRepository
             Email = email,
             DisplayName = displayName,
         };
+        if (!string.IsNullOrEmpty(password))
+        {
+            args.Password = password;
+        }
         var userRecord = await FirebaseAuth.DefaultInstance.UpdateUserAsync(args);
         return MapUserRecord(userRecord);
+    }
+
+    public async Task UpdateUserInfo(string userId, UserInfo userInfo, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(userInfo);
+        if (string.IsNullOrEmpty(userInfo.UserId))
+        {
+            userInfo.UserId = userId;
+        }
+        var dto = MapDto(userInfo);
+        await db.Collection(usersCollection).Document(userId).SetAsync(dto, null, cancellationToken);
     }
 
     public async Task<VerifyPasswordResponse> SignIn(string email, string password, CancellationToken cancellationToken)

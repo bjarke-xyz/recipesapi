@@ -85,6 +85,15 @@ public class UserService : ICacheKeyGetter
                 await cache.Put(UserByIdCacheKey(userId), cached);
             }
         }
+        if (cached != null)
+        {
+            var userInfo = await GetUserInfo(userId, cancellationToken);
+            if (userInfo != null)
+            {
+                cached.Roles = userInfo.Roles;
+                cached.Role = cached.Roles.FirstOrDefault().ToString();
+            }
+        }
         return cached;
     }
 
@@ -139,20 +148,38 @@ public class UserService : ICacheKeyGetter
         return user;
     }
 
-    public async Task<User?> UpdateUser(string userId, string email, string displayName, CancellationToken cancellationToken)
+    public async Task<User?> UpdateUser(string userId, string email, string displayName, string? password, List<Role> roles, CancellationToken cancellationToken)
     {
         var userBeforeUpdate = await GetUserById(userId, cancellationToken);
         if (userBeforeUpdate == null)
         {
             throw new GraphQLErrorException($"User with id {userId} not found");
         }
-        var user = await userRepository.UpdateUser(userId, email, displayName, cancellationToken);
-        await ClearCache(userId);
-        if (user != null && user.Email != userBeforeUpdate.Email)
+        try
         {
-            await SendConfirmEmail(user.Email, includeWelcome: false);
+            await userRepository.UpdateUser(userId, email, displayName, password, cancellationToken);
+            await userRepository.UpdateUserInfo(userId, new UserInfo
+            {
+                Name = displayName,
+                Roles = roles,
+            }, cancellationToken);
         }
-        return user;
+        catch (FirebaseAuthException ex)
+        {
+            logger.LogError(ex, "failed to update user");
+            throw new GraphQLErrorException(ex.Message);
+        }
+        await ClearCache(userId);
+        var updatedUser = await GetUserById(userId, cancellationToken);
+        if (updatedUser == null)
+        {
+            throw new GraphQLErrorException("failed to get updated user");
+        }
+        if (updatedUser != null && updatedUser.Email != userBeforeUpdate.Email)
+        {
+            await SendConfirmEmail(updatedUser.Email, includeWelcome: false);
+        }
+        return updatedUser;
     }
 
     private async Task SendConfirmEmail(string email, bool includeWelcome)

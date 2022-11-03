@@ -1,3 +1,4 @@
+using System.Net.Mail;
 using System.Security.Claims;
 using HotChocolate.AspNetCore.Authorization;
 using RecipesAPI.Auth;
@@ -68,7 +69,27 @@ public class UserMutations
     [RoleAuthorize(RoleEnums = new[] { Role.USER })]
     public async Task<User> UpdateMe(UpdateMeInput input, [UserId] string userId, [Service] UserService userService, CancellationToken cancellationToken)
     {
-        var user = await userService.UpdateUser(userId, input.Email, input.DisplayName, cancellationToken);
+        if (string.IsNullOrEmpty(input.Email) && string.IsNullOrEmpty(input.DisplayName) && string.IsNullOrEmpty(input.Password))
+        {
+            throw new GraphQLErrorException("At least one field must be provided");
+        }
+        var existingUser = await userService.GetUserById(userId, cancellationToken);
+        if (existingUser == null)
+        {
+            throw new GraphQLErrorException($"User with id '{userId}' not found");
+        }
+        if (!string.IsNullOrEmpty(input.Email) && !IsEmailValid(input.Email))
+        {
+            throw new GraphQLErrorException("Email is invalid");
+        }
+        var email = input.Email ?? existingUser.Email;
+        var displayName = input.DisplayName ?? existingUser.DisplayName ?? "";
+        var password = input.Password;
+        if (string.IsNullOrEmpty(password))
+        {
+            password = null;
+        }
+        var user = await userService.UpdateUser(userId, email, displayName, password, existingUser.Roles, cancellationToken);
         if (user == null)
         {
             throw new GraphQLErrorException("updated user was null");
@@ -76,10 +97,45 @@ public class UserMutations
         return user;
     }
 
-    // [RoleAuthorize(RoleEnums = new[] { Role.ADMIN })]
-    // public Task<User> UpdateUser([Service] UserService userService, CancellationToken cancellationToken)
-    // {
-    //     throw new NotImplementedException("UpdateUser is not implemented");
-    // }
+    [RoleAuthorize(RoleEnums = new[] { Role.ADMIN })]
+    public async Task<User> UpdateUser(string userId, UpdateUserInput input, [Service] UserService userService, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(input.Email) && string.IsNullOrEmpty(input.DisplayName) && input.Roles == null)
+        {
+            throw new GraphQLErrorException("At least one field must be provided");
+        }
+        var existingUser = await userService.GetUserById(userId, cancellationToken);
+        if (existingUser == null)
+        {
+            throw new GraphQLErrorException($"User with id '{userId}' not found");
+        }
+        if (!string.IsNullOrEmpty(input.Email) && !IsEmailValid(input.Email))
+        {
+            throw new GraphQLErrorException("Email is invalid");
+        }
+
+        var email = input.Email ?? existingUser.Email;
+        var displayName = input.DisplayName ?? existingUser.DisplayName ?? "";
+        var roles = input.Roles ?? existingUser.Roles ?? new List<Role>() { Role.USER };
+        var updatedUser = await userService.UpdateUser(userId, email, displayName, null, roles, cancellationToken);
+        if (updatedUser == null)
+        {
+            throw new GraphQLErrorException("updated user was null");
+        }
+        return updatedUser;
+    }
+
+    private bool IsEmailValid(string email)
+    {
+        try
+        {
+            new MailAddress(email);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
 
 }
