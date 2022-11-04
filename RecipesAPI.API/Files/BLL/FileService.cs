@@ -4,7 +4,16 @@ using RecipesAPI.Infrastructure;
 
 namespace RecipesAPI.Files.BLL;
 
-public class FileService : ICacheKeyGetter
+public interface IFileService : ICacheKeyGetter
+{
+    Task<FileDto?> GetFile(string id, CancellationToken cancellationToken);
+    Task<Stream?> GetFileContent(string fileId, CancellationToken cancellationToken);
+    string GetPublicUrl(FileDto file);
+    Task<FileDto?> SaveFile(FileDto file, CancellationToken cancellationToken);
+    Task<FileDto?> SaveFile(FileDto file, Stream content, CancellationToken cancellationToken);
+}
+
+public class FileService : IFileService
 {
     private readonly FileRepository fileRepository;
     private readonly ICacheProvider cache;
@@ -57,6 +66,17 @@ public class FileService : ICacheKeyGetter
     {
         // return $"https://pub-fc8159a8900d44e2b3f022917f202fc1.r2.dev/{file.Key}";
         return $"https://storage.googleapis.com/{file.Bucket}/{file.Key}";
+    }
+
+    public async Task<FileDto?> SaveFile(FileDto file, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(file.Id))
+        {
+            file.Id = Guid.NewGuid().ToString();
+        }
+        await fileRepository.SaveFile(file, cancellationToken);
+        await cache.Remove(FileCacheKey(file.Id));
+        return await GetFile(file.Id, cancellationToken);
     }
 
     public async Task<FileDto?> SaveFile(FileDto file, Stream content, CancellationToken cancellationToken)

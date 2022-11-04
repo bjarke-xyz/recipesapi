@@ -23,6 +23,7 @@ using RecipesAPI.Files.BLL;
 using RecipesAPI.Admin.BLL;
 using RecipesAPI.Admin.Graph;
 using Prometheus;
+using RecipesAPI.Recipes.BackgroundServices;
 
 DotNetEnv.Env.Load();
 
@@ -126,10 +127,13 @@ builder.Services
     .AddSingleton<ICacheKeyGetter>(sp => sp.GetRequiredService<RecipeService>())
     .AddSingleton<ParserService>()
     .AddSingleton<FileRepository>()
-    .AddSingleton<FileService>()
-    .AddSingleton<ICacheKeyGetter>(sp => sp.GetRequiredService<FileService>())
+    .AddSingleton<IFileService, FileService>()
     .AddSingleton<AdminService>()
+    // TODO: Figure out right capacity
+    .AddSingleton<ImageProcessingQueue>(sp => new ImageProcessingQueue(50))
+    .AddSingleton<ImageProcessingService>()
     .AddHostedService<CacheRefreshBackgroundService>()
+    .AddHostedService<ImageProcessingBackgroundService>()
     .AddHttpContextAccessor()
     .AddSingleton<IConnectionMultiplexer>(sp =>
     {

@@ -42,8 +42,10 @@ public class RecipeIngredient
 
 public class Image
 {
+    public string ImageId { get; set; } = default!;
     public string Src { get; set; } = default!;
     public string Type { get; set; } = default!;
     public long Size { get; set; } = default!;
     public string Name { get; set; } = default!;
+    public string? BlurHash { get; set; } = default!;
 }

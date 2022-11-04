@@ -50,6 +50,8 @@ public class FileDto
     public long Size { get; set; } = default!;
     [FirestoreProperty("fileName")]
     public string FileName { get; set; } = default!;
+    [FirestoreProperty("blurHash")]
+    public string? BlurHash { get; set; }
 
     public DateTimeOffset? CreatedAt { get; set; }
 }

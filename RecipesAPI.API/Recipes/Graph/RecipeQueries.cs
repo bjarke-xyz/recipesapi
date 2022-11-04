@@ -57,7 +57,7 @@ public class RecipeIngredientQueries
 [ExtendObjectType(typeof(Recipe))]
 public class ExtendedRecipeQueries
 {
-    public async Task<Image?> GetImage([Parent] Recipe recipe, [Service] FileService fileService, CancellationToken cancellationToken)
+    public async Task<Image?> GetImage([Parent] Recipe recipe, [Service] IFileService fileService, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(recipe.ImageId)) return null;
         var file = await fileService.GetFile(recipe.ImageId, cancellationToken);
@@ -65,10 +65,12 @@ public class ExtendedRecipeQueries
         var imageSrc = fileService.GetPublicUrl(file);
         return new Image
         {
+            ImageId = recipe.ImageId,
             Name = file.FileName,
             Size = file.Size,
             Type = file.ContentType,
             Src = imageSrc,
+            BlurHash = file.BlurHash,
         };
     }
 

@@ -1,9 +1,11 @@
 using RecipesAPI.Admin.Common;
 using RecipesAPI.Exceptions;
+using RecipesAPI.Files.BLL;
 using RecipesAPI.Food;
 using RecipesAPI.Infrastructure;
 using RecipesAPI.Recipes.Common;
 using RecipesAPI.Recipes.DAL;
+using SixLabors.ImageSharp.Processing;
 
 namespace RecipesAPI.Recipes.BLL;
 
@@ -12,17 +14,19 @@ public class RecipeService : ICacheKeyGetter
     private readonly RecipeRepository recipeRepository;
     private readonly ICacheProvider cache;
     private readonly ParserService parserService;
+    private readonly ILogger<RecipeService> logger;
 
     public const string GetRecipesCacheKey = "GetRecipes";
     public string GetRecipeCacheKey(string id) => $"GetRecipe:{id}";
     public string GetRecipeByTitleCacheKey(string title) => $"GetRecipeByTitle:{title}";
     public string GetRecipeByUserCacheKey(string userId) => $"GetRecipeByUser:{userId}";
 
-    public RecipeService(RecipeRepository recipeRepository, ICacheProvider cache, ParserService parserService, FoodService foodService)
+    public RecipeService(RecipeRepository recipeRepository, ICacheProvider cache, ParserService parserService, FoodService foodService, ILogger<RecipeService> logger)
     {
         this.recipeRepository = recipeRepository;
         this.cache = cache;
         this.parserService = parserService;
+        this.logger = logger;
     }
 
     public CacheKeyInfo GetCacheKeyInfo()

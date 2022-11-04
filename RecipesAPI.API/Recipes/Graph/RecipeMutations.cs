@@ -49,7 +49,7 @@ public class RecipeMutations
         return (true, contentType);
     }
 
-    private static async Task<string> UploadImage(IFile file, FileService fileService, CancellationToken cancellationToken)
+    private static async Task<string> UploadImage(IFile file, IFileService fileService, ImageProcessingQueue imageProcessingQueue, ImageProcessingService imageProcessingService, CancellationToken cancellationToken)
     {
         var (_, contenType) = ValidateImage(file);
         var fileId = Guid.NewGuid().ToString();
@@ -66,6 +66,7 @@ public class RecipeMutations
         {
             using var stream = file.OpenReadStream();
             await fileService.SaveFile(fileDto, stream, cancellationToken);
+            await imageProcessingQueue.QueueBackgroundWorkItem((CancellationToken ct) => imageProcessingService.ProcessRecipeImage(fileId, ct));
             return fileId;
         }
         catch (Exception ex)
@@ -75,12 +76,17 @@ public class RecipeMutations
     }
 
     [RoleAuthorize(RoleEnums = new[] { Role.USER })]
-    public async Task<Recipe> CreateRecipe(RecipeInput input, [UserId] string userId, [Service] RecipeService recipeService, [Service] FileService fileService, CancellationToken cancellationToken)
+    public async Task<Recipe> CreateRecipe(RecipeInput input, [UserId] string userId, [Service] RecipeService recipeService, [Service] IFileService fileService, [Service] ImageProcessingQueue imageProcessingQueue, [Service] ImageProcessingService imageProcessingService, CancellationToken cancellationToken)
     {
+        var existingRecipe = await recipeService.GetRecipeByTitle(input.Title, cancellationToken, true);
+        if (existingRecipe != null)
+        {
+            throw new GraphQLErrorException($"Recipe with name '{input.Title}' already exists");
+        }
         string? imageId = null;
         if (input.Image != null)
         {
-            imageId = await UploadImage(input.Image, fileService, cancellationToken);
+            imageId = await UploadImage(input.Image, fileService, imageProcessingQueue, imageProcessingService, cancellationToken);
         }
         var recipe = RecipeMapper.MapInput(input);
         recipe.ImageId = imageId;
@@ -90,7 +96,7 @@ public class RecipeMutations
     }
 
     [RoleAuthorize(RoleEnums = new[] { Role.USER })]
-    public async Task<Recipe> UpdateRecipe(string id, RecipeInput input, [UserId] string userId, [UserRoles] List<Role> userRoles, [Service] RecipeService recipeService, [Service] FileService fileService, CancellationToken cancellationToken)
+    public async Task<Recipe> UpdateRecipe(string id, RecipeInput input, [UserId] string userId, [UserRoles] List<Role> userRoles, [Service] RecipeService recipeService, [Service] IFileService fileService, [Service] ImageProcessingQueue imageProcessingQueue, [Service] ImageProcessingService imageProcessingService, CancellationToken cancellationToken)
     {
         var existingRecipe = await recipeService.GetRecipe(id, cancellationToken, true);
         if (existingRecipe == null)
@@ -109,7 +115,7 @@ public class RecipeMutations
         {
             if (input.Image != null)
             {
-                imageId = await UploadImage(input.Image, fileService, cancellationToken);
+                imageId = await UploadImage(input.Image, fileService, imageProcessingQueue, imageProcessingService, cancellationToken);
             }
         }
 
