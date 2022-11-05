@@ -1,14 +1,14 @@
 using RecipesAPI.Infrastructure;
 using RecipesAPI.Recipes.BLL;
 
-namespace RecipesAPI.Recipes.BackgroundServices;
+namespace RecipesAPI.Infrastructure;
 
-public class ImageProcessingBackgroundService : BackgroundService
+public class TaskQueueBackgroundService : BackgroundService
 {
-    private readonly ImageProcessingQueue taskQueue;
-    private readonly ILogger<ImageProcessingBackgroundService> logger;
+    private readonly IBackgroundTaskQueue taskQueue;
+    private readonly ILogger<TaskQueueBackgroundService> logger;
 
-    public ImageProcessingBackgroundService(ImageProcessingQueue taskQueue, ILogger<ImageProcessingBackgroundService> logger)
+    public TaskQueueBackgroundService(IBackgroundTaskQueue taskQueue, ILogger<TaskQueueBackgroundService> logger)
     {
         this.taskQueue = taskQueue;
         this.logger = logger;
