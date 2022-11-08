@@ -9,7 +9,8 @@ public class FoodService
     private readonly FoodRepository foodRepository;
     private readonly ICacheProvider cache;
 
-    private List<FoodItem>? localCache = null;
+    private IReadOnlyList<FoodItem>? localCache = null;
+    private Dictionary<int, FoodItem>? localCacheDict = null;
 
     public FoodService(FoodRepository foodRepository, ICacheProvider cache)
     {
@@ -17,7 +18,23 @@ public class FoodService
         this.cache = cache;
     }
 
-    public async Task<List<FoodItem>> GetFoodData(CancellationToken cancellationToken)
+    public async Task<IReadOnlyList<FoodItem>?> GetFoodData(CancellationToken cancellationToken)
+    {
+        await PopulateLocalCache(cancellationToken);
+        return localCache;
+    }
+
+    public async Task<FoodItem?> GetFoodItem(int id, CancellationToken cancellationToken)
+    {
+        await PopulateLocalCache(cancellationToken);
+        if (localCacheDict?.TryGetValue(id, out var foodItem) == true)
+        {
+            return foodItem;
+        }
+        return null;
+    }
+
+    private async Task PopulateLocalCache(CancellationToken cancellationToken)
     {
         var cached = localCache;
         if (cached == null)
@@ -26,7 +43,7 @@ public class FoodService
             cached = FoodMapper.MapDtos(dtos);
             localCache = cached;
         }
-        return cached;
+        localCacheDict = cached.GroupBy(x => x.FoodId).ToDictionary(x => x.Key, x => x.First());
     }
 
     public async Task<List<FoodItem>> SearchFoodData(string query, CancellationToken cancellationToken)
