@@ -10,6 +10,12 @@ public class User
     public List<Role> Roles { get; set; } = default!;
 }
 
+public class SimpleUser
+{
+    public string Id { get; set; } = default!;
+    public string? DisplayName { get; set; }
+}
+
 public enum Role
 {
     USER,

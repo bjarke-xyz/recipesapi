@@ -23,6 +23,7 @@ public class RecipeAuthor
 {
     public string UserId { get; set; } = default!;
     public string DisplayName { get; set; } = default!;
+    public string Name => DisplayName;
 }
 
 public class RecipePart

@@ -34,6 +34,21 @@ public class UserQueries
         return users;
     }
 
+    public async Task<SimpleUser?> GetSimpleUser([Service] UserService userService, CancellationToken cancellationToken, string userId)
+    {
+        var user = await userService.GetUserById(userId, cancellationToken);
+        if (user == null)
+        {
+            return null;
+        }
+        var simpleUser = new SimpleUser
+        {
+            Id = user.Id,
+            DisplayName = user.DisplayName,
+        };
+        return simpleUser;
+    }
+
     public async Task<Stats> GetStats([Service] UserService userService, [Service] RecipeService recipeService, CancellationToken cancellationToken, bool showUnpublished = false)
     {
         var users = await userService.GetUsers(cancellationToken);
@@ -57,6 +72,16 @@ public class ExtendedUserQueries
     public async Task<List<Recipe>> GetRecipes([Parent] User user, [UserId] string loggedInId, [UserRoles] List<Role> userRoles, [Service] RecipeService recipeService, CancellationToken cancellationToken)
     {
         var recipes = await recipeService.GetRecipesByUserId(user.Id, cancellationToken, (userRoles?.Contains(Role.ADMIN) ?? false) || user.Id == loggedInId);
+        return recipes;
+    }
+}
+
+[ExtendObjectType(typeof(SimpleUser))]
+public class ExtendedSimpleUserQueries
+{
+    public async Task<List<Recipe>> GetRecipes([Parent] SimpleUser simpleUser, [UserId] string loggedInId, [UserRoles] List<Role> userRoles, [Service] RecipeService recipeService, CancellationToken cancellationToken)
+    {
+        var recipes = await recipeService.GetRecipesByUserId(simpleUser.Id, cancellationToken, (userRoles?.Contains(Role.ADMIN) ?? false) || simpleUser.Id == loggedInId);
         return recipes;
     }
 }

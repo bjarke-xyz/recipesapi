@@ -90,6 +90,7 @@ public class UserService : ICacheKeyGetter
             var userInfo = await GetUserInfo(userId, cancellationToken);
             if (userInfo != null)
             {
+                cached.DisplayName = cached.DisplayName ?? userInfo.Name;
                 cached.Roles = userInfo.Roles;
                 cached.Role = cached.Roles.FirstOrDefault().ToString();
             }
