@@ -6,13 +6,15 @@ namespace RecipesAPI.Recipes.DAL;
 
 public class RecipeRepository
 {
+    private readonly ILogger<RecipeRepository> logger;
     private readonly FirestoreDb db;
 
     private const string recipeCollection = "recipes";
 
-    public RecipeRepository(FirestoreDb db)
+    public RecipeRepository(FirestoreDb db, ILogger<RecipeRepository> logger)
     {
         this.db = db;
+        this.logger = logger;
     }
 
     public async Task<List<Recipe>> GetRecipes(CancellationToken cancellationToken)
@@ -21,9 +23,16 @@ public class RecipeRepository
         var recipes = new List<Recipe>();
         foreach (var doc in snapshot.Documents)
         {
-            var dto = doc.ConvertTo<RecipeDto>();
-            var recipe = RecipeMapper.MapDto(dto, doc.Id);
-            recipes.Add(recipe);
+            try
+            {
+                var dto = doc.ConvertTo<RecipeDto>();
+                var recipe = RecipeMapper.MapDto(dto, doc.Id);
+                recipes.Add(recipe);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "failed to convert firebase doc {id} to dto", doc.Id);
+            }
         }
         return recipes;
     }
@@ -35,8 +44,16 @@ public class RecipeRepository
         {
             return null;
         }
-        var dto = doc.ConvertTo<RecipeDto>();
-        return RecipeMapper.MapDto(dto, doc.Id);
+        try
+        {
+            var dto = doc.ConvertTo<RecipeDto>();
+            return RecipeMapper.MapDto(dto, doc.Id);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "failed to convert firebase doc {id} to dto", doc.Id);
+            throw;
+        }
     }
 
     public async Task<Recipe?> GetRecipeByTitle(string title, CancellationToken cancellationToken)
@@ -47,8 +64,16 @@ public class RecipeRepository
             return null;
         }
         var doc = snapshot.Documents.First();
-        var dto = doc.ConvertTo<RecipeDto>();
-        return RecipeMapper.MapDto(dto, doc.Id);
+        try
+        {
+            var dto = doc.ConvertTo<RecipeDto>();
+            return RecipeMapper.MapDto(dto, doc.Id);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "failed to convert firebase doc {id} to dto", doc.Id);
+            throw;
+        }
     }
 
     public async Task SaveRecipe(Recipe recipe, CancellationToken cancellationToken)
@@ -71,9 +96,16 @@ public class RecipeRepository
         var recipes = new List<Recipe>();
         foreach (var doc in snapshot.Documents)
         {
-            var dto = doc.ConvertTo<RecipeDto>();
-            var recipe = RecipeMapper.MapDto(dto, doc.Id);
-            recipes.Add(recipe);
+            try
+            {
+                var dto = doc.ConvertTo<RecipeDto>();
+                var recipe = RecipeMapper.MapDto(dto, doc.Id);
+                recipes.Add(recipe);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "failed to convert firebase doc {id} to dto", doc.Id);
+            }
         }
         return recipes;
     }
