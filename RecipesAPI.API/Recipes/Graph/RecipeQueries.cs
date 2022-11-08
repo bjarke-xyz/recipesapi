@@ -63,7 +63,7 @@ public class ExtendedRecipeQueries
         var file = await fileService.GetFile(recipe.ImageId, cancellationToken);
         if (file == null) return null;
         var imageSrc = fileService.GetPublicUrl(file);
-        return new Image
+        var image = new Image
         {
             ImageId = recipe.ImageId,
             Name = file.FileName,
@@ -71,7 +71,9 @@ public class ExtendedRecipeQueries
             Type = file.ContentType,
             Src = imageSrc,
             BlurHash = file.BlurHash,
+            Dimensions = RecipeMapper.MapDto(file.Dimensions),
         };
+        return image;
     }
 
     public async Task<RecipeAuthor> GetUser([Parent] Recipe recipe, [Service] UserService userService, CancellationToken cancellationToken)

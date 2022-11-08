@@ -32,9 +32,12 @@ public class ImageProcessingTests
         Stream fileContent = new FileStream($"../../../test-data/{file}", FileMode.Open);
 
         // Act
-        var blurHash = await imageProcessingService.GetBlurHash(fileContent, CancellationToken.None);
+        using var image = await imageProcessingService.LoadImage(fileContent, CancellationToken.None);
+        var (blurHash, blurHashWidth, blurHashHeight) = imageProcessingService.GetBlurHash(image);
 
         // Assert
         Assert.IsNotEmpty(blurHash);
+        Assert.That(blurHashWidth, Is.GreaterThan(0));
+        Assert.That(blurHashHeight, Is.GreaterThan(0));
     }
 }

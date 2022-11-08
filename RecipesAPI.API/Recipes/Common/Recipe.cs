@@ -50,4 +50,17 @@ public class Image
     public long Size { get; set; } = default!;
     public string Name { get; set; } = default!;
     public string? BlurHash { get; set; } = default!;
+    public ImageDimensions? Dimensions { get; set; }
+}
+
+public class ImageDimensions
+{
+    public ImageDimension? Original { get; set; }
+    public ImageDimension? BlurHash { get; set; }
+}
+
+public class ImageDimension
+{
+    public int Width { get; set; }
+    public int Height { get; set; }
 }

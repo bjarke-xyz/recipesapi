@@ -1,4 +1,5 @@
 using AutoMapper;
+using RecipesAPI.Files.DAL;
 using RecipesAPI.Recipes.DAL;
 using RecipesAPI.Recipes.Graph;
 
@@ -29,6 +30,9 @@ public static class RecipeMapper
         cfg.CreateMap<RecipeInput, Recipe>();
         cfg.CreateMap<RecipePartInput, RecipePart>();
         cfg.CreateMap<RecipePartIngredientInput, RecipeIngredient>();
+
+        cfg.CreateMap<ImageDimensionsDto, ImageDimensions>();
+        cfg.CreateMap<ImageDimensionDto, ImageDimension>();
     }).CreateMapper();
 
     public static Recipe MapDto(RecipeDto dto, string docId)
@@ -39,6 +43,13 @@ public static class RecipeMapper
             recipe.Id = docId;
         }
         return recipe;
+    }
+
+    public static ImageDimensions? MapDto(ImageDimensionsDto? dto)
+    {
+        if (dto == null) return null;
+        var imageDimensions = mapper.Map<ImageDimensionsDto, ImageDimensions>(dto);
+        return imageDimensions;
     }
 
     public static RecipeDto Map(Recipe recipe)

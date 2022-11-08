@@ -52,6 +52,27 @@ public class FileDto
     public string FileName { get; set; } = default!;
     [FirestoreProperty("blurHash")]
     public string? BlurHash { get; set; }
+    [FirestoreProperty("dimensions")]
+    public ImageDimensionsDto? Dimensions { get; set; }
 
     public DateTimeOffset? CreatedAt { get; set; }
+}
+
+
+[FirestoreData]
+public class ImageDimensionsDto
+{
+    [FirestoreProperty("original")]
+    public ImageDimensionDto? Original { get; set; }
+    [FirestoreProperty("blurHash")]
+    public ImageDimensionDto? BlurHash { get; set; }
+}
+
+[FirestoreData]
+public class ImageDimensionDto
+{
+    [FirestoreProperty("width")]
+    public int Width { get; set; }
+    [FirestoreProperty("height")]
+    public int Height { get; set; }
 }
