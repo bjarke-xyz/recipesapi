@@ -16,6 +16,7 @@ public class Recipe
     public List<string> Tips { get; set; } = default!;
     public string? Yield { get; set; }
     public List<RecipePart> Parts { get; set; } = default!;
+    public int? Difficulty { get; set; }
 }
 
 public class RecipeAuthor
@@ -29,6 +30,7 @@ public class RecipePart
     public string Title { get; set; } = default!;
     public List<RecipeIngredient> Ingredients { get; set; } = default!;
     public List<string> Steps { get; set; } = default!;
+    public double? TimeEstimate { get; set; }
 }
 
 public class RecipeIngredient

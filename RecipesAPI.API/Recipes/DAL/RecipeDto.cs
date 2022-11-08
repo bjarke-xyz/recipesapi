@@ -33,6 +33,8 @@ public class RecipeDto
     public string? Yield { get; set; }
     [FirestoreProperty("parts")]
     public List<RecipePartDto> Parts { get; set; } = default!;
+    [FirestoreProperty("Difficulty")]
+    public int? Difficulty { get; set; }
 }
 
 [FirestoreData]
@@ -44,6 +46,8 @@ public class RecipePartDto
     public List<RecipeIngredientDto> Ingredients { get; set; } = default!;
     [FirestoreProperty("steps")]
     public List<string> Steps { get; set; } = default!;
+    [FirestoreProperty("timeEstimate")]
+    public double? TimeEstimate { get; set; }
 }
 
 [FirestoreData]
