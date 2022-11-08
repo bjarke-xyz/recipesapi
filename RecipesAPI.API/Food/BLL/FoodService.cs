@@ -43,7 +43,10 @@ public class FoodService
             cached = FoodMapper.MapDtos(dtos);
             localCache = cached;
         }
-        localCacheDict = cached.GroupBy(x => x.FoodId).ToDictionary(x => x.Key, x => x.First());
+        if (localCacheDict == null)
+        {
+            localCacheDict = cached.GroupBy(x => x.FoodId).ToDictionary(x => x.Key, x => x.First());
+        }
     }
 
     public async Task<List<FoodItem>> SearchFoodData(string query, CancellationToken cancellationToken)
