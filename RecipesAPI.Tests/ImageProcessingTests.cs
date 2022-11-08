@@ -8,8 +8,8 @@ namespace RecipesAPI.Tests;
 
 public class ImageProcessingTests
 {
-    private Mock<IFileService> mockFileService;
-    private IServiceProvider serviceProvider;
+    private Mock<IFileService>? mockFileService;
+    private IServiceProvider? serviceProvider;
 
     [SetUp]
     public void Setup()
@@ -22,6 +22,8 @@ public class ImageProcessingTests
     [TestCase("bike.jpg")]
     public async Task BlurHash_ShouldReturnNonEmptyString(string file)
     {
+        ArgumentNullException.ThrowIfNull(serviceProvider);
+        ArgumentNullException.ThrowIfNull(mockFileService);
         // Arrange
         var loggerFactory = serviceProvider.GetRequiredService<ILoggerFactory>();
         var logger = loggerFactory.CreateLogger<ImageProcessingService>();
