@@ -7,7 +7,7 @@ namespace RecipesAPI.Infrastructure;
 public interface ICacheProvider
 {
     Task<T?> Get<T>(string key, CancellationToken cancellationToken = default) where T : class;
-    Task<IReadOnlyDictionary<string, T>> Get<T>(IReadOnlyList<string> keys, CancellationToken cancellationToken = default) where T : class;
+    Task<List<T?>> Get<T>(IReadOnlyList<string> keys, CancellationToken cancellationToken = default) where T : class;
 
     Task Put<T>(string key, T value, TimeSpan? expiration = null, CancellationToken cancellationToken = default) where T : class;
 
@@ -35,17 +35,14 @@ public class CacheProvider : ICacheProvider
         return items == null ? null : JsonSerializer.Deserialize<T>(items);
     }
 
-    public async Task<IReadOnlyDictionary<string, T>> Get<T>(IReadOnlyList<string> keys, CancellationToken cancellationToken = default) where T : class
+    public async Task<List<T?>> Get<T>(IReadOnlyList<string> keys, CancellationToken cancellationToken = default) where T : class
     {
         // TODO: Use redis MGET command instead
-        var result = new Dictionary<string, T>();
+        var result = new List<T?>();
         foreach (var key in keys)
         {
             var item = await Get<T>(key, cancellationToken);
-            if (item != null)
-            {
-                result[key] = item;
-            }
+            result.Add(item);
         }
         return result;
     }

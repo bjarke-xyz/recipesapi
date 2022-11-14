@@ -57,10 +57,10 @@ public class RecipeIngredientQueries
 [ExtendObjectType(typeof(Recipe))]
 public class ExtendedRecipeQueries
 {
-    public async Task<Image?> GetImage([Parent] Recipe recipe, [Service] IFileService fileService, CancellationToken cancellationToken)
+    public async Task<Image?> GetImage([Parent] Recipe recipe, [Service] IFileService fileService, FileDataLoader fileDataLoader, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(recipe.ImageId)) return null;
-        var file = await fileService.GetFile(recipe.ImageId, cancellationToken);
+        var file = await fileDataLoader.LoadAsync(recipe.ImageId, cancellationToken);
         if (file == null) return null;
         var imageSrc = fileService.GetPublicUrl(file);
         var image = new Image

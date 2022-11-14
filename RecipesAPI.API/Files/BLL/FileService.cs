@@ -7,6 +7,7 @@ namespace RecipesAPI.Files.BLL;
 public interface IFileService : ICacheKeyGetter
 {
     Task<FileDto?> GetFile(string id, CancellationToken cancellationToken);
+    Task<Dictionary<string, FileDto>> GetFiles(IReadOnlyList<string> ids, CancellationToken cancellationToken);
     Task<Stream?> GetFileContent(string fileId, CancellationToken cancellationToken);
     string GetPublicUrl(FileDto file);
     Task<FileDto?> SaveFile(FileDto file, CancellationToken cancellationToken);
@@ -51,6 +52,29 @@ public class FileService : IFileService
             }
         }
         return cached;
+    }
+
+    public async Task<Dictionary<string, FileDto>> GetFiles(IReadOnlyList<string> ids, CancellationToken cancellationToken)
+    {
+        var mutableIds = ids.ToList();
+        var result = new Dictionary<string, FileDto>();
+        var fromCache = await cache.Get<FileDto>(ids.Select(x => FileCacheKey(x)).ToList(), cancellationToken);
+        foreach (var file in fromCache)
+        {
+            if (file != null)
+            {
+                result[file.Id] = file;
+                mutableIds.Remove(file.Id);
+            }
+        }
+
+        var fromDb = await fileRepository.GetFiles(mutableIds, cancellationToken);
+        foreach (var file in fromDb)
+        {
+            await cache.Put(FileCacheKey(file.Value.Id), file.Value);
+            result[file.Key] = file.Value;
+        }
+        return result;
     }
 
     public async Task<Stream?> GetFileContent(string fileId, CancellationToken cancellationToken)

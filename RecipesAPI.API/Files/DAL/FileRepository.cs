@@ -6,12 +6,14 @@ namespace RecipesAPI.Files.DAL;
 public class FileRepository
 {
     private readonly FirestoreDb db;
+    private readonly ILogger<FileRepository> logger;
 
     private const string filesCollection = "files";
 
-    public FileRepository(FirestoreDb db)
+    public FileRepository(FirestoreDb db, ILogger<FileRepository> logger)
     {
         this.db = db;
+        this.logger = logger;
     }
 
     public async Task<FileDto?> GetFile(string id, CancellationToken cancellationToken)
@@ -26,7 +28,44 @@ public class FileRepository
         {
             dto.CreatedAt = doc.CreateTime?.ToDateTimeOffset();
         }
+        if (string.IsNullOrEmpty(dto.Id))
+        {
+            dto.Id = doc.Id;
+        }
+        dto.Id = dto.Id.Trim();
         return dto;
+    }
+
+    public async Task<Dictionary<string, FileDto>> GetFiles(IReadOnlyList<string> ids, CancellationToken cancellationToken)
+    {
+        if (ids == null || ids.Count == 0)
+        {
+            return new Dictionary<string, FileDto>();
+        }
+        var snapshot = await db.Collection(filesCollection).WhereIn(FieldPath.DocumentId, ids).GetSnapshotAsync(cancellationToken);
+        var result = new Dictionary<string, FileDto>();
+        foreach (var doc in snapshot.Documents)
+        {
+            try
+            {
+                var dto = doc.ConvertTo<FileDto>();
+                if (!dto.CreatedAt.HasValue)
+                {
+                    dto.CreatedAt = doc.CreateTime?.ToDateTimeOffset();
+                }
+                if (string.IsNullOrEmpty(dto.Id))
+                {
+                    dto.Id = doc.Id;
+                }
+                dto.Id = dto.Id.Trim();
+                result[dto.Id] = dto;
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "failed to convert file dto with id {id}", doc.Id);
+            }
+        }
+        return result;
     }
 
     public async Task SaveFile(FileDto file, CancellationToken cancellationToken)
