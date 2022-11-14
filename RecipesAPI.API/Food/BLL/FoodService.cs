@@ -2,7 +2,7 @@ using RecipesAPI.Food.Common;
 using RecipesAPI.Food.DAL;
 using RecipesAPI.Infrastructure;
 
-namespace RecipesAPI.Food;
+namespace RecipesAPI.Food.BLL;
 
 public class FoodService
 {
@@ -47,6 +47,19 @@ public class FoodService
         {
             localCacheDict = cached.GroupBy(x => x.FoodId).ToDictionary(x => x.Key, x => x.First());
         }
+    }
+
+    public async Task<Dictionary<string, List<FoodItem>>> SearchFoodData(List<string> queries, CancellationToken cancellationToken)
+    {
+        var foodData = await GetFoodData(cancellationToken);
+        if (foodData == null) return new Dictionary<string, List<FoodItem>>();
+        var result = new Dictionary<string, List<FoodItem>>();
+        foreach (var query in queries)
+        {
+            var searchResult = await SearchFoodData(query, cancellationToken);
+            result[query] = searchResult;
+        }
+        return result;
     }
 
     public async Task<List<FoodItem>> SearchFoodData(string query, CancellationToken cancellationToken)

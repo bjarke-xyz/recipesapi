@@ -1,3 +1,5 @@
+using RecipesAPI.Food.BLL;
+
 namespace RecipesAPI.Food;
 
 public class CacheRefreshBackgroundService : BackgroundService

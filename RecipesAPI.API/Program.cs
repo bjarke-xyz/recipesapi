@@ -23,6 +23,7 @@ using RecipesAPI.Files.BLL;
 using RecipesAPI.Admin.BLL;
 using RecipesAPI.Admin.Graph;
 using Prometheus;
+using RecipesAPI.Food.BLL;
 
 DotNetEnv.Env.Load();
 

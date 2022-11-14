@@ -1,6 +1,7 @@
 using RecipesAPI.Auth;
 using RecipesAPI.Files.BLL;
 using RecipesAPI.Food;
+using RecipesAPI.Food.BLL;
 using RecipesAPI.Food.Common;
 using RecipesAPI.Recipes.BLL;
 using RecipesAPI.Recipes.Common;
@@ -43,11 +44,11 @@ public class RecipeQueries
 [ExtendObjectType(typeof(RecipeIngredient))]
 public class RecipeIngredientQueries
 {
-    public async Task<FoodItem?> GetFood([Parent] RecipeIngredient recipeIngredient, [Service] FoodService foodService, CancellationToken cancellationToken)
+    public async Task<FoodItem?> GetFood([Parent] RecipeIngredient recipeIngredient, FoodDataLoader foodDataLoader, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(recipeIngredient.Title)) return null;
 
-        var foodData = await foodService.SearchFoodData(recipeIngredient.Title, cancellationToken);
+        var foodData = await foodDataLoader.LoadAsync(recipeIngredient.Title, cancellationToken);
         return foodData.FirstOrDefault();
     }
 
