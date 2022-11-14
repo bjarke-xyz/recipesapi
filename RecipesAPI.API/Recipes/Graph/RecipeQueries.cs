@@ -22,10 +22,9 @@ public class RecipeQueries
         return recipeService.GetRecipe(id, cancellationToken, userRoles?.Contains(Role.ADMIN) ?? false, userId: loggedInId);
     }
 
-    [Obsolete]
-    public Task<Recipe?> GetRecipeByTitle(string title, [UserRoles] List<Role> userRoles, [Service] RecipeService recipeService, CancellationToken cancellationToken)
+    public Task<Recipe?> GetRecipeBySlug(string slug, [UserRoles] List<Role> userRoles, [Service] RecipeService recipeService, CancellationToken cancellationToken)
     {
-        return recipeService.GetRecipeByTitle(title, cancellationToken, userRoles?.Contains(Role.ADMIN) ?? false);
+        return recipeService.GetRecipeBySlug(slug, cancellationToken, userRoles?.Contains(Role.ADMIN) ?? false);
     }
 
     [Obsolete("Use User.Recipes instead")]

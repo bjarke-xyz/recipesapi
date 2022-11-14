@@ -11,6 +11,7 @@ public static class RecipeMapper
     {
         cfg.CreateMap<RecipeDto, Recipe>()
             .ForMember(e => e.Parts, opt => opt.MapFrom(dto => dto.Parts ?? new List<RecipePartDto>()))
+            .ForMember(e => e.Slugs, opt => opt.MapFrom(dto => dto.Slugs ?? new List<string>()))
             ;
         cfg.CreateMap<RecipePartDto, RecipePart>()
             .ForMember(e => e.Ingredients, opt => opt.MapFrom(dto => dto.Ingredients ?? new List<RecipeIngredientDto>()));

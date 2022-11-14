@@ -35,6 +35,8 @@ public class RecipeDto
     public List<RecipePartDto> Parts { get; set; } = default!;
     [FirestoreProperty("Difficulty")]
     public int? Difficulty { get; set; }
+    [FirestoreProperty("slugs")]
+    public List<string> Slugs { get; set; } = default!;
 }
 
 [FirestoreData]

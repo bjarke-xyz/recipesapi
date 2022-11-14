@@ -1,4 +1,5 @@
 using RecipesAPI.Admin.Common;
+using RecipesAPI.API.Utils;
 using RecipesAPI.Exceptions;
 using RecipesAPI.Files.BLL;
 using RecipesAPI.Food;
@@ -18,8 +19,8 @@ public class RecipeService : ICacheKeyGetter
 
     public const string GetRecipesCacheKey = "GetRecipes";
     public string GetRecipeCacheKey(string id) => $"GetRecipe:{id}";
-    public string GetRecipeByTitleCacheKey(string title) => $"GetRecipeByTitle:{title}";
     public string GetRecipeByUserCacheKey(string userId) => $"GetRecipeByUser:{userId}";
+    public string GetRecipeBySlugCacheKey(string slug) => $"GetRecipeBySlug:{slug}";
 
     public RecipeService(RecipeRepository recipeRepository, ICacheProvider cache, ParserService parserService, FoodService foodService, ILogger<RecipeService> logger)
     {
@@ -37,8 +38,8 @@ public class RecipeService : ICacheKeyGetter
             {
                 GetRecipesCacheKey,
                 GetRecipeCacheKey(""),
-                GetRecipeByTitleCacheKey(""),
                 GetRecipeByUserCacheKey(""),
+                GetRecipeBySlugCacheKey(""),
             },
             ResourceType = CachedResourceTypeHelper.RECIPES,
         };
@@ -105,15 +106,22 @@ public class RecipeService : ICacheKeyGetter
         return cached;
     }
 
-    public async Task<Recipe?> GetRecipeByTitle(string title, CancellationToken cancellationToken, bool showUnpublished)
+    public async Task<Recipe?> GetRecipeByTitle(string title, CancellationToken cancellationToken)
     {
-        var cached = await cache.Get<Recipe>(GetRecipeByTitleCacheKey(title));
+        var recipes = await GetRecipes(cancellationToken, true);
+        var recipe = recipes.FirstOrDefault(x => string.Equals(x.Title, title, StringComparison.OrdinalIgnoreCase));
+        return recipe;
+    }
+
+    public async Task<Recipe?> GetRecipeBySlug(string slug, CancellationToken cancellationToken, bool showUnpublished)
+    {
+        var cached = await cache.Get<Recipe>(GetRecipeBySlugCacheKey(slug));
         if (cached == null)
         {
-            cached = await recipeRepository.GetRecipeByTitle(title, cancellationToken);
+            cached = await recipeRepository.GetRecipeBySlug(slug, cancellationToken);
             if (cached != null)
             {
-                await cache.Put(GetRecipeByTitleCacheKey(title), cached);
+                await cache.Put(GetRecipeBySlugCacheKey(slug), cached);
             }
         }
         if (cached?.Published == false && !showUnpublished)
@@ -148,13 +156,21 @@ public class RecipeService : ICacheKeyGetter
 
     public async Task<Recipe> CreateRecipe(Recipe recipe, CancellationToken cancellationToken)
     {
-        var existingRecipe = await recipeRepository.GetRecipeByTitle(recipe.Title, cancellationToken);
+        var existingRecipe = await GetRecipeByTitle(recipe.Title, cancellationToken);
         if (existingRecipe != null)
         {
             throw new GraphQLErrorException($"recipe with name '{recipe.Title}' already exists");
         }
+
         var id = Guid.NewGuid().ToString();
         recipe.Id = id;
+
+        if (recipe.Slugs == null)
+        {
+            recipe.Slugs = new List<string>();
+        }
+        recipe.Slugs.Add(StringUtils.UrlFriendly(recipe.Title));
+
         await recipeRepository.SaveRecipe(recipe, cancellationToken);
         await ClearCache();
         var savedRecipe = await GetRecipe(recipe.Id, cancellationToken, true, recipe.UserId);
@@ -167,8 +183,13 @@ public class RecipeService : ICacheKeyGetter
 
     public async Task<Recipe> UpdateRecipe(Recipe recipe, CancellationToken cancellationToken)
     {
+        if (recipe.Slugs == null)
+        {
+            recipe.Slugs = new List<string>();
+        }
+        recipe.Slugs.Add(StringUtils.UrlFriendly(recipe.Title));
         await recipeRepository.SaveRecipe(recipe, cancellationToken);
-        await ClearCache(recipe.Id, recipe.Title, recipe.UserId);
+        await ClearCache(recipe.Id, recipe.UserId, recipe.Slugs);
         var savedRecipe = await GetRecipe(recipe.Id, cancellationToken, true, recipe.UserId);
         if (savedRecipe == null)
         {
@@ -177,20 +198,23 @@ public class RecipeService : ICacheKeyGetter
         return savedRecipe;
     }
 
-    private async Task ClearCache(string? recipeId = null, string? recipeTitle = null, string? userId = null)
+    private async Task ClearCache(string? recipeId = null, string? userId = null, List<string>? slugs = null)
     {
         await cache.Remove(GetRecipesCacheKey);
         if (recipeId != null)
         {
             await cache.Remove(GetRecipeCacheKey(recipeId));
         }
-        if (recipeTitle != null)
-        {
-            await cache.Remove(GetRecipeByTitleCacheKey(recipeTitle));
-        }
         if (userId != null)
         {
             await cache.Remove(GetRecipeByUserCacheKey(userId));
+        }
+        if (slugs != null)
+        {
+            foreach (var slug in slugs)
+            {
+                await cache.Remove(GetRecipeBySlugCacheKey(slug));
+            }
         }
     }
 

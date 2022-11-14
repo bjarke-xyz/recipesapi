@@ -17,6 +17,7 @@ public class Recipe
     public string? Yield { get; set; }
     public List<RecipePart> Parts { get; set; } = default!;
     public int? Difficulty { get; set; }
+    public List<string> Slugs { get; set; } = default!;
 }
 
 public class RecipeAuthor

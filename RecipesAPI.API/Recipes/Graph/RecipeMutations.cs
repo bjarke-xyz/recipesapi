@@ -79,7 +79,7 @@ public class RecipeMutations
     [RoleAuthorize(RoleEnums = new[] { Role.USER })]
     public async Task<Recipe> CreateRecipe(RecipeInput input, [UserId] string userId, [Service] RecipeService recipeService, [Service] IFileService fileService, [Service] IBackgroundTaskQueue backgroundTaskQueue, [Service] ImageProcessingService imageProcessingService, CancellationToken cancellationToken)
     {
-        var existingRecipe = await recipeService.GetRecipeByTitle(input.Title, cancellationToken, true);
+        var existingRecipe = await recipeService.GetRecipeByTitle(input.Title, cancellationToken);
         if (existingRecipe != null)
         {
             throw new GraphQLErrorException($"Recipe with name '{input.Title}' already exists");
@@ -99,16 +99,25 @@ public class RecipeMutations
     [RoleAuthorize(RoleEnums = new[] { Role.USER })]
     public async Task<Recipe> UpdateRecipe(string id, RecipeInput input, [UserId] string userId, [UserRoles] List<Role> userRoles, [Service] RecipeService recipeService, [Service] IFileService fileService, [Service] IBackgroundTaskQueue backgroundTaskQueue, [Service] ImageProcessingService imageProcessingService, CancellationToken cancellationToken)
     {
-        var existingRecipe = await recipeService.GetRecipe(id, cancellationToken, true);
+        var existingRecipe = await recipeService.GetRecipe(id, cancellationToken, true, userId);
         if (existingRecipe == null)
         {
-            throw new GraphQLErrorException($"recipe with id {id} not found");
+            throw new GraphQLErrorException($"Recipe with id {id} not found");
         }
         if (existingRecipe.UserId != userId)
         {
             if (!userRoles.Contains(Role.ADMIN))
             {
                 throw new GraphQLErrorException("You do not have permission to edit this recipe");
+            }
+        }
+        var titleHasChanged = !string.Equals(existingRecipe.Title, input.Title, StringComparison.OrdinalIgnoreCase);
+        if (titleHasChanged)
+        {
+            var recipeWithNewTitle = await recipeService.GetRecipeByTitle(input.Title, cancellationToken);
+            if (recipeWithNewTitle != null)
+            {
+                throw new GraphQLErrorException($"Recipe with title '{input.Title}' already exists");
             }
         }
         var imageId = existingRecipe.ImageId;
@@ -124,6 +133,7 @@ public class RecipeMutations
         recipe.Id = existingRecipe.Id;
         recipe.CreatedAt = existingRecipe.CreatedAt;
         recipe.UserId = existingRecipe.UserId;
+        recipe.Slugs = existingRecipe.Slugs;
         recipe.ImageId = imageId;
         var updatedRecipe = await recipeService.UpdateRecipe(recipe, cancellationToken);
         return updatedRecipe;

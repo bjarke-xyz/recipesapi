@@ -19,7 +19,7 @@ public class RecipeRepository
 
     public async Task<List<Recipe>> GetRecipes(CancellationToken cancellationToken)
     {
-        var snapshot = await db.Collection(recipeCollection).GetSnapshotAsync();
+        var snapshot = await db.Collection(recipeCollection).GetSnapshotAsync(cancellationToken);
         var recipes = new List<Recipe>();
         foreach (var doc in snapshot.Documents)
         {
@@ -39,7 +39,7 @@ public class RecipeRepository
 
     public async Task<Recipe?> GetRecipe(string id, CancellationToken cancellationToken)
     {
-        var doc = await db.Collection(recipeCollection).Document(id).GetSnapshotAsync();
+        var doc = await db.Collection(recipeCollection).Document(id).GetSnapshotAsync(cancellationToken);
         if (!doc.Exists)
         {
             return null;
@@ -56,9 +56,9 @@ public class RecipeRepository
         }
     }
 
-    public async Task<Recipe?> GetRecipeByTitle(string title, CancellationToken cancellationToken)
+    public async Task<Recipe?> GetRecipeBySlug(string slug, CancellationToken cancellationToken)
     {
-        var snapshot = await db.Collection(recipeCollection).WhereEqualTo("title", title).Limit(1).GetSnapshotAsync();
+        var snapshot = await db.Collection(recipeCollection).WhereArrayContains("slugs", slug).Limit(1).GetSnapshotAsync(cancellationToken);
         if (snapshot.Count == 0)
         {
             return null;
@@ -87,12 +87,12 @@ public class RecipeRepository
             recipe.LastModifiedAt = DateTime.UtcNow;
         }
         var dto = RecipeMapper.Map(recipe);
-        await db.Collection(recipeCollection).Document(dto.Id).SetAsync(dto);
+        await db.Collection(recipeCollection).Document(dto.Id).SetAsync(dto, null, cancellationToken);
     }
 
     public async Task<List<Recipe>> GetRecipesByUserId(string userId, CancellationToken cancellationToken)
     {
-        var snapshot = await db.Collection(recipeCollection).WhereEqualTo("createdByUser", userId).GetSnapshotAsync();
+        var snapshot = await db.Collection(recipeCollection).WhereEqualTo("createdByUser", userId).GetSnapshotAsync(cancellationToken);
         var recipes = new List<Recipe>();
         foreach (var doc in snapshot.Documents)
         {
