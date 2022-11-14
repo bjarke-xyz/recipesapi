@@ -76,22 +76,12 @@ public class ExtendedRecipeQueries
         return image;
     }
 
-    public async Task<RecipeAuthor> GetUser([Parent] Recipe recipe, [Service] UserService userService, CancellationToken cancellationToken)
+    public async Task<RecipeAuthor> GetUser([Parent] Recipe recipe, UserDataLoader userDataLoader, CancellationToken cancellationToken)
     {
-        var user = await userService.GetUserById(recipe.UserId, cancellationToken);
-        var displayName = user?.DisplayName;
-        if (string.IsNullOrEmpty(displayName))
-        {
-            var userInfo = await userService.GetUserInfo(recipe.UserId, cancellationToken);
-            displayName = userInfo?.Name;
-        }
-        if (string.IsNullOrEmpty(displayName))
-        {
-            displayName = "";
-        }
+        var user = await userDataLoader.LoadAsync(recipe.UserId, cancellationToken);
         return new RecipeAuthor
         {
-            DisplayName = displayName,
+            DisplayName = user.DisplayName ?? "",
             UserId = recipe.UserId,
         };
     }

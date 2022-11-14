@@ -53,6 +53,19 @@ public class UserService : ICacheKeyGetter
         }
     }
 
+    private void EnrichUsers(List<User> users, Dictionary<string, UserInfo> userInfos)
+    {
+        foreach (var user in users)
+        {
+            if (userInfos.TryGetValue(user.Id, out var userInfo) && userInfo != null)
+            {
+                user.DisplayName = user.DisplayName ?? userInfo.Name;
+                user.Role = userInfo.Roles.FirstOrDefault().ToString();
+                user.Roles = userInfo.Roles;
+            }
+        }
+    }
+
     public async Task<List<User>> GetUsers(CancellationToken cancellationToken)
     {
         var cached = await cache.Get<List<User>>(GetUsersCacheKey);
@@ -62,16 +75,41 @@ public class UserService : ICacheKeyGetter
             await cache.Put(GetUsersCacheKey, cached);
         }
         var userInfos = await GetUserInfos(cached.Select(x => x.Id).ToList(), cancellationToken);
-        foreach (var user in cached)
+        EnrichUsers(cached, userInfos);
+        return cached;
+    }
+
+    public async Task<Dictionary<string, User>> GetUsersByIds(IReadOnlyList<string> userIds, CancellationToken cancellationToken)
+    {
+        var mutableUserIds = userIds.ToList();
+        var fromCache = await cache.Get<User>(userIds.Select(x => UserByIdCacheKey(x)).ToList(), cancellationToken);
+        var users = new List<User>();
+        foreach (var user in fromCache)
         {
-            if (userInfos.TryGetValue(user.Id, out var userInfo) && userInfo != null)
+            if (user != null)
             {
-                user.DisplayName = user.DisplayName ?? userInfo.Name;
-                user.Role = userInfo.Roles.FirstOrDefault().ToString();
-                user.Roles = userInfo.Roles;
+                users.Add(user);
+                mutableUserIds.Remove(user.Id);
             }
         }
-        return cached;
+
+        if (mutableUserIds.Count > 0)
+        {
+            var allUsers = await userRepository.GetUsers(cancellationToken);
+            var usersById = allUsers.GroupBy(x => x.Id).ToDictionary(x => x.Key, x => x.First());
+            foreach (var userId in mutableUserIds)
+            {
+                if (usersById.TryGetValue(userId, out var user))
+                {
+                    await cache.Put(UserByIdCacheKey(user.Id), user);
+                    users.Add(user);
+                }
+            }
+        }
+        var userInfos = await GetUserInfos(users.Select(x => x.Id).ToList(), cancellationToken);
+        EnrichUsers(users, userInfos);
+        var result = users.GroupBy(x => x.Id).ToDictionary(x => x.Key, x => x.First());
+        return result;
     }
 
     public async Task<User?> GetUserById(string userId, CancellationToken cancellationToken)
