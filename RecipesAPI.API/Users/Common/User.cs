@@ -7,6 +7,7 @@ public class User
     public string Email { get; set; } = default!;
     public bool EmailVerified { get; set; }
     public Role? Role { get; set; } = default!;
+    public List<Role> Roles => new List<Role> { this.Role ?? Common.Role.USER };
 
     public bool HasRole(Role role)
     {
