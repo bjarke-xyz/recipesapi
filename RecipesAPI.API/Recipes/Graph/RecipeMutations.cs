@@ -79,11 +79,6 @@ public class RecipeMutations
     [RoleAuthorize(RoleEnums = new[] { Role.USER })]
     public async Task<Recipe> CreateRecipe(RecipeInput input, [UserId] string userId, [Service] RecipeService recipeService, [Service] IFileService fileService, [Service] IBackgroundTaskQueue backgroundTaskQueue, [Service] ImageProcessingService imageProcessingService, CancellationToken cancellationToken)
     {
-        var existingRecipe = await recipeService.GetRecipeByTitle(input.Title, cancellationToken);
-        if (existingRecipe != null)
-        {
-            throw new GraphQLErrorException($"Recipe with name '{input.Title}' already exists");
-        }
         string? imageId = null;
         if (input.Image != null)
         {
@@ -106,20 +101,12 @@ public class RecipeMutations
         }
         if (existingRecipe.UserId != userId)
         {
-            if (!userRoles.Contains(Role.ADMIN))
+            if (!userRoles.Contains(Role.MODERATOR))
             {
                 throw new GraphQLErrorException("You do not have permission to edit this recipe");
             }
         }
-        var titleHasChanged = !string.Equals(existingRecipe.Title, input.Title, StringComparison.OrdinalIgnoreCase);
-        if (titleHasChanged)
-        {
-            var recipeWithNewTitle = await recipeService.GetRecipeByTitle(input.Title, cancellationToken);
-            if (recipeWithNewTitle != null)
-            {
-                throw new GraphQLErrorException($"Recipe with title '{input.Title}' already exists");
-            }
-        }
+
         var imageId = existingRecipe.ImageId;
         if (input.Image != null)
         {

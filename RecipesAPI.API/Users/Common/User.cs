@@ -20,6 +20,7 @@ public enum Role
 {
     USER,
     ADMIN,
+    MODERATOR,
 }
 
 public class UserInfo

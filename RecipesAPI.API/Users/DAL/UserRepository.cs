@@ -53,6 +53,11 @@ public class UserRepository
         if (userInfo.Roles.Count == 1 && userInfo.Roles[0] == Role.ADMIN)
         {
             userInfo.Roles.Add(Role.USER);
+            userInfo.Roles.Add(Role.MODERATOR);
+        }
+        if (userInfo.Roles.Count == 1 && userInfo.Roles[0] == Role.MODERATOR)
+        {
+            userInfo.Roles.Add(Role.USER);
         }
 
         return userInfo;
