@@ -71,7 +71,7 @@ public class ExtendedUserQueries
 {
     public async Task<List<Recipe>> GetRecipes([Parent] User user, [UserId] string loggedInId, [UserRoles] List<Role> userRoles, [Service] RecipeService recipeService, CancellationToken cancellationToken)
     {
-        var recipes = await recipeService.GetRecipesByUserId(user.Id, cancellationToken, (userRoles?.Contains(Role.ADMIN) ?? false) || user.Id == loggedInId);
+        var recipes = await recipeService.GetRecipesByUserId(user.Id, cancellationToken, RoleUtils.IsModerator(userRoles) || user.Id == loggedInId);
         return recipes;
     }
 }
@@ -81,7 +81,7 @@ public class ExtendedSimpleUserQueries
 {
     public async Task<List<Recipe>> GetRecipes([Parent] SimpleUser simpleUser, [UserId] string loggedInId, [UserRoles] List<Role> userRoles, [Service] RecipeService recipeService, CancellationToken cancellationToken)
     {
-        var recipes = await recipeService.GetRecipesByUserId(simpleUser.Id, cancellationToken, (userRoles?.Contains(Role.ADMIN) ?? false) || simpleUser.Id == loggedInId);
+        var recipes = await recipeService.GetRecipesByUserId(simpleUser.Id, cancellationToken, RoleUtils.IsModerator(userRoles) || simpleUser.Id == loggedInId);
         return recipes;
     }
 }

@@ -23,6 +23,15 @@ public enum Role
     MODERATOR,
 }
 
+public static class RoleUtils
+{
+    public static bool IsModerator(List<Role>? roles)
+    {
+        if (roles == null) return false;
+        return roles.Contains(Role.MODERATOR) || roles.Contains(Role.ADMIN);
+    }
+}
+
 public class UserInfo
 {
     public string UserId { get; set; } = default!;

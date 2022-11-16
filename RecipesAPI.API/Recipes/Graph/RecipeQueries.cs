@@ -1,4 +1,6 @@
+using RecipesAPI.API.Utils;
 using RecipesAPI.Auth;
+using RecipesAPI.Exceptions;
 using RecipesAPI.Files.BLL;
 using RecipesAPI.Food;
 using RecipesAPI.Food.BLL;
@@ -13,25 +15,38 @@ namespace RecipesAPI.Recipes.Graph;
 [ExtendObjectType(OperationTypeNames.Query)]
 public class RecipeQueries
 {
-    public Task<List<Recipe>> GetRecipes([UserRoles] List<Role> userRoles, [Service] RecipeService recipeService, CancellationToken cancellationToken, RecipeFilter? filter = null)
+    public async Task<List<Recipe>> GetRecipes([UserRoles] List<Role> userRoles, [Service] RecipeService recipeService, CancellationToken cancellationToken, RecipeFilter? filter = null)
     {
         filter = filter ?? new RecipeFilter();
-        return recipeService.GetRecipes(cancellationToken, (userRoles?.Contains(Role.ADMIN) ?? false) && filter.Published == false);
+        var recipes = await recipeService.GetRecipes(cancellationToken, (RoleUtils.IsModerator(userRoles)) && filter.Published == false);
+
+        if (!string.IsNullOrEmpty(filter.OrderByProperty))
+        {
+            if (!ClassUtils.IsPropertyOf<Recipe>(filter.OrderByProperty, out var propertyInfo) || propertyInfo == null)
+            {
+                throw new GraphQLErrorException($"The property '{filter.OrderByProperty}' does not exist on Recipe");
+            }
+            recipes = recipes.AsQueryable().OrderBy(propertyInfo.Name, filter.OrderDesc ?? true).ToList();
+        }
+
+        recipes = recipes.Skip(filter.Skip ?? 0).Take(filter.Limit ?? recipes.Count).ToList();
+
+        return recipes;
     }
     public Task<Recipe?> GetRecipe(string id, [UserId] string loggedInId, [UserRoles] List<Role> userRoles, [Service] RecipeService recipeService, CancellationToken cancellationToken)
     {
-        return recipeService.GetRecipe(id, cancellationToken, userRoles?.Contains(Role.ADMIN) ?? false, userId: loggedInId);
+        return recipeService.GetRecipe(id, cancellationToken, RoleUtils.IsModerator(userRoles), userId: loggedInId);
     }
 
     public Task<Recipe?> GetRecipeBySlug(string slug, [UserRoles] List<Role> userRoles, [Service] RecipeService recipeService, CancellationToken cancellationToken)
     {
-        return recipeService.GetRecipeBySlug(slug, cancellationToken, userRoles?.Contains(Role.ADMIN) ?? false);
+        return recipeService.GetRecipeBySlug(slug, cancellationToken, RoleUtils.IsModerator(userRoles));
     }
 
     [Obsolete("Use User.Recipes instead")]
     public Task<List<Recipe>> GetRecipesByUser(string userId, [UserId] string loggedInId, [UserRoles] List<Role> userRoles, [Service] RecipeService recipeService, CancellationToken cancellationToken)
     {
-        return recipeService.GetRecipesByUserId(userId, cancellationToken, (userRoles?.Contains(Role.ADMIN) ?? false) || userId == loggedInId);
+        return recipeService.GetRecipesByUserId(userId, cancellationToken, RoleUtils.IsModerator(userRoles) || userId == loggedInId);
     }
 
     public RecipeIngredient? ParseIngredient(string ingredient, [Service] ParserService parserService)

@@ -33,4 +33,9 @@ public class RecipeFilter
     public string? UserId { get; set; }
     public bool? Published { get; set; }
 
+    public string? OrderByProperty { get; set; }
+    public bool? OrderDesc { get; set; }
+
+    public int? Skip { get; set; }
+    public int? Limit { get; set; }
 }

@@ -101,7 +101,7 @@ public class RecipeMutations
         }
         if (existingRecipe.UserId != userId)
         {
-            if (!userRoles.Contains(Role.MODERATOR))
+            if (!RoleUtils.IsModerator(userRoles))
             {
                 throw new GraphQLErrorException("You do not have permission to edit this recipe");
             }
