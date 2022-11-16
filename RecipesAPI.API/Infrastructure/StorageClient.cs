@@ -48,6 +48,10 @@ public class S3StorageClient : IStorageClient
         return response.ResponseStream;
     }
 
+    public async Task Delete(string bucket, string key, CancellationToken cancellationToken)
+    {
+        await client.DeleteObjectAsync(bucket, key, cancellationToken);
+    }
 }
 
 public class GoogleStorageClient : IStorageClient
@@ -95,10 +99,24 @@ public class GoogleStorageClient : IStorageClient
             return null;
         }
     }
+
+    public async Task Delete(string bucket, string key, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await client.DeleteObjectAsync(bucket, key, null, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "failed to delete object {bucket} {key}", bucket, key);
+            throw;
+        }
+    }
 }
 
 public interface IStorageClient
 {
+    Task Delete(string bucket, string key, CancellationToken cancellationToken);
     Task PutStream(string bucket, string key, Stream data, string contentType, CancellationToken cancellationToken);
     Task<byte[]?> Get(string bucket, string key, CancellationToken cancellationToken);
     Task<Stream?> GetStream(string bucket, string key, CancellationToken cancellationToken);

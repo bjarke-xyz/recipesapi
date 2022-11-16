@@ -90,6 +90,19 @@ public class RecipeRepository
         await db.Collection(recipeCollection).Document(dto.Id).SetAsync(dto, null, cancellationToken);
     }
 
+    public async Task DeleteRecipe(Recipe recipe, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await db.Collection(recipeCollection).Document(recipe.Id).DeleteAsync(null, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "failed to delete recipe with id {id}", recipe.Id);
+            throw;
+        }
+    }
+
     public async Task<List<Recipe>> GetRecipesByUserId(string userId, CancellationToken cancellationToken)
     {
         var snapshot = await db.Collection(recipeCollection).WhereEqualTo("createdByUser", userId).GetSnapshotAsync(cancellationToken);

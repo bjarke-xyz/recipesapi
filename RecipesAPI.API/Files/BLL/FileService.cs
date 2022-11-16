@@ -12,6 +12,7 @@ public interface IFileService : ICacheKeyGetter
     string GetPublicUrl(FileDto file);
     Task<FileDto?> SaveFile(FileDto file, CancellationToken cancellationToken);
     Task<FileDto?> SaveFile(FileDto file, Stream content, CancellationToken cancellationToken);
+    Task DeleteFile(FileDto file, CancellationToken cancellationToken);
 }
 
 public class FileService : IFileService
@@ -20,13 +21,16 @@ public class FileService : IFileService
     private readonly ICacheProvider cache;
     private readonly IStorageClient storageClient;
 
+    private readonly ILogger<FileService> logger;
+
     private string FileCacheKey(string id) => $"GetFile:{id}";
 
-    public FileService(FileRepository fileRepository, ICacheProvider cache, IStorageClient storageClient)
+    public FileService(FileRepository fileRepository, ICacheProvider cache, IStorageClient storageClient, ILogger<FileService> logger)
     {
         this.fileRepository = fileRepository;
         this.cache = cache;
         this.storageClient = storageClient;
+        this.logger = logger;
     }
 
     public CacheKeyInfo GetCacheKeyInfo()
@@ -119,4 +123,18 @@ public class FileService : IFileService
         return createdFile;
     }
 
+    public async Task DeleteFile(FileDto file, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await fileRepository.DeleteFile(file, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "failed to delete file with id {id}", file.Id);
+            throw;
+        }
+
+        await storageClient.Delete(file.Bucket, file.Key, cancellationToken);
+    }
 }

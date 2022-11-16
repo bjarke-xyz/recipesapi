@@ -125,4 +125,49 @@ public class RecipeMutations
         var updatedRecipe = await recipeService.UpdateRecipe(recipe, cancellationToken);
         return updatedRecipe;
     }
+
+    [RoleAuthorize(RoleEnums = new[] { Role.USER })]
+    public async Task<bool> DeleteRecipe(string id, [User] User loggedInUser, [Service] RecipeService recipeService, [Service] IFileService fileService, CancellationToken cancellationToken)
+    {
+        var recipe = await recipeService.GetRecipe(id, cancellationToken, true, loggedInUser.Id);
+        if (recipe == null)
+        {
+            throw new GraphQLErrorException($"Recipe with id {id} not found");
+        }
+        if (recipe.UserId != loggedInUser.Id)
+        {
+            if (!loggedInUser.HasRole(Role.MODERATOR))
+            {
+                throw new GraphQLErrorException("You do not have permission to edit this recipe");
+            }
+        }
+
+        try
+        {
+            await recipeService.DeleteRecipe(recipe, cancellationToken);
+        }
+        catch
+        {
+            throw new GraphQLErrorException("Could not delete recipe");
+        }
+
+
+        if (!string.IsNullOrEmpty(recipe.ImageId))
+        {
+            try
+            {
+                var fileDto = await fileService.GetFile(recipe.ImageId, cancellationToken);
+                if (fileDto != null)
+                {
+                    await fileService.DeleteFile(fileDto, cancellationToken);
+                }
+            }
+            catch
+            {
+                throw new GraphQLErrorException("Could not delete recipe image");
+            }
+        }
+
+        return true;
+    }
 }

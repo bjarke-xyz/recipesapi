@@ -199,6 +199,11 @@ public class RecipeService : ICacheKeyGetter
         return savedRecipe;
     }
 
+    public async Task DeleteRecipe(Recipe recipe, CancellationToken cancellationToken)
+    {
+        await recipeRepository.DeleteRecipe(recipe, cancellationToken);
+    }
+
     private async Task ClearCache(string? recipeId = null, string? userId = null, List<string>? slugs = null)
     {
         await cache.Remove(GetRecipesCacheKey);

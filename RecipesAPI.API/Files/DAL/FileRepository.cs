@@ -72,6 +72,11 @@ public class FileRepository
     {
         await db.Collection(filesCollection).Document(file.Id).SetAsync(file, null, cancellationToken);
     }
+
+    public async Task DeleteFile(FileDto file, CancellationToken cancellationToken)
+    {
+        await db.Collection(filesCollection).Document(file.Id).DeleteAsync(null, cancellationToken);
+    }
 }
 
 [FirestoreData]
