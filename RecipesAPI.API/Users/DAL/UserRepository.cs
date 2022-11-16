@@ -40,26 +40,12 @@ public class UserRepository
         var userInfo = new UserInfo
         {
             UserId = dto.UserId,
-            Roles = dto.Roles.Select(roleStr => Enum.Parse<Role>(roleStr)).ToList(),
             Name = dto.Name,
         };
-        if (userInfo.Roles.Count == 0 && !string.IsNullOrEmpty(dto.Role))
+        if (Enum.TryParse<Role>(dto.Role.ToUpper(), out var role))
         {
-            if (Enum.TryParse<Role>(dto.Role.ToUpper(), out var role))
-            {
-                userInfo.Roles = new List<Role> { role };
-            }
+            userInfo.Role = role;
         }
-        if (userInfo.Roles.Count == 1 && userInfo.Roles[0] == Role.ADMIN)
-        {
-            userInfo.Roles.Add(Role.USER);
-            userInfo.Roles.Add(Role.MODERATOR);
-        }
-        if (userInfo.Roles.Count == 1 && userInfo.Roles[0] == Role.MODERATOR)
-        {
-            userInfo.Roles.Add(Role.USER);
-        }
-
         return userInfo;
     }
 
@@ -69,8 +55,7 @@ public class UserRepository
         var dto = new UserInfoDto
         {
             Name = userInfo.Name,
-            Role = userInfo.Roles.FirstOrDefault().ToString().ToUpper(),
-            Roles = userInfo.Roles.Select(x => x.ToString().ToUpper()).ToList(),
+            Role = userInfo.Role.ToString().ToUpper(),
             UserId = userInfo.UserId
         };
         return dto;
@@ -153,8 +138,8 @@ public class UserRepository
         var userInfo = new UserInfoDto
         {
             UserId = userRecord.Uid,
-            Role = "user",
-            Roles = new List<string> { Role.USER.ToString() },
+            Role = Role.USER.ToString().ToUpper(),
+            Name = displayName,
         };
         await db.Collection(usersCollection).Document(userInfo.UserId).SetAsync(userInfo, null, cancellationToken);
 
@@ -270,9 +255,6 @@ public class UserInfoDto
 
     [FirestoreProperty("role")]
     public string Role { get; set; } = default!;
-
-    [FirestoreProperty("roles")]
-    public List<string> Roles { get; set; } = new List<string>();
 
     [FirestoreProperty("name")]
     public string? Name { get; set; } = null;

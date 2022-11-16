@@ -16,14 +16,8 @@ namespace RecipesAPI.Users.Graph;
 public class UserQueries
 {
     [Authorize]
-    public async Task<User> GetMe([Service] UserService userService, [UserId] string userId, CancellationToken cancellationToken)
+    public User GetMe([Service] UserService userService, [User] User user, CancellationToken cancellationToken)
     {
-        var user = await userService.GetUserById(userId, cancellationToken);
-        if (user == null)
-        {
-            throw new GraphQLErrorException("User not found");
-        }
-        var userInfo = await userService.GetUserInfo(user.Id, cancellationToken);
         return user;
     }
 
@@ -69,9 +63,9 @@ public class UserQueries
 [ExtendObjectType(typeof(User))]
 public class ExtendedUserQueries
 {
-    public async Task<List<Recipe>> GetRecipes([Parent] User user, [UserId] string loggedInId, [UserRoles] List<Role> userRoles, [Service] RecipeService recipeService, CancellationToken cancellationToken)
+    public async Task<List<Recipe>> GetRecipes([Parent] User user, [User] User loggedInUser, [Service] RecipeService recipeService, CancellationToken cancellationToken)
     {
-        var recipes = await recipeService.GetRecipesByUserId(user.Id, cancellationToken, RoleUtils.IsModerator(userRoles) || user.Id == loggedInId);
+        var recipes = await recipeService.GetRecipesByUserId(user.Id, cancellationToken, loggedInUser.HasRole(Role.MODERATOR) || user.Id == loggedInUser.Id);
         return recipes;
     }
 }
@@ -79,9 +73,9 @@ public class ExtendedUserQueries
 [ExtendObjectType(typeof(SimpleUser))]
 public class ExtendedSimpleUserQueries
 {
-    public async Task<List<Recipe>> GetRecipes([Parent] SimpleUser simpleUser, [UserId] string loggedInId, [UserRoles] List<Role> userRoles, [Service] RecipeService recipeService, CancellationToken cancellationToken)
+    public async Task<List<Recipe>> GetRecipes([Parent] SimpleUser simpleUser, [User] User loggedInUser, [Service] RecipeService recipeService, CancellationToken cancellationToken)
     {
-        var recipes = await recipeService.GetRecipesByUserId(simpleUser.Id, cancellationToken, RoleUtils.IsModerator(userRoles) || simpleUser.Id == loggedInId);
+        var recipes = await recipeService.GetRecipesByUserId(simpleUser.Id, cancellationToken, loggedInUser.HasRole(Role.MODERATOR) || simpleUser.Id == loggedInUser.Id);
         return recipes;
     }
 }

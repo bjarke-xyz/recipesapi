@@ -67,16 +67,16 @@ public class UserMutations
 
 
     [RoleAuthorize(RoleEnums = new[] { Role.USER })]
-    public async Task<User> UpdateMe(UpdateMeInput input, [UserId] string userId, [Service] UserService userService, CancellationToken cancellationToken)
+    public async Task<User> UpdateMe(UpdateMeInput input, [User] User loggedInUser, [Service] UserService userService, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(input.Email) && string.IsNullOrEmpty(input.DisplayName) && string.IsNullOrEmpty(input.Password))
         {
             throw new GraphQLErrorException("At least one field must be provided");
         }
-        var existingUser = await userService.GetUserById(userId, cancellationToken);
+        var existingUser = await userService.GetUserById(loggedInUser.Id, cancellationToken);
         if (existingUser == null)
         {
-            throw new GraphQLErrorException($"User with id '{userId}' not found");
+            throw new GraphQLErrorException($"User with id '{loggedInUser.Id}' not found");
         }
         if (!string.IsNullOrEmpty(input.Email) && !IsEmailValid(input.Email))
         {
@@ -89,7 +89,7 @@ public class UserMutations
         {
             password = null;
         }
-        var user = await userService.UpdateUser(userId, email, displayName, password, existingUser.Roles, cancellationToken);
+        var user = await userService.UpdateUser(loggedInUser.Id, email, displayName, password, existingUser.Role ?? Role.USER, cancellationToken);
         if (user == null)
         {
             throw new GraphQLErrorException("updated user was null");
@@ -100,7 +100,7 @@ public class UserMutations
     [RoleAuthorize(RoleEnums = new[] { Role.ADMIN })]
     public async Task<User> UpdateUser(string userId, UpdateUserInput input, [Service] UserService userService, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrEmpty(input.Email) && string.IsNullOrEmpty(input.DisplayName) && input.Roles == null)
+        if (string.IsNullOrEmpty(input.Email) && string.IsNullOrEmpty(input.DisplayName) && input.Role == null)
         {
             throw new GraphQLErrorException("At least one field must be provided");
         }
@@ -116,7 +116,7 @@ public class UserMutations
 
         var email = input.Email ?? existingUser.Email;
         var displayName = input.DisplayName ?? existingUser.DisplayName ?? "";
-        var roles = input.Roles ?? existingUser.Roles ?? new List<Role>() { Role.USER };
+        var roles = input.Role ?? existingUser.Role ?? Role.USER;
         var updatedUser = await userService.UpdateUser(userId, email, displayName, null, roles, cancellationToken);
         if (updatedUser == null)
         {

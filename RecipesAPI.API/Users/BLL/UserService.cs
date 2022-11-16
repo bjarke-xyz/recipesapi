@@ -60,8 +60,7 @@ public class UserService : ICacheKeyGetter
             if (userInfos.TryGetValue(user.Id, out var userInfo) && userInfo != null)
             {
                 user.DisplayName = user.DisplayName ?? userInfo.Name;
-                user.Role = userInfo.Roles.FirstOrDefault().ToString();
-                user.Roles = userInfo.Roles;
+                user.Role = userInfo.Role;
             }
         }
     }
@@ -129,8 +128,7 @@ public class UserService : ICacheKeyGetter
             if (userInfo != null)
             {
                 cached.DisplayName = cached.DisplayName ?? userInfo.Name;
-                cached.Roles = userInfo.Roles;
-                cached.Role = cached.Roles.FirstOrDefault().ToString();
+                cached.Role = userInfo.Role;
             }
         }
         return cached;
@@ -187,7 +185,7 @@ public class UserService : ICacheKeyGetter
         return user;
     }
 
-    public async Task<User?> UpdateUser(string userId, string email, string displayName, string? password, List<Role> roles, CancellationToken cancellationToken)
+    public async Task<User?> UpdateUser(string userId, string email, string displayName, string? password, Role role, CancellationToken cancellationToken)
     {
         var userBeforeUpdate = await GetUserById(userId, cancellationToken);
         if (userBeforeUpdate == null)
@@ -200,7 +198,7 @@ public class UserService : ICacheKeyGetter
             await userRepository.UpdateUserInfo(userId, new UserInfo
             {
                 Name = displayName,
-                Roles = roles,
+                Role = role,
             }, cancellationToken);
         }
         catch (FirebaseAuthException ex)

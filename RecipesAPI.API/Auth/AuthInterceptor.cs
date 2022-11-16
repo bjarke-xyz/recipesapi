@@ -20,20 +20,23 @@ public class AuthInterceptor : DefaultHttpRequestInterceptor
     public override async ValueTask OnCreateAsync(HttpContext context, IRequestExecutor requestExecutor, IQueryRequestBuilder requestBuilder, CancellationToken cancellationToken)
     {
         var userId = context.User.FindFirstValue(ClaimTypes.NameIdentifier);
-        List<Role>? userRoles = null;
+        User? user = null;
         if (!string.IsNullOrEmpty(userId))
         {
-            var userInfo = await userService.GetUserInfo(userId, cancellationToken);
-            if (userInfo != null)
+            user = await userService.GetUserById(userId, cancellationToken);
+            if (user != null)
             {
                 var identity = new ClaimsIdentity();
-                identity.AddClaims(userInfo.Roles.Select(role => new Claim(ClaimTypes.Role, role.ToString())));
+                var roles = new List<Role> { user.Role ?? Role.USER };
+                if (RoleUtils.RoleHierarchy.TryGetValue(roles.FirstOrDefault(), out var subRoles))
+                {
+                    roles.AddRange(subRoles);
+                }
+                identity.AddClaims(roles.Select(role => new Claim(ClaimTypes.Role, role.ToString())));
                 context.User.AddIdentity(identity);
-                userRoles = userInfo.Roles;
             }
         }
-        requestBuilder.SetProperty(UserRolesAttribute.DictKey, userRoles);
-        requestBuilder.SetProperty(UserIdAttribute.DictKey, userId);
+        requestBuilder.SetProperty(UserAttribute.DictKey, user ?? new User());
         await base.OnCreateAsync(context, requestExecutor, requestBuilder, cancellationToken);
     }
 

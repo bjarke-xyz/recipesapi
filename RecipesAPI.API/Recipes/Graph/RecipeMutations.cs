@@ -77,7 +77,7 @@ public class RecipeMutations
     }
 
     [RoleAuthorize(RoleEnums = new[] { Role.USER })]
-    public async Task<Recipe> CreateRecipe(RecipeInput input, [UserId] string userId, [Service] RecipeService recipeService, [Service] IFileService fileService, [Service] IBackgroundTaskQueue backgroundTaskQueue, [Service] ImageProcessingService imageProcessingService, CancellationToken cancellationToken)
+    public async Task<Recipe> CreateRecipe(RecipeInput input, [User] User loggedInUser, [Service] RecipeService recipeService, [Service] IFileService fileService, [Service] IBackgroundTaskQueue backgroundTaskQueue, [Service] ImageProcessingService imageProcessingService, CancellationToken cancellationToken)
     {
         string? imageId = null;
         if (input.Image != null)
@@ -86,22 +86,22 @@ public class RecipeMutations
         }
         var recipe = RecipeMapper.MapInput(input);
         recipe.ImageId = imageId;
-        recipe.UserId = userId;
+        recipe.UserId = loggedInUser.Id;
         var createdRecipe = await recipeService.CreateRecipe(recipe, cancellationToken);
         return createdRecipe;
     }
 
     [RoleAuthorize(RoleEnums = new[] { Role.USER })]
-    public async Task<Recipe> UpdateRecipe(string id, RecipeInput input, [UserId] string userId, [UserRoles] List<Role> userRoles, [Service] RecipeService recipeService, [Service] IFileService fileService, [Service] IBackgroundTaskQueue backgroundTaskQueue, [Service] ImageProcessingService imageProcessingService, CancellationToken cancellationToken)
+    public async Task<Recipe> UpdateRecipe(string id, RecipeInput input, [User] User loggedInUser, [Service] RecipeService recipeService, [Service] IFileService fileService, [Service] IBackgroundTaskQueue backgroundTaskQueue, [Service] ImageProcessingService imageProcessingService, CancellationToken cancellationToken)
     {
-        var existingRecipe = await recipeService.GetRecipe(id, cancellationToken, true, userId);
+        var existingRecipe = await recipeService.GetRecipe(id, cancellationToken, true, loggedInUser.Id);
         if (existingRecipe == null)
         {
             throw new GraphQLErrorException($"Recipe with id {id} not found");
         }
-        if (existingRecipe.UserId != userId)
+        if (existingRecipe.UserId != loggedInUser.Id)
         {
-            if (!RoleUtils.IsModerator(userRoles))
+            if (!loggedInUser.HasRole(Role.MODERATOR))
             {
                 throw new GraphQLErrorException("You do not have permission to edit this recipe");
             }

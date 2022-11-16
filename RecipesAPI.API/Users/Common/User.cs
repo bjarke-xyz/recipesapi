@@ -6,8 +6,24 @@ public class User
     public string? DisplayName { get; set; }
     public string Email { get; set; } = default!;
     public bool EmailVerified { get; set; }
-    public string Role { get; set; } = default!;
-    public List<Role> Roles { get; set; } = default!;
+    public Role? Role { get; set; } = default!;
+
+    public bool HasRole(Role role)
+    {
+        if (this.Role == null) return false;
+        if (this.Role == role)
+        {
+            return true;
+        }
+        if (RoleUtils.RoleHierarchy.TryGetValue(this.Role.Value, out var subRoles))
+        {
+            if (subRoles.Contains(role))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
 }
 
 public class SimpleUser
@@ -25,17 +41,17 @@ public enum Role
 
 public static class RoleUtils
 {
-    public static bool IsModerator(List<Role>? roles)
+    public static readonly IReadOnlyDictionary<Role, IReadOnlyList<Role>> RoleHierarchy = new Dictionary<Role, IReadOnlyList<Role>>
     {
-        if (roles == null) return false;
-        return roles.Contains(Role.MODERATOR) || roles.Contains(Role.ADMIN);
-    }
+        { Role.ADMIN, new List<Role> { Role.MODERATOR, Role.USER } },
+        { Role.MODERATOR, new List<Role> { Role.USER } },
+    };
 }
 
 public class UserInfo
 {
     public string UserId { get; set; } = default!;
-    public List<Role> Roles { get; set; } = default!;
+    public Role Role { get; set; }
     public string? Name { get; set; } = null;
 }
 

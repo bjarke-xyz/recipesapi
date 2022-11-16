@@ -15,10 +15,10 @@ namespace RecipesAPI.Recipes.Graph;
 [ExtendObjectType(OperationTypeNames.Query)]
 public class RecipeQueries
 {
-    public async Task<List<Recipe>> GetRecipes([UserRoles] List<Role> userRoles, [Service] RecipeService recipeService, CancellationToken cancellationToken, RecipeFilter? filter = null)
+    public async Task<List<Recipe>> GetRecipes([User] User loggedInUser, [Service] RecipeService recipeService, CancellationToken cancellationToken, RecipeFilter? filter = null)
     {
         filter = filter ?? new RecipeFilter();
-        var recipes = await recipeService.GetRecipes(cancellationToken, (RoleUtils.IsModerator(userRoles)) && filter.Published == false);
+        var recipes = await recipeService.GetRecipes(cancellationToken, loggedInUser.HasRole(Role.MODERATOR) && filter.Published == false);
 
         if (!string.IsNullOrEmpty(filter.OrderByProperty))
         {
@@ -33,20 +33,14 @@ public class RecipeQueries
 
         return recipes;
     }
-    public Task<Recipe?> GetRecipe(string id, [UserId] string loggedInId, [UserRoles] List<Role> userRoles, [Service] RecipeService recipeService, CancellationToken cancellationToken)
+    public Task<Recipe?> GetRecipe(string id, [User] User loggedInUser, [Service] RecipeService recipeService, CancellationToken cancellationToken)
     {
-        return recipeService.GetRecipe(id, cancellationToken, RoleUtils.IsModerator(userRoles), userId: loggedInId);
+        return recipeService.GetRecipe(id, cancellationToken, loggedInUser.HasRole(Role.MODERATOR), userId: loggedInUser.Id);
     }
 
-    public Task<Recipe?> GetRecipeBySlug(string slug, [UserRoles] List<Role> userRoles, [Service] RecipeService recipeService, CancellationToken cancellationToken)
+    public Task<Recipe?> GetRecipeBySlug(string slug, [User] User loggedInUser, [Service] RecipeService recipeService, CancellationToken cancellationToken)
     {
-        return recipeService.GetRecipeBySlug(slug, cancellationToken, RoleUtils.IsModerator(userRoles));
-    }
-
-    [Obsolete("Use User.Recipes instead")]
-    public Task<List<Recipe>> GetRecipesByUser(string userId, [UserId] string loggedInId, [UserRoles] List<Role> userRoles, [Service] RecipeService recipeService, CancellationToken cancellationToken)
-    {
-        return recipeService.GetRecipesByUserId(userId, cancellationToken, RoleUtils.IsModerator(userRoles) || userId == loggedInId);
+        return recipeService.GetRecipeBySlug(slug, cancellationToken, loggedInUser.HasRole(Role.MODERATOR));
     }
 
     public RecipeIngredient? ParseIngredient(string ingredient, [Service] ParserService parserService)
