@@ -17,6 +17,17 @@ public class RecipeRepository
         this.logger = logger;
     }
 
+    public async Task<bool> IsSlugUnique(string slug, string? recipeId = null, CancellationToken cancellationToken = default)
+    {
+        var query = db.Collection(recipeCollection).WhereArrayContains("slugs", slug);
+        if (!string.IsNullOrEmpty(recipeId))
+        {
+            query = query.WhereNotEqualTo(FieldPath.DocumentId, recipeId);
+        }
+        var snapshot = await query.GetSnapshotAsync(cancellationToken);
+        return snapshot.Count == 0;
+    }
+
     public async Task<List<Recipe>> GetRecipes(CancellationToken cancellationToken)
     {
         var snapshot = await db.Collection(recipeCollection).GetSnapshotAsync(cancellationToken);

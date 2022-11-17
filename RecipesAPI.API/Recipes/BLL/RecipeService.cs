@@ -159,13 +159,14 @@ public class RecipeService : ICacheKeyGetter
     {
         var id = Guid.NewGuid().ToString();
         recipe.Id = id;
-
-        if (recipe.Slugs == null)
+        if (!string.IsNullOrEmpty(recipe.Slug))
         {
-            recipe.Slugs = new List<string>();
+            var isSlugUnique = await recipeRepository.IsSlugUnique(recipe.Slug, null, cancellationToken);
+            if (!isSlugUnique)
+            {
+                throw new GraphQLErrorException($"Slug '{recipe.Slug}' is in use");
+            }
         }
-        recipe.Slugs.Add(StringUtils.UrlFriendly(recipe.Title));
-
         await recipeRepository.SaveRecipe(recipe, cancellationToken);
         await ClearCache();
         var savedRecipe = await GetRecipe(recipe.Id, cancellationToken, true, recipe.UserId);
@@ -178,11 +179,14 @@ public class RecipeService : ICacheKeyGetter
 
     public async Task<Recipe> UpdateRecipe(Recipe recipe, CancellationToken cancellationToken)
     {
-        if (recipe.Slugs == null)
+        if (!string.IsNullOrEmpty(recipe.Slug))
         {
-            recipe.Slugs = new List<string>();
+            var isSlugUnique = await recipeRepository.IsSlugUnique(recipe.Slug, recipe.Id, cancellationToken);
+            if (!isSlugUnique)
+            {
+                throw new GraphQLErrorException($"Slug '{recipe.Slug}' is in use");
+            }
         }
-        recipe.Slugs.Add(StringUtils.UrlFriendly(recipe.Title));
         await recipeRepository.SaveRecipe(recipe, cancellationToken);
         await ClearCache(recipe.Id, recipe.UserId, recipe.Slugs);
         var savedRecipe = await GetRecipe(recipe.Id, cancellationToken, true, recipe.UserId);

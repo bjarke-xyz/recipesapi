@@ -9,6 +9,7 @@ public class RecipeInput
     public List<string>? Tips { get; set; }
     public string? Yield { get; set; }
     public List<RecipePartInput>? Parts { get; set; }
+    public string? Slug { get; set; }
 }
 
 public class RecipePartInput

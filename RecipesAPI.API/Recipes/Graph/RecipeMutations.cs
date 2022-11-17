@@ -93,6 +93,11 @@ public class RecipeMutations
         var recipe = RecipeMapper.MapInput(input);
         recipe.ImageId = imageId;
         recipe.UserId = loggedInUser.Id;
+        if (!string.IsNullOrEmpty(input.Slug) && loggedInUser.HasRole(Role.MODERATOR))
+        {
+            if (recipe.Slugs == null) recipe.Slugs = new List<string>();
+            recipe.Slugs.Add(input.Slug);
+        }
         var createdRecipe = await recipeService.CreateRecipe(recipe, cancellationToken);
         return createdRecipe;
     }
@@ -124,6 +129,11 @@ public class RecipeMutations
         recipe.CreatedAt = existingRecipe.CreatedAt;
         recipe.UserId = existingRecipe.UserId;
         recipe.Slugs = existingRecipe.Slugs;
+        if (!string.IsNullOrEmpty(input.Slug) && !recipe.Slugs.Contains(input.Slug, StringComparer.OrdinalIgnoreCase) && loggedInUser.HasRole(Role.MODERATOR))
+        {
+            if (recipe.Slugs == null) recipe.Slugs = new List<string>();
+            recipe.Slugs.Add(input.Slug);
+        }
         recipe.ImageId = imageId;
         var updatedRecipe = await recipeService.UpdateRecipe(recipe, cancellationToken);
         return updatedRecipe;

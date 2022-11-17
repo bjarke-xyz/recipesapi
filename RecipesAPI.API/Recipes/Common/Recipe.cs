@@ -18,6 +18,7 @@ public class Recipe
     public List<RecipePart> Parts { get; set; } = default!;
     public int? Difficulty { get; set; }
     public List<string> Slugs { get; set; } = default!;
+    public string? Slug => Slugs.LastOrDefault();
 }
 
 public class RecipeAuthor
