@@ -7,6 +7,7 @@ using RecipesAPI.Food.BLL;
 using RecipesAPI.Infrastructure;
 using RecipesAPI.Recipes.Common;
 using RecipesAPI.Recipes.DAL;
+using RecipesAPI.Users.Common;
 using SixLabors.ImageSharp.Processing;
 
 namespace RecipesAPI.Recipes.BLL;
@@ -66,7 +67,25 @@ public class RecipeService : ICacheKeyGetter
         }
     }
 
-    public async Task<List<Recipe>> GetRecipes(CancellationToken cancellationToken, bool showUnpublished)
+    private bool IsRecipeVisible(Recipe? recipe, User? loggedInUser)
+    {
+        if (recipe == null || recipe.Published || loggedInUser == null)
+        {
+            return true;
+        }
+
+        if (loggedInUser.HasRole(Role.MODERATOR))
+        {
+            return true;
+        }
+        if (loggedInUser.Id == recipe.UserId)
+        {
+            return true;
+        }
+        return false;
+    }
+
+    public async Task<List<Recipe>> GetRecipes(CancellationToken cancellationToken, User? loggedInUser)
     {
         var cached = await cache.Get<List<Recipe>>(GetRecipesCacheKey);
         if (cached == null)
@@ -74,10 +93,7 @@ public class RecipeService : ICacheKeyGetter
             cached = await recipeRepository.GetRecipes(cancellationToken);
             await cache.Put<List<Recipe>>(GetRecipesCacheKey, cached);
         }
-        if (!showUnpublished)
-        {
-            cached = cached.Where(x => x.Published).ToList();
-        }
+        cached = cached.Where(x => IsRecipeVisible(x, loggedInUser)).ToList();
         foreach (var recipe in cached)
         {
             EnrichIngredients(recipe);
@@ -85,7 +101,7 @@ public class RecipeService : ICacheKeyGetter
         return cached;
     }
 
-    public async Task<Recipe?> GetRecipe(string id, CancellationToken cancellationToken, bool showUnpublished, string? userId = null)
+    public async Task<Recipe?> GetRecipe(string id, CancellationToken cancellationToken, User? loggedInUser)
     {
         var cached = await cache.Get<Recipe>(GetRecipeCacheKey(id));
         if (cached == null)
@@ -96,7 +112,7 @@ public class RecipeService : ICacheKeyGetter
                 await cache.Put(GetRecipeCacheKey(id), cached);
             }
         }
-        if (cached != null && cached.Published == false && (!showUnpublished || cached.UserId != userId))
+        if (!IsRecipeVisible(cached, loggedInUser))
         {
             return null;
         }
@@ -109,12 +125,12 @@ public class RecipeService : ICacheKeyGetter
 
     public async Task<Recipe?> GetRecipeByTitle(string title, CancellationToken cancellationToken)
     {
-        var recipes = await GetRecipes(cancellationToken, true);
+        var recipes = await GetRecipes(cancellationToken, null);
         var recipe = recipes.FirstOrDefault(x => string.Equals(x.Title, title, StringComparison.OrdinalIgnoreCase));
         return recipe;
     }
 
-    public async Task<Recipe?> GetRecipeBySlug(string slug, CancellationToken cancellationToken, bool showUnpublished)
+    public async Task<Recipe?> GetRecipeBySlug(string slug, User loggedInUser, CancellationToken cancellationToken)
     {
         var cached = await cache.Get<Recipe>(GetRecipeBySlugCacheKey(slug));
         if (cached == null)
@@ -125,7 +141,7 @@ public class RecipeService : ICacheKeyGetter
                 await cache.Put(GetRecipeBySlugCacheKey(slug), cached);
             }
         }
-        if (cached?.Published == false && !showUnpublished)
+        if (!IsRecipeVisible(cached, loggedInUser))
         {
             return null;
         }
@@ -169,7 +185,7 @@ public class RecipeService : ICacheKeyGetter
         }
         await recipeRepository.SaveRecipe(recipe, cancellationToken);
         await ClearCache(null, recipe.UserId);
-        var savedRecipe = await GetRecipe(recipe.Id, cancellationToken, true, recipe.UserId);
+        var savedRecipe = await GetRecipe(recipe.Id, cancellationToken, null);
         if (savedRecipe == null)
         {
             throw new GraphQLErrorException("failed to get saved recipe");
@@ -189,7 +205,7 @@ public class RecipeService : ICacheKeyGetter
         }
         await recipeRepository.SaveRecipe(recipe, cancellationToken);
         await ClearCache(recipe.Id, recipe.UserId, recipe.Slugs);
-        var savedRecipe = await GetRecipe(recipe.Id, cancellationToken, true, recipe.UserId);
+        var savedRecipe = await GetRecipe(recipe.Id, cancellationToken, null);
         if (savedRecipe == null)
         {
             throw new GraphQLErrorException("failed to get saved recipe");

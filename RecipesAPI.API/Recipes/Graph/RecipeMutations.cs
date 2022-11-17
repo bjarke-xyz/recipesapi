@@ -105,7 +105,7 @@ public class RecipeMutations
     [RoleAuthorize(RoleEnums = new[] { Role.USER })]
     public async Task<Recipe> UpdateRecipe(string id, RecipeInput input, [User] User loggedInUser, [Service] RecipeService recipeService, [Service] IFileService fileService, [Service] IBackgroundTaskQueue backgroundTaskQueue, [Service] ImageProcessingService imageProcessingService, CancellationToken cancellationToken)
     {
-        var existingRecipe = await recipeService.GetRecipe(id, cancellationToken, true, loggedInUser.Id);
+        var existingRecipe = await recipeService.GetRecipe(id, cancellationToken, loggedInUser);
         if (existingRecipe == null)
         {
             throw new GraphQLErrorException($"Recipe with id {id} not found");
@@ -142,7 +142,7 @@ public class RecipeMutations
     [RoleAuthorize(RoleEnums = new[] { Role.USER })]
     public async Task<bool> DeleteRecipe(string id, [User] User loggedInUser, [Service] RecipeService recipeService, [Service] IFileService fileService, CancellationToken cancellationToken)
     {
-        var recipe = await recipeService.GetRecipe(id, cancellationToken, true, loggedInUser.Id);
+        var recipe = await recipeService.GetRecipe(id, cancellationToken, loggedInUser);
         if (recipe == null)
         {
             throw new GraphQLErrorException($"Recipe with id {id} not found");

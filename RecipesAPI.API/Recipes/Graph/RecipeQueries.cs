@@ -18,7 +18,9 @@ public class RecipeQueries
     public async Task<List<Recipe>> GetRecipes([User] User loggedInUser, [Service] RecipeService recipeService, CancellationToken cancellationToken, RecipeFilter? filter = null)
     {
         filter = filter ?? new RecipeFilter();
-        var recipes = await recipeService.GetRecipes(cancellationToken, loggedInUser.HasRole(Role.MODERATOR) && filter.Published == false);
+        var recipes = await recipeService.GetRecipes(cancellationToken, loggedInUser);
+
+        recipes = recipes.Where(x => x.Published == (filter.Published ?? true)).ToList();
 
         if (!string.IsNullOrEmpty(filter.OrderByProperty))
         {
@@ -35,12 +37,12 @@ public class RecipeQueries
     }
     public Task<Recipe?> GetRecipe(string id, [User] User loggedInUser, [Service] RecipeService recipeService, CancellationToken cancellationToken)
     {
-        return recipeService.GetRecipe(id, cancellationToken, loggedInUser.HasRole(Role.MODERATOR), userId: loggedInUser.Id);
+        return recipeService.GetRecipe(id, cancellationToken, loggedInUser);
     }
 
     public Task<Recipe?> GetRecipeBySlug(string slug, [User] User loggedInUser, [Service] RecipeService recipeService, CancellationToken cancellationToken)
     {
-        return recipeService.GetRecipeBySlug(slug, cancellationToken, loggedInUser.HasRole(Role.MODERATOR));
+        return recipeService.GetRecipeBySlug(slug, loggedInUser, cancellationToken);
     }
 
     public RecipeIngredient? ParseIngredient(string ingredient, [Service] ParserService parserService)

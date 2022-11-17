@@ -46,7 +46,12 @@ public class UserQueries
     public async Task<Stats> GetStats([Service] UserService userService, [Service] RecipeService recipeService, CancellationToken cancellationToken, bool showUnpublished = false)
     {
         var users = await userService.GetUsers(cancellationToken);
-        var recipes = await recipeService.GetRecipes(cancellationToken, showUnpublished);
+        var recipes = await recipeService.GetRecipes(cancellationToken, null);
+
+        if (!showUnpublished)
+        {
+            recipes = recipes.Where(x => x.Published).ToList();
+        }
 
         var chefCount = recipes.Select(x => x.UserId).Distinct().Count();
 
