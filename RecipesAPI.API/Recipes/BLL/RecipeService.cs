@@ -157,12 +157,6 @@ public class RecipeService : ICacheKeyGetter
 
     public async Task<Recipe> CreateRecipe(Recipe recipe, CancellationToken cancellationToken)
     {
-        var existingRecipe = await GetRecipeByTitle(recipe.Title, cancellationToken);
-        if (existingRecipe != null)
-        {
-            throw new GraphQLErrorException($"recipe with name '{recipe.Title}' already exists");
-        }
-
         var id = Guid.NewGuid().ToString();
         recipe.Id = id;
 
