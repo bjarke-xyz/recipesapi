@@ -168,7 +168,7 @@ public class RecipeService : ICacheKeyGetter
             }
         }
         await recipeRepository.SaveRecipe(recipe, cancellationToken);
-        await ClearCache();
+        await ClearCache(null, recipe.UserId);
         var savedRecipe = await GetRecipe(recipe.Id, cancellationToken, true, recipe.UserId);
         if (savedRecipe == null)
         {

@@ -5,6 +5,7 @@ public class RecipeInput
     public string Title { get; set; } = default!;
     public string? Description { get; set; }
     public string? FileCode { get; set; }
+    public IFile? Image { get; set; }
     public bool Published { get; set; }
     public List<string>? Tips { get; set; }
     public string? Yield { get; set; }
