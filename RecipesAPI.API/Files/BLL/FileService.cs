@@ -6,9 +6,12 @@ namespace RecipesAPI.Files.BLL;
 
 public interface IFileService : ICacheKeyGetter
 {
+    Task<UploadUrlTicket> GetSignedUploadUrl(string bucket, string key, string fileId, string contentType, ulong contentLength, string fileName, CancellationToken cancellationToken);
+    Task<UploadUrlTicket?> GetUploadUrlTicket(string code);
     Task<FileDto?> GetFile(string id, CancellationToken cancellationToken);
     Task<Dictionary<string, FileDto>> GetFiles(IReadOnlyList<string> ids, CancellationToken cancellationToken);
     Task<Stream?> GetFileContent(string fileId, CancellationToken cancellationToken);
+    Task<Stream?> GetFileContent(string bucket, string key, CancellationToken cancellationToken);
     string GetPublicUrl(FileDto file);
     Task<FileDto?> SaveFile(FileDto file, CancellationToken cancellationToken);
     Task<FileDto?> SaveFile(FileDto file, Stream content, CancellationToken cancellationToken);
@@ -24,6 +27,7 @@ public class FileService : IFileService
     private readonly ILogger<FileService> logger;
 
     private string FileCacheKey(string id) => $"GetFile:{id}";
+    private string UploadTicketKey(string code) => $"UploadTicket:{code}";
 
     public FileService(FileRepository fileRepository, ICacheProvider cache, IStorageClient storageClient, ILogger<FileService> logger)
     {
@@ -42,6 +46,28 @@ public class FileService : IFileService
             },
             ResourceType = CachedResourceTypeHelper.FILES,
         };
+    }
+
+    public async Task<UploadUrlTicket> GetSignedUploadUrl(string bucket, string key, string fileId, string contentType, ulong contentLength, string fileName, CancellationToken cancellationToken)
+    {
+        var uploadUrl = await storageClient.GetSignedUploadUrl(bucket, key, contentType, contentLength, cancellationToken);
+        var ticket = new UploadUrlTicket
+        {
+            Bucket = bucket,
+            Key = key,
+            Code = Guid.NewGuid().ToString(),
+            Url = uploadUrl,
+            FileId = fileId,
+            ContentType = contentType,
+            FileName = fileName,
+        };
+        await cache.Put(UploadTicketKey(ticket.Code), ticket, expiration: TimeSpan.FromHours(24));
+        return ticket;
+    }
+
+    public async Task<UploadUrlTicket?> GetUploadUrlTicket(string code)
+    {
+        return await cache.Get<UploadUrlTicket>(UploadTicketKey(code));
     }
 
     public async Task<FileDto?> GetFile(string id, CancellationToken cancellationToken)
@@ -88,6 +114,11 @@ public class FileService : IFileService
 
         var stream = await storageClient.GetStream(file.Bucket, file.Key, cancellationToken);
         return stream;
+    }
+
+    public async Task<Stream?> GetFileContent(string bucket, string key, CancellationToken cancellationToken)
+    {
+        return await storageClient.GetStream(bucket, key, cancellationToken);
     }
 
     public string GetPublicUrl(FileDto file)
@@ -137,4 +168,16 @@ public class FileService : IFileService
 
         await storageClient.Delete(file.Bucket, file.Key, cancellationToken);
     }
+
+}
+
+public class UploadUrlTicket
+{
+    public string Url { get; set; } = default!;
+    public string Code { get; set; } = default!;
+    public string Bucket { get; set; } = default!;
+    public string Key { get; set; } = default!;
+    public string FileId { get; set; } = default!;
+    public string ContentType { get; set; } = default!;
+    public string FileName { get; set; } = default!;
 }

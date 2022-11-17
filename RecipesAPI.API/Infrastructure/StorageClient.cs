@@ -1,6 +1,7 @@
 using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
+using Google.Apis.Auth.OAuth2;
 using Google.Cloud.Storage.V1;
 
 namespace RecipesAPI.Infrastructure;
@@ -52,6 +53,11 @@ public class S3StorageClient : IStorageClient
     {
         await client.DeleteObjectAsync(bucket, key, cancellationToken);
     }
+
+    public Task<string> GetSignedUploadUrl(string bucket, string key, string contentType, ulong contentLength, CancellationToken cancellationToken)
+    {
+        throw new NotImplementedException();
+    }
 }
 
 public class GoogleStorageClient : IStorageClient
@@ -63,6 +69,25 @@ public class GoogleStorageClient : IStorageClient
     {
         this.client = storageClient;
         this.logger = logger;
+    }
+
+    public async Task<string> GetSignedUploadUrl(string bucket, string key, string contentType, ulong contentLength, CancellationToken cancellationToken)
+    {
+        var credential = (await GoogleCredential.GetApplicationDefaultAsync()).UnderlyingCredential as ServiceAccountCredential;
+        var requestTemplate = UrlSigner.RequestTemplate
+            .FromBucket(bucket)
+            .WithObjectName(key)
+            .WithHttpMethod(HttpMethod.Put)
+            .WithContentHeaders(new Dictionary<string, IEnumerable<string>>
+            {
+                { "Content-Type", new []{contentType}},
+                { "Content-Length", new[]{contentLength.ToString()}},
+            });
+
+        var options = UrlSigner.Options.FromDuration(TimeSpan.FromMinutes(5));
+        var urlSigner = UrlSigner.FromServiceAccountCredential(credential);
+        var url = urlSigner.Sign(requestTemplate, options);
+        return url;
     }
 
     public async Task PutStream(string bucket, string key, Stream data, string contentType, CancellationToken cancellationToken)
@@ -117,6 +142,7 @@ public class GoogleStorageClient : IStorageClient
 public interface IStorageClient
 {
     Task Delete(string bucket, string key, CancellationToken cancellationToken);
+    Task<string> GetSignedUploadUrl(string bucket, string key, string contentType, ulong contentLength, CancellationToken cancellationToken);
     Task PutStream(string bucket, string key, Stream data, string contentType, CancellationToken cancellationToken);
     Task<byte[]?> Get(string bucket, string key, CancellationToken cancellationToken);
     Task<Stream?> GetStream(string bucket, string key, CancellationToken cancellationToken);

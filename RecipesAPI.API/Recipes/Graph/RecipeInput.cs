@@ -4,7 +4,7 @@ public class RecipeInput
 {
     public string Title { get; set; } = default!;
     public string? Description { get; set; }
-    public IFile? Image { get; set; }
+    public string? FileCode { get; set; }
     public bool Published { get; set; }
     public List<string>? Tips { get; set; }
     public string? Yield { get; set; }
@@ -38,4 +38,11 @@ public class RecipeFilter
 
     public int? Skip { get; set; }
     public int? Limit { get; set; }
+}
+
+public class CreateUploadUrlInput
+{
+    public string ContentType { get; set; } = default!;
+    public long ContentLength { get; set; } = default!;
+    public string FileName { get; set; } = default!;
 }
