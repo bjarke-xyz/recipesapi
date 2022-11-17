@@ -19,7 +19,7 @@ public class RecipeRepository
 
     public async Task<bool> IsSlugUnique(string slug, string? recipeId = null, CancellationToken cancellationToken = default)
     {
-        var query = db.Collection(recipeCollection).WhereArrayContains("slugs", slug);
+        var query = db.Collection(recipeCollection).Select(FieldPath.DocumentId).WhereArrayContains("slugs", slug);
         if (!string.IsNullOrEmpty(recipeId))
         {
             query = query.WhereNotEqualTo(FieldPath.DocumentId, recipeId);
