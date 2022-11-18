@@ -61,6 +61,12 @@ public class UserRepository
         return dto;
     }
 
+    public async Task<int> GetUserCount(CancellationToken cancellationToken)
+    {
+        var count = await FirebaseAuth.DefaultInstance.ListUsersAsync(null).CountAsync();
+        return count;
+    }
+
     public async Task<List<User>> GetUsers(CancellationToken cancellationToken)
     {
         var users = new List<User>();

@@ -23,6 +23,7 @@ public class RecipeService : ICacheKeyGetter
     public string GetRecipeCacheKey(string id) => $"GetRecipe:{id}";
     public string GetRecipeByUserCacheKey(string userId) => $"GetRecipeByUser:{userId}";
     public string GetRecipeBySlugCacheKey(string slug) => $"GetRecipeBySlug:{slug}";
+    public string RecipeStatsCacheKey(bool published) => $"RecipeStats:{published}";
 
     public RecipeService(RecipeRepository recipeRepository, ICacheProvider cache, ParserService parserService, FoodService foodService, ILogger<RecipeService> logger)
     {
@@ -42,6 +43,8 @@ public class RecipeService : ICacheKeyGetter
                 GetRecipeCacheKey(""),
                 GetRecipeByUserCacheKey(""),
                 GetRecipeBySlugCacheKey(""),
+                RecipeStatsCacheKey(true),
+                RecipeStatsCacheKey(false),
             },
             ResourceType = CachedResourceTypeHelper.RECIPES,
         };
@@ -83,6 +86,17 @@ public class RecipeService : ICacheKeyGetter
             return true;
         }
         return false;
+    }
+
+    public async Task<RecipeStats> GetRecipeStats(bool published, CancellationToken cancellationToken)
+    {
+        var recipeStats = await cache.Get<RecipeStats>(RecipeStatsCacheKey(published));
+        if (recipeStats == null)
+        {
+            recipeStats = await recipeRepository.GetRecipeCount(published, cancellationToken);
+            await cache.Put(RecipeStatsCacheKey(published), recipeStats, TimeSpan.FromDays(7), cancellationToken);
+        }
+        return recipeStats;
     }
 
     public async Task<List<Recipe>> GetRecipes(CancellationToken cancellationToken, User? loggedInUser)
@@ -221,6 +235,8 @@ public class RecipeService : ICacheKeyGetter
     private async Task ClearCache(string? recipeId = null, string? userId = null, List<string>? slugs = null)
     {
         await cache.Remove(GetRecipesCacheKey);
+        await cache.Remove(RecipeStatsCacheKey(true));
+        await cache.Remove(RecipeStatsCacheKey(false));
         if (recipeId != null)
         {
             await cache.Remove(GetRecipeCacheKey(recipeId));

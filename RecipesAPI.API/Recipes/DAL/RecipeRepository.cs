@@ -134,4 +134,31 @@ public class RecipeRepository
         return recipes;
     }
 
+    public async Task<RecipeStats> GetRecipeCount(bool published, CancellationToken cancellationToken)
+    {
+        var snapshot = await db.Collection(recipeCollection).WhereEqualTo("published", published).Select("createdByUser").GetSnapshotAsync(cancellationToken);
+        var recipeCount = snapshot.Count;
+        var userIds = new HashSet<string>();
+        foreach (var doc in snapshot.Documents)
+        {
+            try
+            {
+                if (doc.TryGetValue<string>("createdByUser", out var userId))
+                {
+                    userIds.Add(userId);
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "failed to get user id from doc {id} id", doc.Id);
+            }
+        }
+
+        return new RecipeStats
+        {
+            RecipeCount = recipeCount,
+            ChefCount = userIds.Count,
+        };
+    }
+
 }

@@ -17,6 +17,7 @@ public class UserService : ICacheKeyGetter
     public const string GetUsersCacheKey = "GetUsers";
     public string UserByIdCacheKey(string userId) => $"GetUserById:{userId}";
     public string UserInfoByIdCacheKey(string userId) => $"GetUserInfo:{userId}";
+    public const string UserCountCacheKey = "UserCount";
 
     public UserService(DAL.UserRepository userRepository, ICacheProvider cache, ILogger<UserService> logger, IEmailService emailService)
     {
@@ -32,6 +33,7 @@ public class UserService : ICacheKeyGetter
         {
             CacheKeyPrefixes = new List<string>{
                 GetUsersCacheKey,
+                UserCountCacheKey,
                 UserByIdCacheKey(""),
                 UserInfoByIdCacheKey(""),
             },
@@ -63,6 +65,18 @@ public class UserService : ICacheKeyGetter
                 user.Role = userInfo.Role;
             }
         }
+    }
+
+    public async Task<int> GetUserCount(CancellationToken cancellationToken)
+    {
+        var userCount = await cache.Get<UserCount>(UserCountCacheKey, cancellationToken);
+        if (userCount == null)
+        {
+            var userCountInt = await userRepository.GetUserCount(cancellationToken);
+            userCount = new UserCount { Count = userCountInt };
+            await cache.Put(UserCountCacheKey, userCount, TimeSpan.FromDays(7), cancellationToken);
+        }
+        return userCount.Count;
     }
 
     public async Task<List<User>> GetUsers(CancellationToken cancellationToken)
@@ -249,6 +263,7 @@ public class UserService : ICacheKeyGetter
     private async Task ClearCache(string? userId = null)
     {
         await cache.Remove(GetUsersCacheKey);
+        await cache.Remove(UserCountCacheKey);
         if (userId != null)
         {
             await cache.Remove(UserByIdCacheKey(userId));

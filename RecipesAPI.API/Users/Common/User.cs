@@ -68,3 +68,8 @@ public class Stats
     public int UserCount { get; set; }
     public int ChefCount { get; set; }
 }
+
+public class UserCount
+{
+    public int Count { get; set; }
+}

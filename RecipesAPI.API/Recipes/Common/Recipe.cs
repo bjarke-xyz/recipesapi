@@ -67,3 +67,9 @@ public class ImageDimension
     public int Width { get; set; }
     public int Height { get; set; }
 }
+
+public class RecipeStats
+{
+    public int RecipeCount { get; set; }
+    public int ChefCount { get; set; }
+}
