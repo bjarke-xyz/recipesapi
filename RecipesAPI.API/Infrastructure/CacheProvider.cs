@@ -10,6 +10,7 @@ public interface ICacheProvider
     Task<List<T?>> Get<T>(IReadOnlyList<string> keys, CancellationToken cancellationToken = default) where T : class;
 
     Task Put<T>(string key, T value, TimeSpan? expiration = null, CancellationToken cancellationToken = default) where T : class;
+    Task Put<T>(IReadOnlyDictionary<string, T> keyValuePairs, TimeSpan? expiration = null, CancellationToken cancellationToken = default) where T : class;
 
     Task Remove(string key, CancellationToken cancellationToken = default);
     Task RemoveByPrefix(string keyPrefix, CancellationToken cancellationToken = default);
@@ -55,6 +56,14 @@ public class CacheProvider : ICacheProvider
             AbsoluteExpirationRelativeToNow = expiration ?? defaultExpiration,
         };
         await _cache.SetStringAsync(GetKey(key), users, options, cancellationToken);
+    }
+
+    public async Task Put<T>(IReadOnlyDictionary<string, T> keyValuePairs, TimeSpan? expiration = null, CancellationToken cancellationToken = default) where T : class
+    {
+        foreach (var kvp in keyValuePairs)
+        {
+            await Put(kvp.Key, kvp.Value, expiration, cancellationToken);
+        }
     }
 
     public async Task Remove(string key, CancellationToken cancellationToken = default)

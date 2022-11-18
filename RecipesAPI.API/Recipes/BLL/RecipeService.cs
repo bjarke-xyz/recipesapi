@@ -106,6 +106,10 @@ public class RecipeService : ICacheKeyGetter
         {
             cached = await recipeRepository.GetRecipes(cancellationToken);
             await cache.Put<List<Recipe>>(GetRecipesCacheKey, cached);
+            var recipesById = cached.GroupBy(x => x.Id).ToDictionary(x => GetRecipeCacheKey(x.Key), x => x.First());
+            await cache.Put(recipesById);
+            var recipesBySlug = cached.Where(x => !string.IsNullOrEmpty(x.Slug)).GroupBy(X => X.Slug).ToDictionary(x => GetRecipeBySlugCacheKey(x.Key!), x => x.First());
+            await cache.Put(recipesBySlug);
         }
         cached = cached.Where(x => IsRecipeVisible(x, loggedInUser)).ToList();
         foreach (var recipe in cached)
