@@ -159,6 +159,7 @@ public class FileService : IFileService
         try
         {
             await fileRepository.DeleteFile(file, cancellationToken);
+            await cache.Remove(FileCacheKey(file.Id));
         }
         catch (Exception ex)
         {
@@ -166,7 +167,7 @@ public class FileService : IFileService
             throw;
         }
 
-        await storageClient.Delete(file.Bucket, file.Key, cancellationToken);
+        // await storageClient.Delete(file.Bucket, file.Key, cancellationToken);
     }
 
 }

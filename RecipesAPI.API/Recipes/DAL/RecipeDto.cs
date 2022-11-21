@@ -37,6 +37,9 @@ public class RecipeDto
     public int? Difficulty { get; set; }
     [FirestoreProperty("slugs")]
     public List<string> Slugs { get; set; } = default!;
+
+    [FirestoreProperty("deletedAt")]
+    public DateTime? DeletedAt { get; set; }
 }
 
 [FirestoreData]

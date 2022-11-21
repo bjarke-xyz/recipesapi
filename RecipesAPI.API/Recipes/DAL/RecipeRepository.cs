@@ -37,6 +37,10 @@ public class RecipeRepository
             try
             {
                 var dto = doc.ConvertTo<RecipeDto>();
+                if (dto.DeletedAt.HasValue)
+                {
+                    continue;
+                }
                 var recipe = RecipeMapper.MapDto(dto, doc.Id);
                 recipes.Add(recipe);
             }
@@ -58,6 +62,10 @@ public class RecipeRepository
         try
         {
             var dto = doc.ConvertTo<RecipeDto>();
+            if (dto.DeletedAt.HasValue)
+            {
+                return null;
+            }
             return RecipeMapper.MapDto(dto, doc.Id);
         }
         catch (Exception ex)
@@ -69,7 +77,7 @@ public class RecipeRepository
 
     public async Task<Recipe?> GetRecipeBySlug(string slug, CancellationToken cancellationToken)
     {
-        var snapshot = await db.Collection(recipeCollection).WhereArrayContains("slugs", slug).Limit(1).GetSnapshotAsync(cancellationToken);
+        var snapshot = await db.Collection(recipeCollection).WhereEqualTo("deletedAt", null).WhereArrayContains("slugs", slug).Limit(1).GetSnapshotAsync(cancellationToken);
         if (snapshot.Count == 0)
         {
             return null;
@@ -78,6 +86,10 @@ public class RecipeRepository
         try
         {
             var dto = doc.ConvertTo<RecipeDto>();
+            if (dto.DeletedAt.HasValue)
+            {
+                return null;
+            }
             return RecipeMapper.MapDto(dto, doc.Id);
         }
         catch (Exception ex)
@@ -105,7 +117,7 @@ public class RecipeRepository
     {
         try
         {
-            await db.Collection(recipeCollection).Document(recipe.Id).DeleteAsync(null, cancellationToken);
+            await db.Collection(recipeCollection).Document(recipe.Id).UpdateAsync("deletedAt", DateTime.UtcNow);
         }
         catch (Exception ex)
         {
@@ -123,6 +135,10 @@ public class RecipeRepository
             try
             {
                 var dto = doc.ConvertTo<RecipeDto>();
+                if (dto.DeletedAt.HasValue)
+                {
+                    continue;
+                }
                 var recipe = RecipeMapper.MapDto(dto, doc.Id);
                 recipes.Add(recipe);
             }
@@ -136,13 +152,17 @@ public class RecipeRepository
 
     public async Task<RecipeStats> GetRecipeCount(bool published, CancellationToken cancellationToken)
     {
-        var snapshot = await db.Collection(recipeCollection).WhereEqualTo("published", published).Select("createdByUser").GetSnapshotAsync(cancellationToken);
+        var snapshot = await db.Collection(recipeCollection).WhereEqualTo("published", published).Select("createdByUser", "deletedAt").GetSnapshotAsync(cancellationToken);
         var recipeCount = snapshot.Count;
         var userIds = new HashSet<string>();
         foreach (var doc in snapshot.Documents)
         {
             try
             {
+                if (doc.TryGetValue<DateTime?>("deletedAt", out var deletedAt) && deletedAt.HasValue)
+                {
+                    continue;
+                }
                 if (doc.TryGetValue<string>("createdByUser", out var userId))
                 {
                     userIds.Add(userId);

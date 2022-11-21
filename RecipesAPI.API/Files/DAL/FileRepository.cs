@@ -24,6 +24,10 @@ public class FileRepository
             return null;
         }
         var dto = doc.ConvertTo<FileDto>();
+        if (dto.DeletedAt.HasValue)
+        {
+            return null;
+        }
         if (!dto.CreatedAt.HasValue)
         {
             dto.CreatedAt = doc.CreateTime?.ToDateTimeOffset();
@@ -49,6 +53,10 @@ public class FileRepository
             try
             {
                 var dto = doc.ConvertTo<FileDto>();
+                if (dto.DeletedAt.HasValue)
+                {
+                    continue;
+                }
                 if (!dto.CreatedAt.HasValue)
                 {
                     dto.CreatedAt = doc.CreateTime?.ToDateTimeOffset();
@@ -75,7 +83,7 @@ public class FileRepository
 
     public async Task DeleteFile(FileDto file, CancellationToken cancellationToken)
     {
-        await db.Collection(filesCollection).Document(file.Id).DeleteAsync(null, cancellationToken);
+        await db.Collection(filesCollection).Document(file.Id).UpdateAsync("deletedAt", DateTime.UtcNow, null, cancellationToken);
     }
 }
 
@@ -100,6 +108,8 @@ public class FileDto
     public ImageDimensionsDto? Dimensions { get; set; }
 
     public DateTimeOffset? CreatedAt { get; set; }
+
+    public DateTime? DeletedAt { get; set; }
 }
 
 
