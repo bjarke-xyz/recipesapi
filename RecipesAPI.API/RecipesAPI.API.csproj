@@ -20,6 +20,9 @@
     <PackageReference Include="FirebaseAdmin" Version="2.3.0" />
     <PackageReference Include="Google.Cloud.Firestore" Version="3.0.0" />
     <PackageReference Include="Google.Cloud.Storage.V1" Version="4.1.0" />
+    <PackageReference Include="hangfire" Version="1.7.32" />
+    <PackageReference Include="hangfire.aspnetcore" Version="1.7.32" />
+    <PackageReference Include="hangfire.inmemory" Version="0.3.4" />
     <PackageReference Include="HotChocolate.AspNetCore" Version="12.15.0" />
     <PackageReference Include="HotChocolate.AspNetCore.Authorization" Version="12.15.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.10" />

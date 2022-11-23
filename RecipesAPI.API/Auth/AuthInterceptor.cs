@@ -19,7 +19,7 @@ public class AuthInterceptor : DefaultHttpRequestInterceptor
 
     public override async ValueTask OnCreateAsync(HttpContext context, IRequestExecutor requestExecutor, IQueryRequestBuilder requestBuilder, CancellationToken cancellationToken)
     {
-        var userId = context.User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userId = JwtUtil.GetUserId(context.User);
         User? user = null;
         if (!string.IsNullOrEmpty(userId))
         {

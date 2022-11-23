@@ -24,6 +24,8 @@ using RecipesAPI.API.Admin.BLL;
 using RecipesAPI.API.Admin.Graph;
 using Prometheus;
 using RecipesAPI.API.Food.BLL;
+using Hangfire;
+using Hangfire.Dashboard;
 
 DotNetEnv.Env.Load();
 
@@ -58,22 +60,26 @@ StackExchange.Redis.ConfigurationOptions GetRedisConfigurationOptions(WebApplica
     return configuration;
 }
 
+var jwtUtil = new JwtUtil(builder.Configuration["FirebaseAppId"], null);
+
 builder.Services
     .AddRouting()
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(options =>
         {
-            options.Authority = $"https://securetoken.google.com/{builder.Configuration["FirebaseAppId"]}";
-            options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
-            {
-                ValidateIssuer = true,
-                ValidIssuer = $"https://securetoken.google.com/{builder.Configuration["FirebaseAppId"]}",
-                ValidateAudience = true,
-                ValidAudience = builder.Configuration["FirebaseAppId"],
-                ValidateLifetime = true,
-            };
+            options.Authority = jwtUtil.GetAuthority();
+            options.TokenValidationParameters = jwtUtil.GetTokenValidationParameters();
         }).Services
     .AddAuthorization()
+    .AddHangfire(config => config
+        .SetDataCompatibilityLevel(CompatibilityLevel.Version_170)
+        .UseSimpleAssemblyNameTypeSerializer()
+        .UseRecommendedSerializerSettings()
+        .UseInMemoryStorage()
+    )
+    .AddHangfireServer()
+    .AddHangfireAuthorizationMiddleware()
+    .AddSingleton<JwtUtil>(sp => new JwtUtil(builder.Configuration["FirebaseAppId"], sp.GetRequiredService<ICacheProvider>()))
     .AddSingleton<ICacheProvider, CacheProvider>(sp =>
     {
         var distributedCache = sp.GetRequiredService<IDistributedCache>();
@@ -129,11 +135,8 @@ builder.Services
     .AddSingleton<FileRepository>()
     .AddSingleton<IFileService, FileService>()
     .AddSingleton<AdminService>()
-    // TODO: Figure out right capacity
-    .AddSingleton<IBackgroundTaskQueue, DefaultBackgroundTaskQueue>(sp => new DefaultBackgroundTaskQueue(50))
     .AddSingleton<ImageProcessingService>()
     .AddHostedService<CacheRefreshBackgroundService>()
-    .AddHostedService<TaskQueueBackgroundService>()
     .AddHttpContextAccessor()
     .AddSingleton<IConnectionMultiplexer>(sp =>
     {
@@ -199,6 +202,7 @@ app
     .UseRouting()
     .UseAuthentication()
     .UseAuthorization()
+    .UseWhen((ctx => ctx.Request.Path.StartsWithSegments("/hangfire")), hangfireApp => hangfireApp.UseHangfireAuthorizationMiddleware())
     .UseEndpoints(endpoint =>
     {
         endpoint.MapGet("/", (ctx) =>
@@ -208,6 +212,7 @@ app
         });
         endpoint.Map("/healthcheck", () => "OK");
         endpoint.MapGraphQL();
+        endpoint.MapHangfireDashboard(new DashboardOptions { Authorization = new List<IDashboardAuthorizationFilter> { new HangfireDashboardAuthorizationFilter() } });
     });
 
 try

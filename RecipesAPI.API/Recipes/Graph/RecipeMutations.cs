@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Security.Claims;
+using Hangfire;
 using RecipesAPI.API.Auth;
 using RecipesAPI.API.Exceptions;
 using RecipesAPI.API.Files.BLL;
@@ -18,7 +19,7 @@ public class RecipeMutations
 
     private static IReadOnlySet<string> allowedContentTypes = new HashSet<string> { "image/jpeg", "image/jpg", "image/png", "image/svg+xml", "image/gif" };
 
-    private static async Task<string> UploadImage(string fileCode, IFileService fileService, IBackgroundTaskQueue backgroundTaskQueue, ImageProcessingService imageProcessingService, CancellationToken cancellationToken)
+    private static async Task<string> UploadImage(string fileCode, IFileService fileService, ImageProcessingService imageProcessingService, CancellationToken cancellationToken)
     {
         var uploadUrlTicket = await fileService.GetUploadUrlTicket(fileCode);
         if (uploadUrlTicket == null)
@@ -44,7 +45,8 @@ public class RecipeMutations
         try
         {
             await fileService.SaveFile(fileDto, cancellationToken);
-            await backgroundTaskQueue.QueueBackgroundWorkItem((CancellationToken ct) => imageProcessingService.ProcessRecipeImage(fileDto.Id, ct));
+            BackgroundJob.Enqueue<ImageProcessingService>(s => s.ProcessRecipeImage(fileDto.Id, CancellationToken.None));
+            // await backgroundTaskQueue.QueueBackgroundWorkItem((CancellationToken ct) => imageProcessingService.ProcessRecipeImage(fileDto.Id, ct));
             return fileDto.Id;
         }
         catch (Exception ex)
@@ -83,12 +85,12 @@ public class RecipeMutations
     }
 
     [RoleAuthorize(RoleEnums = new[] { Role.USER })]
-    public async Task<Recipe> CreateRecipe(RecipeInput input, [User] User loggedInUser, [Service] RecipeService recipeService, [Service] IFileService fileService, [Service] IBackgroundTaskQueue backgroundTaskQueue, [Service] ImageProcessingService imageProcessingService, CancellationToken cancellationToken)
+    public async Task<Recipe> CreateRecipe(RecipeInput input, [User] User loggedInUser, [Service] RecipeService recipeService, [Service] IFileService fileService, [Service] ImageProcessingService imageProcessingService, CancellationToken cancellationToken)
     {
         string? imageId = null;
         if (input.FileCode != null)
         {
-            imageId = await UploadImage(input.FileCode, fileService, backgroundTaskQueue, imageProcessingService, cancellationToken);
+            imageId = await UploadImage(input.FileCode, fileService, imageProcessingService, cancellationToken);
         }
         var recipe = RecipeMapper.MapInput(input);
         recipe.ImageId = imageId;
@@ -103,7 +105,7 @@ public class RecipeMutations
     }
 
     [RoleAuthorize(RoleEnums = new[] { Role.USER })]
-    public async Task<Recipe> UpdateRecipe(string id, RecipeInput input, [User] User loggedInUser, [Service] RecipeService recipeService, [Service] IFileService fileService, [Service] IBackgroundTaskQueue backgroundTaskQueue, [Service] ImageProcessingService imageProcessingService, CancellationToken cancellationToken)
+    public async Task<Recipe> UpdateRecipe(string id, RecipeInput input, [User] User loggedInUser, [Service] RecipeService recipeService, [Service] IFileService fileService, [Service] ImageProcessingService imageProcessingService, CancellationToken cancellationToken)
     {
         var existingRecipe = await recipeService.GetRecipe(id, cancellationToken, loggedInUser);
         if (existingRecipe == null)
@@ -121,7 +123,7 @@ public class RecipeMutations
         var imageId = existingRecipe.ImageId;
         if (input.FileCode != null)
         {
-            imageId = await UploadImage(input.FileCode, fileService, backgroundTaskQueue, imageProcessingService, cancellationToken);
+            imageId = await UploadImage(input.FileCode, fileService, imageProcessingService, cancellationToken);
         }
 
         var recipe = RecipeMapper.MapInput(input);
