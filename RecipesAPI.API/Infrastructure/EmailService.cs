@@ -1,6 +1,6 @@
 using Newtonsoft.Json;
 
-namespace RecipesAPI.Infrastructure;
+namespace RecipesAPI.API.Infrastructure;
 
 public interface IEmailService
 {

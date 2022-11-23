@@ -1,6 +1,6 @@
 using System.Threading.Channels;
 
-namespace RecipesAPI.Infrastructure;
+namespace RecipesAPI.API.Infrastructure;
 
 public interface IBackgroundTaskQueue
 {

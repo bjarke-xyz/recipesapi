@@ -1,6 +1,6 @@
-using RecipesAPI.Food.Common;
+using RecipesAPI.API.Food.Common;
 
-namespace RecipesAPI.Food.BLL;
+namespace RecipesAPI.API.Food.BLL;
 
 public class FoodDataLoader : BatchDataLoader<string, List<FoodItem>>
 {

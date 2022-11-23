@@ -1,10 +1,10 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
-using RecipesAPI.Files.BLL;
-using RecipesAPI.Recipes.BLL;
+using RecipesAPI.API.Files.BLL;
+using RecipesAPI.API.Recipes.BLL;
 
-namespace RecipesAPI.Tests;
+namespace RecipesAPI.API.Tests;
 
 public class ImageProcessingTests
 {

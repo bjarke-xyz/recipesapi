@@ -1,9 +1,9 @@
 using AutoMapper;
-using RecipesAPI.Files.DAL;
-using RecipesAPI.Recipes.DAL;
-using RecipesAPI.Recipes.Graph;
+using RecipesAPI.API.Files.DAL;
+using RecipesAPI.API.Recipes.DAL;
+using RecipesAPI.API.Recipes.Graph;
 
-namespace RecipesAPI.Recipes.Common;
+namespace RecipesAPI.API.Recipes.Common;
 
 public static class RecipeMapper
 {

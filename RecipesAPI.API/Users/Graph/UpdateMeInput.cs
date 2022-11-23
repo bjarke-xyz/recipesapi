@@ -1,6 +1,6 @@
-using RecipesAPI.Users.Common;
+using RecipesAPI.API.Users.Common;
 
-namespace RecipesAPI.Users.Graph;
+namespace RecipesAPI.API.Users.Graph;
 
 public class UpdateMeInput
 {

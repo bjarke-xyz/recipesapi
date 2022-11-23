@@ -1,7 +1,7 @@
 using Google.Cloud.Firestore;
-using RecipesAPI.Infrastructure;
+using RecipesAPI.API.Infrastructure;
 
-namespace RecipesAPI.Files.DAL;
+namespace RecipesAPI.API.Files.DAL;
 
 public class FileRepository
 {

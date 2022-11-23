@@ -1,11 +1,11 @@
 using FirebaseAdmin.Auth;
-using RecipesAPI.Admin.Common;
-using RecipesAPI.Exceptions;
-using RecipesAPI.Infrastructure;
-using RecipesAPI.Users.Common;
-using RecipesAPI.Users.DAL;
+using RecipesAPI.API.Admin.Common;
+using RecipesAPI.API.Exceptions;
+using RecipesAPI.API.Infrastructure;
+using RecipesAPI.API.Users.Common;
+using RecipesAPI.API.Users.DAL;
 
-namespace RecipesAPI.Users.BLL;
+namespace RecipesAPI.API.Users.BLL;
 
 public class UserService : ICacheKeyGetter
 {

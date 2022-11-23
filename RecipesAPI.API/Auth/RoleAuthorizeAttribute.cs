@@ -1,8 +1,8 @@
 using HotChocolate.AspNetCore.Authorization;
-using RecipesAPI.Users;
-using RecipesAPI.Users.Common;
+using RecipesAPI.API.Users;
+using RecipesAPI.API.Users.Common;
 
-namespace RecipesAPI.Auth;
+namespace RecipesAPI.API.Auth;
 
 public class RoleAuthorizeAttribute : AuthorizeAttribute
 {

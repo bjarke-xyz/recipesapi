@@ -1,12 +1,12 @@
 using System.Security.Claims;
 using HotChocolate.AspNetCore;
 using HotChocolate.Execution;
-using RecipesAPI.Users;
-using RecipesAPI.Users.BLL;
-using RecipesAPI.Users.Common;
-using RecipesAPI.Users.DAL;
+using RecipesAPI.API.Users;
+using RecipesAPI.API.Users.BLL;
+using RecipesAPI.API.Users.Common;
+using RecipesAPI.API.Users.DAL;
 
-namespace RecipesAPI.Auth;
+namespace RecipesAPI.API.Auth;
 
 public class AuthInterceptor : DefaultHttpRequestInterceptor
 {

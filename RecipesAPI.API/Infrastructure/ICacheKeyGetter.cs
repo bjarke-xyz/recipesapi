@@ -1,6 +1,6 @@
-using RecipesAPI.Admin.Common;
+using RecipesAPI.API.Admin.Common;
 
-namespace RecipesAPI.Infrastructure;
+namespace RecipesAPI.API.Infrastructure;
 
 public interface ICacheKeyGetter
 {

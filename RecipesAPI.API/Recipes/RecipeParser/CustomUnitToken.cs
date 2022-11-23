@@ -2,9 +2,9 @@ using System.Reflection;
 using RecipeIngredientParser.Core.Parser;
 using RecipeIngredientParser.Core.Tokens;
 using RecipeIngredientParser.Core.Tokens.Abstract;
-using RecipesAPI.Recipes.RecipeParser;
+using RecipesAPI.API.Recipes.RecipeParser;
 
-namespace RecipesAPI.Recipes.RecipeParser
+namespace RecipesAPI.API.Recipes.RecipeParser
 {
     public sealed class CustomUnitToken : IToken
     {

@@ -1,4 +1,4 @@
-namespace RecipesAPI.Exceptions;
+namespace RecipesAPI.API.Exceptions;
 
 public class GraphQLErrorException : Exception
 {

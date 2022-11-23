@@ -1,16 +1,16 @@
-using RecipesAPI.Admin.Common;
+using RecipesAPI.API.Admin.Common;
 using RecipesAPI.API.Utils;
-using RecipesAPI.Exceptions;
-using RecipesAPI.Files.BLL;
-using RecipesAPI.Food;
-using RecipesAPI.Food.BLL;
-using RecipesAPI.Infrastructure;
-using RecipesAPI.Recipes.Common;
-using RecipesAPI.Recipes.DAL;
-using RecipesAPI.Users.Common;
+using RecipesAPI.API.Exceptions;
+using RecipesAPI.API.Files.BLL;
+using RecipesAPI.API.Food;
+using RecipesAPI.API.Food.BLL;
+using RecipesAPI.API.Infrastructure;
+using RecipesAPI.API.Recipes.Common;
+using RecipesAPI.API.Recipes.DAL;
+using RecipesAPI.API.Users.Common;
 using SixLabors.ImageSharp.Processing;
 
-namespace RecipesAPI.Recipes.BLL;
+namespace RecipesAPI.API.Recipes.BLL;
 
 public class RecipeService : ICacheKeyGetter
 {

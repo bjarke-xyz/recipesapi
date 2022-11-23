@@ -1,4 +1,4 @@
-namespace RecipesAPI.Auth;
+namespace RecipesAPI.API.Auth;
 
 public class UserAttribute : GlobalStateAttribute
 {

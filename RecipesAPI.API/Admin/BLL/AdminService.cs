@@ -1,8 +1,8 @@
-using RecipesAPI.Admin.Common;
-using RecipesAPI.Infrastructure;
-using RecipesAPI.Recipes.BLL;
+using RecipesAPI.API.Admin.Common;
+using RecipesAPI.API.Infrastructure;
+using RecipesAPI.API.Recipes.BLL;
 
-namespace RecipesAPI.Admin.BLL;
+namespace RecipesAPI.API.Admin.BLL;
 
 public class AdminService
 {

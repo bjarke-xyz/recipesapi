@@ -1,7 +1,7 @@
 using AutoMapper;
-using RecipesAPI.Food.DAL;
+using RecipesAPI.API.Food.DAL;
 
-namespace RecipesAPI.Food.Common;
+namespace RecipesAPI.API.Food.Common;
 
 public static class FoodMapper
 {

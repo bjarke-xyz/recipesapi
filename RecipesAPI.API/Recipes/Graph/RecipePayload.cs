@@ -1,4 +1,4 @@
-namespace RecipesAPI.Graph;
+namespace RecipesAPI.API.Graph;
 
 public class UploadUrlPayload
 {

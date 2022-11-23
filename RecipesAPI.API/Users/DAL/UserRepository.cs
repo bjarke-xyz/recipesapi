@@ -2,10 +2,10 @@ using System.Collections.ObjectModel;
 using FirebaseAdmin.Auth;
 using Google.Cloud.Firestore;
 using Newtonsoft.Json;
-using RecipesAPI.Exceptions;
-using RecipesAPI.Users.Common;
+using RecipesAPI.API.Exceptions;
+using RecipesAPI.API.Users.Common;
 
-namespace RecipesAPI.Users.DAL;
+namespace RecipesAPI.API.Users.DAL;
 
 public class UserRepository
 {

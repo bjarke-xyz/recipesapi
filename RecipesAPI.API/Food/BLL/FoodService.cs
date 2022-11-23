@@ -1,8 +1,8 @@
-using RecipesAPI.Food.Common;
-using RecipesAPI.Food.DAL;
-using RecipesAPI.Infrastructure;
+using RecipesAPI.API.Food.Common;
+using RecipesAPI.API.Food.DAL;
+using RecipesAPI.API.Infrastructure;
 
-namespace RecipesAPI.Food.BLL;
+namespace RecipesAPI.API.Food.BLL;
 
 public class FoodService
 {

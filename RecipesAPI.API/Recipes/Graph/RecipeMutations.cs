@@ -1,16 +1,16 @@
 using System.Reflection;
 using System.Security.Claims;
-using RecipesAPI.Auth;
-using RecipesAPI.Exceptions;
-using RecipesAPI.Files.BLL;
-using RecipesAPI.Files.DAL;
-using RecipesAPI.Graph;
-using RecipesAPI.Infrastructure;
-using RecipesAPI.Recipes.BLL;
-using RecipesAPI.Recipes.Common;
-using RecipesAPI.Users.Common;
+using RecipesAPI.API.Auth;
+using RecipesAPI.API.Exceptions;
+using RecipesAPI.API.Files.BLL;
+using RecipesAPI.API.Files.DAL;
+using RecipesAPI.API.Graph;
+using RecipesAPI.API.Infrastructure;
+using RecipesAPI.API.Recipes.BLL;
+using RecipesAPI.API.Recipes.Common;
+using RecipesAPI.API.Users.Common;
 
-namespace RecipesAPI.Recipes.Graph;
+namespace RecipesAPI.API.Recipes.Graph;
 
 [ExtendObjectType(OperationTypeNames.Mutation)]
 public class RecipeMutations

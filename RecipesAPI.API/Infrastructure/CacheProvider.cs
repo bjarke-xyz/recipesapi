@@ -2,7 +2,7 @@ using System.Text.Json;
 using Microsoft.Extensions.Caching.Distributed;
 using StackExchange.Redis;
 
-namespace RecipesAPI.Infrastructure;
+namespace RecipesAPI.API.Infrastructure;
 
 public interface ICacheProvider
 {

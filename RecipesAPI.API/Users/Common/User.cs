@@ -1,4 +1,4 @@
-namespace RecipesAPI.Users.Common;
+namespace RecipesAPI.API.Users.Common;
 
 public class User
 {

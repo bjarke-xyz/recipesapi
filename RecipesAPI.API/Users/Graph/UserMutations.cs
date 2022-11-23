@@ -1,13 +1,13 @@
 using System.Net.Mail;
 using System.Security.Claims;
 using HotChocolate.AspNetCore.Authorization;
-using RecipesAPI.Auth;
-using RecipesAPI.Exceptions;
-using RecipesAPI.Users.BLL;
-using RecipesAPI.Users.Common;
-using RecipesAPI.Users.DAL;
+using RecipesAPI.API.Auth;
+using RecipesAPI.API.Exceptions;
+using RecipesAPI.API.Users.BLL;
+using RecipesAPI.API.Users.Common;
+using RecipesAPI.API.Users.DAL;
 
-namespace RecipesAPI.Users.Graph;
+namespace RecipesAPI.API.Users.Graph;
 
 [ExtendObjectType(OperationTypeNames.Mutation)]
 public class UserMutations

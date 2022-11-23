@@ -3,10 +3,10 @@ using System.Text;
 using CsvHelper;
 using CsvHelper.Configuration.Attributes;
 using Newtonsoft.Json;
-using RecipesAPI.Exceptions;
-using RecipesAPI.Infrastructure;
+using RecipesAPI.API.Exceptions;
+using RecipesAPI.API.Infrastructure;
 
-namespace RecipesAPI.Food.DAL;
+namespace RecipesAPI.API.Food.DAL;
 
 public class FoodRepository
 {

@@ -1,9 +1,9 @@
-using RecipesAPI.Admin.BLL;
-using RecipesAPI.Admin.Common;
-using RecipesAPI.Auth;
-using RecipesAPI.Users.Common;
+using RecipesAPI.API.Admin.BLL;
+using RecipesAPI.API.Admin.Common;
+using RecipesAPI.API.Auth;
+using RecipesAPI.API.Users.Common;
 
-namespace RecipesAPI.Admin.Graph;
+namespace RecipesAPI.API.Admin.Graph;
 
 [ExtendObjectType(OperationTypeNames.Mutation)]
 public class AdminMutations

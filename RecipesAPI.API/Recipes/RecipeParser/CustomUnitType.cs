@@ -1,4 +1,4 @@
-namespace RecipesAPI.Recipes.RecipeParser;
+namespace RecipesAPI.API.Recipes.RecipeParser;
 
 public enum CustomUnitType
 {

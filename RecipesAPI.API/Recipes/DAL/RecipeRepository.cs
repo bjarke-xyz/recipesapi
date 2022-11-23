@@ -1,8 +1,8 @@
 using Google.Cloud.Firestore;
-using RecipesAPI.Exceptions;
-using RecipesAPI.Recipes.Common;
+using RecipesAPI.API.Exceptions;
+using RecipesAPI.API.Recipes.Common;
 
-namespace RecipesAPI.Recipes.DAL;
+namespace RecipesAPI.API.Recipes.DAL;
 
 public class RecipeRepository
 {

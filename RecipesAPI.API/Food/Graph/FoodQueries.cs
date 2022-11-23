@@ -1,7 +1,7 @@
-using RecipesAPI.Food.BLL;
-using RecipesAPI.Food.Common;
+using RecipesAPI.API.Food.BLL;
+using RecipesAPI.API.Food.Common;
 
-namespace RecipesAPI.Food.Graph;
+namespace RecipesAPI.API.Food.Graph;
 
 [ExtendObjectType(OperationTypeNames.Query)]
 public class FoodQueries

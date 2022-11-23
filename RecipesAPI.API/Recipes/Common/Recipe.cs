@@ -1,6 +1,6 @@
-using RecipesAPI.Food.Common;
+using RecipesAPI.API.Food.Common;
 
-namespace RecipesAPI.Recipes.Common;
+namespace RecipesAPI.API.Recipes.Common;
 
 public class Recipe
 {

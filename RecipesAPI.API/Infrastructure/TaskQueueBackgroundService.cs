@@ -1,7 +1,7 @@
-using RecipesAPI.Infrastructure;
-using RecipesAPI.Recipes.BLL;
+using RecipesAPI.API.Infrastructure;
+using RecipesAPI.API.Recipes.BLL;
 
-namespace RecipesAPI.Infrastructure;
+namespace RecipesAPI.API.Infrastructure;
 
 public class TaskQueueBackgroundService : BackgroundService
 {

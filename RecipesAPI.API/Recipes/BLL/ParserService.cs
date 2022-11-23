@@ -7,10 +7,10 @@ using RecipeIngredientParser.Core.Templates;
 using RecipeIngredientParser.Core.Tokens;
 using RecipeIngredientParser.Core.Tokens.Abstract;
 using RecipeIngredientParser.Core.Tokens.Readers;
-using RecipesAPI.Recipes.Common;
-using RecipesAPI.Recipes.RecipeParser;
+using RecipesAPI.API.Recipes.Common;
+using RecipesAPI.API.Recipes.RecipeParser;
 
-namespace RecipesAPI.Recipes.BLL;
+namespace RecipesAPI.API.Recipes.BLL;
 
 public class ParserService
 {

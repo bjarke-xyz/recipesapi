@@ -4,7 +4,7 @@ using Amazon.S3.Model;
 using Google.Apis.Auth.OAuth2;
 using Google.Cloud.Storage.V1;
 
-namespace RecipesAPI.Infrastructure;
+namespace RecipesAPI.API.Infrastructure;
 
 public class S3StorageClient : IStorageClient
 {

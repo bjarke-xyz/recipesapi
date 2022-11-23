@@ -1,6 +1,6 @@
-using RecipesAPI.Users.Common;
+using RecipesAPI.API.Users.Common;
 
-namespace RecipesAPI.Users.BLL;
+namespace RecipesAPI.API.Users.BLL;
 
 public class UserDataLoader : BatchDataLoader<string, User>
 {

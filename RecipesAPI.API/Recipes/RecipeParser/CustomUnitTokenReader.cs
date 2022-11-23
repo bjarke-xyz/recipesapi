@@ -4,7 +4,7 @@ using RecipeIngredientParser.Core.Parser.Extensions;
 using RecipeIngredientParser.Core.Tokens;
 using RecipeIngredientParser.Core.Tokens.Abstract;
 
-namespace RecipesAPI.Recipes.RecipeParser;
+namespace RecipesAPI.API.Recipes.RecipeParser;
 
 /// <summary>
 /// A token reader responsible for the {unit} token type.

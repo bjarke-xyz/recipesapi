@@ -1,16 +1,16 @@
 using RecipesAPI.API.Utils;
-using RecipesAPI.Auth;
-using RecipesAPI.Exceptions;
-using RecipesAPI.Files.BLL;
-using RecipesAPI.Food;
-using RecipesAPI.Food.BLL;
-using RecipesAPI.Food.Common;
-using RecipesAPI.Recipes.BLL;
-using RecipesAPI.Recipes.Common;
-using RecipesAPI.Users.BLL;
-using RecipesAPI.Users.Common;
+using RecipesAPI.API.Auth;
+using RecipesAPI.API.Exceptions;
+using RecipesAPI.API.Files.BLL;
+using RecipesAPI.API.Food;
+using RecipesAPI.API.Food.BLL;
+using RecipesAPI.API.Food.Common;
+using RecipesAPI.API.Recipes.BLL;
+using RecipesAPI.API.Recipes.Common;
+using RecipesAPI.API.Users.BLL;
+using RecipesAPI.API.Users.Common;
 
-namespace RecipesAPI.Recipes.Graph;
+namespace RecipesAPI.API.Recipes.Graph;
 
 [ExtendObjectType(OperationTypeNames.Query)]
 public class RecipeQueries

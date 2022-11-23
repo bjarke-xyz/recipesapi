@@ -1,4 +1,4 @@
-namespace RecipesAPI.Admin.Common;
+namespace RecipesAPI.API.Admin.Common;
 
 public class CachedResourceType
 {

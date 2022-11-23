@@ -1,6 +1,6 @@
 using Newtonsoft.Json;
 
-namespace RecipesAPI.Food.Common;
+namespace RecipesAPI.API.Food.Common;
 
 public class FoodItem
 {

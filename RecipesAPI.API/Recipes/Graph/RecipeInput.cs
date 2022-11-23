@@ -1,4 +1,4 @@
-namespace RecipesAPI.Recipes.Graph;
+namespace RecipesAPI.API.Recipes.Graph;
 
 public class RecipeInput
 {

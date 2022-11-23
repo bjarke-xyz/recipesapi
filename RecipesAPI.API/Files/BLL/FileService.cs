@@ -1,8 +1,8 @@
-using RecipesAPI.Admin.Common;
-using RecipesAPI.Files.DAL;
-using RecipesAPI.Infrastructure;
+using RecipesAPI.API.Admin.Common;
+using RecipesAPI.API.Files.DAL;
+using RecipesAPI.API.Infrastructure;
 
-namespace RecipesAPI.Files.BLL;
+namespace RecipesAPI.API.Files.BLL;
 
 public interface IFileService : ICacheKeyGetter
 {

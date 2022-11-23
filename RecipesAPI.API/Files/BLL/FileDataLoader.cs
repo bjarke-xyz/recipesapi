@@ -1,6 +1,6 @@
-using RecipesAPI.Files.DAL;
+using RecipesAPI.API.Files.DAL;
 
-namespace RecipesAPI.Files.BLL;
+namespace RecipesAPI.API.Files.BLL;
 
 public class FileDataLoader : BatchDataLoader<string, FileDto>
 {

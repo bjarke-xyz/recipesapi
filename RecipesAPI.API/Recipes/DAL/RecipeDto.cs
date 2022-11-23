@@ -1,6 +1,6 @@
 using Google.Cloud.Firestore;
 
-namespace RecipesAPI.Recipes.DAL;
+namespace RecipesAPI.API.Recipes.DAL;
 
 
 [FirestoreData]

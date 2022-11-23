@@ -1,16 +1,16 @@
 using System.Security.Claims;
 using HotChocolate.AspNetCore.Authorization;
-using RecipesAPI.Auth;
-using RecipesAPI.Exceptions;
-using RecipesAPI.Food;
-using RecipesAPI.Food.BLL;
-using RecipesAPI.Food.Common;
-using RecipesAPI.Recipes.BLL;
-using RecipesAPI.Recipes.Common;
-using RecipesAPI.Users.BLL;
-using RecipesAPI.Users.Common;
+using RecipesAPI.API.Auth;
+using RecipesAPI.API.Exceptions;
+using RecipesAPI.API.Food;
+using RecipesAPI.API.Food.BLL;
+using RecipesAPI.API.Food.Common;
+using RecipesAPI.API.Recipes.BLL;
+using RecipesAPI.API.Recipes.Common;
+using RecipesAPI.API.Users.BLL;
+using RecipesAPI.API.Users.Common;
 
-namespace RecipesAPI.Users.Graph;
+namespace RecipesAPI.API.Users.Graph;
 
 [ExtendObjectType(OperationTypeNames.Query)]
 public class UserQueries

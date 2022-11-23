@@ -1,4 +1,4 @@
-namespace RecipesAPI.Users.Graph;
+namespace RecipesAPI.API.Users.Graph;
 
 public class SignUpInput
 {

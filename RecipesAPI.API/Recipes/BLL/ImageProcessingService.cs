@@ -1,7 +1,7 @@
-using RecipesAPI.Files.BLL;
+using RecipesAPI.API.Files.BLL;
 using SixLabors.ImageSharp.Processing;
 
-namespace RecipesAPI.Recipes.BLL;
+namespace RecipesAPI.API.Recipes.BLL;
 
 public class ImageProcessingService
 {
