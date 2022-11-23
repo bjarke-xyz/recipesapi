@@ -153,7 +153,7 @@ public class RecipeRepository
     public async Task<RecipeStats> GetRecipeCount(bool published, CancellationToken cancellationToken)
     {
         var snapshot = await db.Collection(recipeCollection).WhereEqualTo("published", published).Select("createdByUser", "deletedAt").GetSnapshotAsync(cancellationToken);
-        var recipeCount = snapshot.Count;
+        var recipeCount = 0;
         var userIds = new HashSet<string>();
         foreach (var doc in snapshot.Documents)
         {
@@ -167,6 +167,7 @@ public class RecipeRepository
                 {
                     userIds.Add(userId);
                 }
+                recipeCount++;
             }
             catch (Exception ex)
             {
