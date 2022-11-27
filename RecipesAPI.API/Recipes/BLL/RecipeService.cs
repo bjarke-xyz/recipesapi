@@ -72,7 +72,7 @@ public class RecipeService : ICacheKeyGetter
 
     private bool IsRecipeVisible(Recipe? recipe, User? loggedInUser)
     {
-        if (recipe == null || recipe.Published || loggedInUser == null)
+        if (recipe == null || (recipe.Published && recipe.ModeratedAt.HasValue) || loggedInUser == null)
         {
             return true;
         }
@@ -86,6 +86,32 @@ public class RecipeService : ICacheKeyGetter
             return true;
         }
         return false;
+    }
+
+    private bool IsDraftVisible(Recipe? recipe, User? loggedInUser)
+    {
+        if (recipe == null || loggedInUser == null)
+        {
+            return false;
+        }
+        if (loggedInUser.HasRole(Role.MODERATOR))
+        {
+            return true;
+        }
+        if (loggedInUser.Id == recipe.UserId)
+        {
+            return true;
+        }
+        return false;
+    }
+
+    private void HideDraft(Recipe? recipe, User? loggedInUser)
+    {
+        if (recipe == null) return;
+        if (!IsDraftVisible(recipe, loggedInUser))
+        {
+            recipe.Draft = null;
+        }
     }
 
     public async Task<RecipeStats> GetRecipeStats(bool published, CancellationToken cancellationToken)
@@ -114,6 +140,7 @@ public class RecipeService : ICacheKeyGetter
         cached = cached.Where(x => IsRecipeVisible(x, loggedInUser)).ToList();
         foreach (var recipe in cached)
         {
+            HideDraft(recipe, loggedInUser);
             EnrichIngredients(recipe);
         }
         return cached;
@@ -136,6 +163,7 @@ public class RecipeService : ICacheKeyGetter
         }
         if (cached != null)
         {
+            HideDraft(cached, loggedInUser);
             EnrichIngredients(cached);
         }
         return cached;
@@ -165,6 +193,7 @@ public class RecipeService : ICacheKeyGetter
         }
         if (cached != null)
         {
+            HideDraft(cached, loggedInUser);
             EnrichIngredients(cached);
         }
         return cached;

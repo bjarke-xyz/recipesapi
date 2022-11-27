@@ -10,6 +10,7 @@ using RecipesAPI.API.Infrastructure;
 using RecipesAPI.API.Recipes.BLL;
 using RecipesAPI.API.Recipes.Common;
 using RecipesAPI.API.Users.Common;
+using RecipesAPI.API.Utils;
 
 namespace RecipesAPI.API.Recipes.Graph;
 
@@ -100,6 +101,10 @@ public class RecipeMutations
             if (recipe.Slugs == null) recipe.Slugs = new List<string>();
             recipe.Slugs.Add(input.Slug);
         }
+        if (loggedInUser.HasRole(Role.MODERATOR))
+        {
+            recipe.ModeratedAt = DateTime.UtcNow;
+        }
         var createdRecipe = await recipeService.CreateRecipe(recipe, cancellationToken);
         return createdRecipe;
     }
@@ -136,7 +141,24 @@ public class RecipeMutations
             if (recipe.Slugs == null) recipe.Slugs = new List<string>();
             recipe.Slugs.Add(input.Slug);
         }
+        if (existingRecipe.UserId == loggedInUser.Id)
+        {
+            recipe.ModeratedAt = null;
+        }
+        if (loggedInUser.HasRole(Role.MODERATOR))
+        {
+            recipe.ModeratedAt = DateTime.UtcNow;
+        }
         recipe.ImageId = imageId;
+        if (!recipe.Published)
+        {
+            existingRecipe.Draft = recipe.DeepClone();
+            recipe = existingRecipe;
+        }
+        else
+        {
+            recipe.Draft = null;
+        }
         var updatedRecipe = await recipeService.UpdateRecipe(recipe, cancellationToken);
         return updatedRecipe;
     }

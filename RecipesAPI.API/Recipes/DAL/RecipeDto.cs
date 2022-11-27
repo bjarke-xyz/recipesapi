@@ -40,6 +40,9 @@ public class RecipeDto
 
     [FirestoreProperty("deletedAt")]
     public DateTime? DeletedAt { get; set; }
+
+    [FirestoreProperty("draft")]
+    public RecipeDto? Draft { get; set; } = default!;
 }
 
 [FirestoreData]

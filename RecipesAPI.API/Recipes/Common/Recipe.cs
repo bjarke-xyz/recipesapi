@@ -19,6 +19,8 @@ public class Recipe
     public int? Difficulty { get; set; }
     public List<string> Slugs { get; set; } = default!;
     public string? Slug => (Slugs ?? new List<string>()).LastOrDefault();
+
+    public Recipe? Draft { get; set; }
 }
 
 public class RecipeAuthor

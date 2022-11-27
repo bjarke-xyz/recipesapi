@@ -21,6 +21,8 @@ public class RecipeQueries
         var recipes = await recipeService.GetRecipes(cancellationToken, loggedInUser);
 
         recipes = recipes.Where(x => x.Published == (filter.Published ?? true)).ToList();
+        recipes = recipes.Where(x => x.ModeratedAt.HasValue == (filter.IsModerated ?? true)).ToList();
+
 
         if (!string.IsNullOrEmpty(filter.OrderByProperty))
         {
