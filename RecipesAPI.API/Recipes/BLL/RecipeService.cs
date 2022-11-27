@@ -114,12 +114,12 @@ public class RecipeService : ICacheKeyGetter
         }
     }
 
-    public async Task<RecipeStats> GetRecipeStats(bool published, CancellationToken cancellationToken)
+    public async Task<RecipeStats> GetRecipeStats(bool published, bool moderated, CancellationToken cancellationToken)
     {
         var recipeStats = await cache.Get<RecipeStats>(RecipeStatsCacheKey(published));
         if (recipeStats == null)
         {
-            recipeStats = await recipeRepository.GetRecipeCount(published, cancellationToken);
+            recipeStats = await recipeRepository.GetRecipeCount(published, moderated, cancellationToken);
             await cache.Put(RecipeStatsCacheKey(published), recipeStats, TimeSpan.FromDays(7), cancellationToken);
         }
         return recipeStats;

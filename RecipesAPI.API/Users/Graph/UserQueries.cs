@@ -43,10 +43,10 @@ public class UserQueries
         return simpleUser;
     }
 
-    public async Task<Stats> GetStats([Service] UserService userService, [Service] RecipeService recipeService, CancellationToken cancellationToken, bool showUnpublished = false)
+    public async Task<Stats> GetStats([Service] UserService userService, [Service] RecipeService recipeService, CancellationToken cancellationToken, bool showUnpublished = false, bool showModerated = true)
     {
         var userCount = await userService.GetUserCount(cancellationToken);
-        var recipeStats = await recipeService.GetRecipeStats(!showUnpublished, cancellationToken);
+        var recipeStats = await recipeService.GetRecipeStats(!showUnpublished, showModerated, cancellationToken);
 
         return new Stats
         {

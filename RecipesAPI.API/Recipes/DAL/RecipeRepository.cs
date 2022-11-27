@@ -150,9 +150,9 @@ public class RecipeRepository
         return recipes;
     }
 
-    public async Task<RecipeStats> GetRecipeCount(bool published, CancellationToken cancellationToken)
+    public async Task<RecipeStats> GetRecipeCount(bool published, bool moderated, CancellationToken cancellationToken)
     {
-        var snapshot = await db.Collection(recipeCollection).WhereEqualTo("published", published).Select("createdByUser", "deletedAt").GetSnapshotAsync(cancellationToken);
+        var snapshot = await db.Collection(recipeCollection).WhereEqualTo("published", published).Select("createdByUser", "moderatedDateTime", "deletedAt").GetSnapshotAsync(cancellationToken);
         var recipeCount = 0;
         var userIds = new HashSet<string>();
         foreach (var doc in snapshot.Documents)
@@ -162,6 +162,13 @@ public class RecipeRepository
                 if (doc.TryGetValue<DateTime?>("deletedAt", out var deletedAt) && deletedAt.HasValue)
                 {
                     continue;
+                }
+                if (moderated)
+                {
+                    if (!doc.TryGetValue<string?>("moderatedDateTime", out var moderatedAt) || string.IsNullOrEmpty(moderatedAt))
+                    {
+                        continue;
+                    }
                 }
                 if (doc.TryGetValue<string>("createdByUser", out var userId))
                 {
