@@ -150,7 +150,7 @@ public class RecipeMutations
             recipe.ModeratedAt = DateTime.UtcNow;
         }
         recipe.ImageId = imageId;
-        if (!recipe.Published)
+        if (!recipe.Published && existingRecipe.Published)
         {
             existingRecipe.Draft = recipe.DeepClone();
             recipe = existingRecipe;
