@@ -48,6 +48,10 @@ public class ParserService
                 }
             }
         }
+        if (amountDouble == 0)
+        {
+            amountDouble = 1;
+        }
         var recipeIngredient = new RecipeIngredient
         {
             Original = ingredient,
