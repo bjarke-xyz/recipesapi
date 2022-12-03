@@ -57,11 +57,24 @@ public class RecipeQueries
 [ExtendObjectType(typeof(RecipeIngredient))]
 public class RecipeIngredientQueries
 {
+    private string getSearchQuery(RecipeIngredient recipeIngredient)
+    {
+        var query = recipeIngredient.Title;
+        if (recipeIngredient.Meta != null && recipeIngredient.Meta.Any())
+        {
+            var percentage = recipeIngredient.Meta.FirstOrDefault(x => x.Contains("%"));
+            if (!string.IsNullOrEmpty(percentage))
+            {
+                query = $"{query} {percentage}";
+            }
+        }
+        return query ?? "";
+    }
     public async Task<FoodItem?> GetFood([Parent] RecipeIngredient recipeIngredient, FoodDataLoader foodDataLoader, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(recipeIngredient.Title)) return null;
 
-        var foodData = await foodDataLoader.LoadAsync(recipeIngredient.Title, cancellationToken);
+        var foodData = await foodDataLoader.LoadAsync(getSearchQuery(recipeIngredient), cancellationToken);
         return foodData.FirstOrDefault();
     }
 
@@ -69,7 +82,7 @@ public class RecipeIngredientQueries
     {
         if (string.IsNullOrEmpty(recipeIngredient.Title)) return new List<FoodItem>();
 
-        var foodData = await foodDataLoader.LoadAsync(recipeIngredient.Title, cancellationToken);
+        var foodData = await foodDataLoader.LoadAsync(getSearchQuery(recipeIngredient), cancellationToken);
         return foodData.Skip(skip).Take(limit).ToList();
     }
 

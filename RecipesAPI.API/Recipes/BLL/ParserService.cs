@@ -8,7 +8,8 @@ using RecipeIngredientParser.Core.Tokens;
 using RecipeIngredientParser.Core.Tokens.Abstract;
 using RecipeIngredientParser.Core.Tokens.Readers;
 using RecipesAPI.API.Recipes.Common;
-using RecipesAPI.API.Recipes.RecipeParser;
+using RecipesAPI.API.Recipes.RecipeParser.CustomIngredientToken;
+using RecipesAPI.API.Recipes.RecipeParser.CustomUnitToken;
 
 namespace RecipesAPI.API.Recipes.BLL;
 
@@ -67,18 +68,23 @@ public class ParserService
         return recipeIngredient;
     }
 
+    private static string[] GetTemplateDefinitions()
+    {
+        return TemplateDefinitions.DefaultTemplateDefinitions;
+    }
+
     private static IngredientParser CreateParser()
     {
         return IngredientParser
             .Builder
             .New
-                .WithTemplateDefinitions(TemplateDefinitions.DefaultTemplateDefinitions)
+                .WithTemplateDefinitions(GetTemplateDefinitions())
                 .WithTokenReaderFactory(new TokenReaderFactory(new ITokenReader[]
                 {
                     new AmountTokenReader(),
                     new CustomUnitTokenReader(),
                     new FormTokenReader(),
-                    new IngredientTokenReader()
+                    new CustomIngredientTokenReader(),
                 }))
                 .WithParserStrategy(new FirstFullMatchParserStrategy())
                 .WithSanitizationRules(new IInputSanitizationRule[]
@@ -119,6 +125,7 @@ public class ParserService
                 case FormToken _:
                     return 1.0m;
 
+                case CustomIngredientToken _:
                 case IngredientToken _:
                     return 2.0m;
             }

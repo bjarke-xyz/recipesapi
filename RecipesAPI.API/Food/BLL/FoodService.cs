@@ -106,14 +106,25 @@ public class FoodService
 
     private (bool match, int rank) HasMatch(string foodName, string query)
     {
+        if (query.Contains("fløde", StringComparison.OrdinalIgnoreCase) && foodName.Contains("fløde", StringComparison.OrdinalIgnoreCase))
+        {
+
+        }
         var foodNameParts = foodName.Split(",", StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
         for (var i = 0; i < foodNameParts.Count; i++)
         {
             var foodNamePart = foodNameParts[i];
             var percentageMatch = percentageRegex.Match(foodNamePart);
-            if (percentageMatch != null && percentageMatch.Success && !query.Contains("%"))
+            if (percentageMatch != null && percentageMatch.Success)
             {
-                foodNamePart = foodNamePart.Replace(percentageMatch.Groups[0].Value, "").Trim();
+                if (!query.Contains("%"))
+                {
+                    foodNamePart = foodNamePart.Replace(percentageMatch.Groups[0].Value, "").Trim();
+                }
+                else
+                {
+                    foodNamePart = foodNamePart.Replace(percentageMatch.Groups[0].Value, percentageMatch.Groups[0].Value.Replace(" ", "")).Trim();
+                }
             }
             var extraScore = i * 10;
             if (string.Equals(foodNamePart, query))

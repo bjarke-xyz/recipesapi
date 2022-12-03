@@ -4,7 +4,7 @@ using RecipeIngredientParser.Core.Tokens;
 using RecipeIngredientParser.Core.Tokens.Abstract;
 using RecipesAPI.API.Recipes.RecipeParser;
 
-namespace RecipesAPI.API.Recipes.RecipeParser
+namespace RecipesAPI.API.Recipes.RecipeParser.CustomUnitToken
 {
     public sealed class CustomUnitToken : IToken
     {

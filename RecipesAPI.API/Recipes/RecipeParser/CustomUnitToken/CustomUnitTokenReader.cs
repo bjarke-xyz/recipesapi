@@ -4,7 +4,7 @@ using RecipeIngredientParser.Core.Parser.Extensions;
 using RecipeIngredientParser.Core.Tokens;
 using RecipeIngredientParser.Core.Tokens.Abstract;
 
-namespace RecipesAPI.API.Recipes.RecipeParser;
+namespace RecipesAPI.API.Recipes.RecipeParser.CustomUnitToken;
 
 /// <summary>
 /// A token reader responsible for the {unit} token type.
@@ -125,7 +125,7 @@ public class CustomUnitTokenReader : ITokenReader
     private readonly IDictionary<string, CustomUnitType> _unitMappings;
 
     /// <summary>
-    /// Initialises a new instance of the <see cref="UnitTokenReader"/> class
+    /// Initialises a new instance of the <see cref="CustomUnitTokenReader"/> class
     /// that will use the default unit mappings.
     /// </summary>
     public CustomUnitTokenReader()
@@ -134,10 +134,10 @@ public class CustomUnitTokenReader : ITokenReader
     }
 
     /// <summary>
-    /// Initialises a new instance of the <see cref="UnitTokenReader"/> class
+    /// Initialises a new instance of the <see cref="CustomUnitTokenReader"/> class
     /// that will use the supplied unit mappings.
     /// </summary>
-    /// <param name="unitMappings">A lookup for raw unit values (e.g. grams) to a <see cref="UnitType"/>.</param>
+    /// <param name="unitMappings">A lookup for raw unit values (e.g. grams) to a <see cref="CustomUnitType"/>.</param>
     public CustomUnitTokenReader(IDictionary<string, CustomUnitType> unitMappings)
     {
         _unitMappings = unitMappings;
