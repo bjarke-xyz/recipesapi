@@ -45,6 +45,7 @@ public class RecipeIngredient
     public double? Volume { get; set; }
     public string? Unit { get; set; }
     public List<string> Meta { get; set; } = default!;
+    public bool ManuallyEntered { get; set; }
 }
 
 public class Image

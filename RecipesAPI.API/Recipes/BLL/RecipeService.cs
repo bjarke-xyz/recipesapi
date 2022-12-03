@@ -56,8 +56,17 @@ public class RecipeService : ICacheKeyGetter
         {
             foreach (var ingredient in part.Ingredients)
             {
-                if (string.IsNullOrEmpty(ingredient.Title) && string.IsNullOrEmpty(ingredient.Original)) continue;
-                var parsedIngredient = parserService.Parse(ingredient.Title ?? ingredient.Original);
+                if (ingredient.ManuallyEntered) continue;
+                var parseInput = ingredient.Original;
+                if (string.IsNullOrEmpty(parseInput))
+                {
+                    parseInput = ingredient.Title;
+                }
+                if (string.IsNullOrEmpty(parseInput))
+                {
+                    continue;
+                }
+                var parsedIngredient = parserService.Parse(parseInput);
                 if (parsedIngredient != null)
                 {
                     ingredient.Original = parsedIngredient.Original;

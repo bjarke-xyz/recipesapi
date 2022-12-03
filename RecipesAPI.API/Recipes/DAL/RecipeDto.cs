@@ -73,4 +73,6 @@ public class RecipeIngredientDto
     public string? Unit { get; set; }
     [FirestoreProperty("meta")]
     public List<string> Meta { get; set; } = default!;
+    [FirestoreProperty("manuallyEntered")]
+    public bool ManuallyEntered { get; set; }
 }

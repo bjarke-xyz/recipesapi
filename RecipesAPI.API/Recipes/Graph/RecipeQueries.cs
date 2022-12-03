@@ -65,6 +65,14 @@ public class RecipeIngredientQueries
         return foodData.FirstOrDefault();
     }
 
+    public async Task<List<FoodItem>> GetFoods([Parent] RecipeIngredient recipeIngredient, FoodDataLoader foodDataLoader, CancellationToken cancellationToken, int skip = 0, int limit = 10)
+    {
+        if (string.IsNullOrEmpty(recipeIngredient.Title)) return new List<FoodItem>();
+
+        var foodData = await foodDataLoader.LoadAsync(recipeIngredient.Title, cancellationToken);
+        return foodData.Skip(skip).Take(limit).ToList();
+    }
+
 }
 
 [ExtendObjectType(typeof(Recipe))]
