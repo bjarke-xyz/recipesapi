@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using RecipeIngredientParser.Core.Parser;
 using RecipeIngredientParser.Core.Parser.Extensions;
 using RecipeIngredientParser.Core.Parser.Sanitization;
@@ -17,6 +18,8 @@ public class ParserService
 {
     private readonly ILogger<ParserService> logger;
 
+    private readonly Regex numberRegex = new Regex(@"(\d+,\d+)");
+
     public ParserService(ILogger<ParserService> logger)
     {
         this.logger = logger;
@@ -25,6 +28,13 @@ public class ParserService
     public RecipeIngredient? Parse(string ingredient)
     {
         var parser = CreateParser();
+        if (numberRegex.IsMatch(ingredient))
+        {
+            // Replace 1,125 with 1.125
+            var match = numberRegex.Match(ingredient).Groups[0].Value;
+            var matchNoComma = match.Replace(",", ".");
+            ingredient = ingredient.Replace(match, matchNoComma);
+        }
         if (!parser.TryParseIngredient(ingredient, out var parseResult))
         {
             return null;

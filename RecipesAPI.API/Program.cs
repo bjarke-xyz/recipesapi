@@ -26,6 +26,9 @@ using Prometheus;
 using RecipesAPI.API.Food.BLL;
 using Hangfire;
 using Hangfire.Dashboard;
+using System.Globalization;
+
+CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
 
 DotNetEnv.Env.Load();
 
