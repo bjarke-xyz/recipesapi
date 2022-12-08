@@ -17,7 +17,7 @@ public class CustomIngredientTokenReader : ITokenReader
     private readonly Regex percentageRegex = new Regex(@"\d+\s*%");
 
     /// <inheritdoc/>
-    public bool TryReadToken(ParserContext context, out IToken token)
+    public bool TryReadToken(ParserContext context, out IToken? token)
     {
         var rawIngredient = new StringBuilder();
 
@@ -51,7 +51,7 @@ public class CustomIngredientTokenReader : ITokenReader
         return token != null;
     }
 
-    private CustomIngredientToken GenerateToken(string rawIngredient, string? meta = null)
+    private CustomIngredientToken? GenerateToken(string rawIngredient, string? meta = null)
     {
         if (string.IsNullOrEmpty(rawIngredient))
         {

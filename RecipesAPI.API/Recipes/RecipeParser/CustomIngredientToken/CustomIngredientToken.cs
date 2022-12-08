@@ -13,7 +13,7 @@ namespace RecipesAPI.API.Recipes.RecipeParser.CustomIngredientToken
         /// <summary>
         /// Gets or sets the ingredient.
         /// </summary>
-        public string Ingredient { get; set; }
+        public string? Ingredient { get; set; }
 
         public string? Meta { get; set; }
 

@@ -46,8 +46,9 @@ public class RecipeMutations
         try
         {
             await fileService.SaveFile(fileDto, cancellationToken);
+#pragma warning disable 4014 // Hangfire awaits the method
             BackgroundJob.Enqueue<ImageProcessingService>(s => s.ProcessRecipeImage(fileDto.Id, CancellationToken.None));
-            // await backgroundTaskQueue.QueueBackgroundWorkItem((CancellationToken ct) => imageProcessingService.ProcessRecipeImage(fileDto.Id, ct));
+#pragma warning restore 4014
             return fileDto.Id;
         }
         catch (Exception ex)
