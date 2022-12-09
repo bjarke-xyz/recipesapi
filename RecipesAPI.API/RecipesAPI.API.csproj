@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <TrimmerRootAssembly Include="mscorlib" />
+    <TrimmerRootAssembly Include="Google.Apis" />
   </ItemGroup>
 
   <ItemGroup>
@@ -22,7 +23,6 @@
     <PackageReference Include="CsvHelper" Version="29.0.0" />
     <PackageReference Include="DotNetEnv" Version="2.3.0" />
     <PackageReference Include="FirebaseAdmin" Version="2.3.0" />
-    <PackageReference Include="Google.Apis.Auth" Version="1.58.0" />
     <PackageReference Include="Google.Cloud.Firestore" Version="3.0.0" />
     <PackageReference Include="Google.Cloud.Storage.V1" Version="4.1.0" />
     <PackageReference Include="hangfire" Version="1.7.32" />
