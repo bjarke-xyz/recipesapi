@@ -63,7 +63,7 @@ StackExchange.Redis.ConfigurationOptions GetRedisConfigurationOptions(WebApplica
     return configuration;
 }
 
-var jwtUtil = new JwtUtil(builder.Configuration["FirebaseAppId"], null);
+var jwtUtil = new JwtUtil(builder.Configuration["FirebaseAppId"]!, null);
 
 builder.Services
     .AddRouting()
@@ -82,27 +82,27 @@ builder.Services
     )
     .AddHangfireServer()
     .AddHangfireAuthorizationMiddleware()
-    .AddSingleton<JwtUtil>(sp => new JwtUtil(builder.Configuration["FirebaseAppId"], sp.GetRequiredService<ICacheProvider>()))
+    .AddSingleton<JwtUtil>(sp => new JwtUtil(builder.Configuration["FirebaseAppId"]!, sp.GetRequiredService<ICacheProvider>()))
     .AddSingleton<ICacheProvider, CacheProvider>(sp =>
     {
         var distributedCache = sp.GetRequiredService<IDistributedCache>();
-        var keyPrefix = builder.Configuration["REDIS_PREFIX"];
+        var keyPrefix = builder.Configuration["REDIS_PREFIX"]!;
         var redis = sp.GetRequiredService<IConnectionMultiplexer>();
         return new CacheProvider(distributedCache, keyPrefix, redis);
     })
     .AddSingleton<S3StorageClient>(sp =>
     {
-        var r2AccountId = builder.Configuration["R2_ACCOUNTID"];
-        var r2AccessKeySecret = builder.Configuration["R2_ACCESSKEYSECRET"];
-        var r2AccessKeyId = builder.Configuration["R2_ACCESSKEYID"];
+        var r2AccountId = builder.Configuration["R2_ACCOUNTID"]!;
+        var r2AccessKeySecret = builder.Configuration["R2_ACCESSKEYSECRET"]!;
+        var r2AccessKeyId = builder.Configuration["R2_ACCESSKEYID"]!;
         return new S3StorageClient(r2AccessKeyId, r2AccessKeySecret, r2AccountId);
     })
     .AddSingleton<IStorageClient, GoogleStorageClient>()
     .AddSingleton<IEmailService, EmailService>(sp =>
     {
-        var apiUrl = builder.Configuration["EMAILSERVICE_URL"];
-        var apiUser = builder.Configuration["EMAILSERVICE_USER"];
-        var apiPassword = builder.Configuration["EMAILSERVICE_PASSWORD"];
+        var apiUrl = builder.Configuration["EMAILSERVICE_URL"]!;
+        var apiUser = builder.Configuration["EMAILSERVICE_USER"]!;
+        var apiPassword = builder.Configuration["EMAILSERVICE_PASSWORD"]!;
         var logger = sp.GetRequiredService<ILogger<EmailService>>();
         return new EmailService(apiUrl, apiUser, apiPassword, logger);
     })
@@ -117,7 +117,7 @@ builder.Services
     .AddSingleton(sp =>
     {
         var db = sp.GetRequiredService<FirestoreDb>();
-        return new UserRepository(builder.Configuration["FirebaseWebApiKey"], db);
+        return new UserRepository(builder.Configuration["FirebaseWebApiKey"]!, db);
     })
     .AddSingleton<FoodRepository>(sp =>
     {

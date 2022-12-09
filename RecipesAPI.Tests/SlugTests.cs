@@ -12,6 +12,6 @@ public class SlugTests
     public void UrlFriendly_ShouldGenerateSlug(string recipeTitle, string expectedSlug)
     {
         var slug = StringUtils.UrlFriendly(recipeTitle);
-        Assert.AreEqual(expectedSlug, slug);
+        Assert.That(expectedSlug, Is.EqualTo(slug));
     }
 }
