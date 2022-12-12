@@ -39,7 +39,13 @@ public class ParserService
         {
             return null;
         }
-        if (!double.TryParse(parseResult.Details.Amount ?? "", out var amountDouble) && parseResult.Details.Amount?.Contains("/") == true)
+        double? amount = null;
+        var doubleParseSuccess = double.TryParse(parseResult.Details.Amount ?? "", out var parsedAmountDouble);
+        if (doubleParseSuccess)
+        {
+            amount = parsedAmountDouble;
+        }
+        if (!doubleParseSuccess && parseResult.Details.Amount?.Contains("/") == true)
         {
             var fractionalToken = parseResult.Metadata.Tokens.FirstOrDefault(x => x is FractionalAmountToken) as FractionalAmountToken;
             if (fractionalToken != null)
@@ -51,7 +57,7 @@ public class ParserService
                     {
                         result += fractionalToken.WholeNumber.Amount;
                     }
-                    amountDouble = (double)result;
+                    amount = (double)result;
                 }
                 catch (Exception ex)
                 {
@@ -59,15 +65,11 @@ public class ParserService
                 }
             }
         }
-        if (amountDouble == 0)
-        {
-            amountDouble = 1;
-        }
         var recipeIngredient = new RecipeIngredient
         {
             Original = ingredient,
             Unit = parseResult.Details.Unit,
-            Volume = amountDouble,
+            Volume = amount,
             Title = parseResult.Details.Ingredient,
             Meta = new List<string>()
         };
