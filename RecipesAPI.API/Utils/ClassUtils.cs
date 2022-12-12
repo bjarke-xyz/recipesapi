@@ -8,6 +8,8 @@ public static class ClassUtils
     public static bool IsPropertyOf<T>(string propertyName, out PropertyInfo? propertyInfo)
     {
         var type = typeof(T);
+        propertyInfo = null;
+        if (type == null) return false;
         var properties = type.GetProperties();
         propertyInfo = properties.FirstOrDefault(x => string.Equals(x.Name, propertyName, StringComparison.OrdinalIgnoreCase));
         return propertyInfo != null;

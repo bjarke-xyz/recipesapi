@@ -1,6 +1,9 @@
+using System.Dynamic;
 using System.Reflection;
 using System.Security.Claims;
+using System.Text;
 using Hangfire;
+using Newtonsoft.Json;
 using RecipesAPI.API.Auth;
 using RecipesAPI.API.Exceptions;
 using RecipesAPI.API.Files.BLL;
@@ -110,9 +113,53 @@ public class RecipeMutations
         return createdRecipe;
     }
 
-    [RoleAuthorize(RoleEnums = new[] { Role.USER })]
-    public async Task<Recipe> UpdateRecipe(string id, RecipeInput input, [User] User loggedInUser, [Service] RecipeService recipeService, [Service] IFileService fileService, [Service] ImageProcessingService imageProcessingService, CancellationToken cancellationToken)
+    private async Task<IDictionary<string, object>?> GetRawInput(HttpContext httpContext, string[] keys)
     {
+        using var ms = new MemoryStream();
+        httpContext.Request.Body.Position = 0;
+        await httpContext.Request.Body.CopyToAsync(ms);
+        var rawBodyStr = Encoding.UTF8.GetString(ms.ToArray());
+        var rawBody = JsonConvert.DeserializeObject<ExpandoObject>(rawBodyStr);
+        if (rawBody == null)
+        {
+            throw new GraphQLErrorException("Failed to get body");
+        }
+        var rawBodyDict = rawBody.ToDictionary(x => x.Key);
+        var tmpDict = rawBodyDict;
+        for (var i = 0; i < keys.Length; i++)
+        {
+            var key = keys[i];
+            if (i + 1 != keys.Length)
+            {
+                if (!tmpDict.TryGetValue(key, out var val))
+                {
+                    throw new GraphQLErrorException($"Property {key} not found");
+                }
+                tmpDict = (val.Value as ExpandoObject)?.ToDictionary(x => x.Key);
+                if (tmpDict == null)
+                {
+                    throw new GraphQLErrorException($"Property {key} invalid format");
+                }
+            }
+        }
+        var lastKey = keys.Last();
+        tmpDict.TryGetValue(lastKey, out var resultKvp);
+        var resultDict = resultKvp.Value as IDictionary<string, object>;
+        return resultDict;
+    }
+
+    [RoleAuthorize(RoleEnums = new[] { Role.USER })]
+    public async Task<Recipe> UpdateRecipe(string id, RecipeInput input, [Service] IHttpContextAccessor httpContextAccessor, [User] User loggedInUser, [Service] RecipeService recipeService, [Service] IFileService fileService, [Service] ImageProcessingService imageProcessingService, CancellationToken cancellationToken)
+    {
+        var httpContext = httpContextAccessor.HttpContext;
+        if (httpContext == null) throw new GraphQLErrorException("Something went wrong");
+
+        var inputVariablesDict = await GetRawInput(httpContext, new[] { "variables", "input" });
+        if (inputVariablesDict == null)
+        {
+            throw new GraphQLErrorException("Failed to get input variables");
+        }
+
         var existingRecipe = await recipeService.GetRecipe(id, cancellationToken, loggedInUser);
         if (existingRecipe == null)
         {
@@ -127,9 +174,15 @@ public class RecipeMutations
         }
 
         var imageId = existingRecipe.ImageId;
+        // If a FileCode is provided, upload and store image id
         if (input.FileCode != null)
         {
             imageId = await UploadImage(input.FileCode, fileService, imageProcessingService, cancellationToken);
+        }
+        // If FileCode property was provided, and it was set to null, delete image
+        else if (input.FileCode == null && inputVariablesDict.Keys.Contains(nameof(RecipeInput.FileCode), StringComparer.OrdinalIgnoreCase))
+        {
+            imageId = null;
         }
 
         var recipe = RecipeMapper.MapInput(input);

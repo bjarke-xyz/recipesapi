@@ -190,6 +190,12 @@ builder.Services
 
 var app = builder.Build();
 
+app.Use((ctx, next) =>
+{
+    HttpRequestRewindExtensions.EnableBuffering(ctx.Request);
+    return next(ctx);
+});
+
 app.UseCors(o => o
     .AllowAnyHeader()
     .AllowAnyMethod()
