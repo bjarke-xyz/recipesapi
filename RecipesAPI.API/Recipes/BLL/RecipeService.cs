@@ -123,6 +123,15 @@ public class RecipeService : ICacheKeyGetter
         }
     }
 
+    private void SetDefaultSlug(Recipe? recipe)
+    {
+        if (recipe == null) return;
+        if (recipe.Slugs == null || recipe.Slugs.Count == 0)
+        {
+            recipe.Slugs = new List<string> { recipe.Id };
+        }
+    }
+
     public async Task<RecipeStats> GetRecipeStats(bool published, bool moderated, CancellationToken cancellationToken)
     {
         var recipeStats = await cache.Get<RecipeStats>(RecipeStatsCacheKey(published));
@@ -149,6 +158,7 @@ public class RecipeService : ICacheKeyGetter
         cached = cached.Where(x => IsRecipeVisible(x, loggedInUser)).ToList();
         foreach (var recipe in cached)
         {
+            SetDefaultSlug(recipe);
             HideDraft(recipe, loggedInUser);
             EnrichIngredients(recipe);
         }
@@ -172,6 +182,7 @@ public class RecipeService : ICacheKeyGetter
         }
         if (cached != null)
         {
+            SetDefaultSlug(cached);
             HideDraft(cached, loggedInUser);
             EnrichIngredients(cached);
         }
@@ -185,7 +196,7 @@ public class RecipeService : ICacheKeyGetter
         return recipe;
     }
 
-    public async Task<Recipe?> GetRecipeBySlug(string slug, User loggedInUser, CancellationToken cancellationToken)
+    public async Task<Recipe?> GetRecipeBySlug(string slug, CancellationToken cancellationToken, User? loggedInUser)
     {
         var cached = await cache.Get<Recipe>(GetRecipeBySlugCacheKey(slug));
         if (cached == null)
@@ -202,6 +213,7 @@ public class RecipeService : ICacheKeyGetter
         }
         if (cached != null)
         {
+            SetDefaultSlug(cached);
             HideDraft(cached, loggedInUser);
             EnrichIngredients(cached);
         }
@@ -222,6 +234,7 @@ public class RecipeService : ICacheKeyGetter
         }
         foreach (var recipe in cached)
         {
+            SetDefaultSlug(recipe);
             EnrichIngredients(recipe);
         }
         return cached;

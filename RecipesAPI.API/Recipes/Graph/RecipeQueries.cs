@@ -37,14 +37,14 @@ public class RecipeQueries
 
         return recipes;
     }
-    public Task<Recipe?> GetRecipe(string id, [User] User loggedInUser, [Service] RecipeService recipeService, CancellationToken cancellationToken)
+    public async Task<Recipe?> GetRecipe(string slugOrId, [User] User loggedInUser, [Service] RecipeService recipeService, CancellationToken cancellationToken)
     {
-        return recipeService.GetRecipe(id, cancellationToken, loggedInUser);
-    }
-
-    public Task<Recipe?> GetRecipeBySlug(string slug, [User] User loggedInUser, [Service] RecipeService recipeService, CancellationToken cancellationToken)
-    {
-        return recipeService.GetRecipeBySlug(slug, loggedInUser, cancellationToken);
+        var recipe = await recipeService.GetRecipeBySlug(slugOrId, cancellationToken, loggedInUser);
+        if (recipe == null)
+        {
+            recipe = await recipeService.GetRecipe(slugOrId, cancellationToken, loggedInUser);
+        }
+        return recipe;
     }
 
     public RecipeIngredient? ParseIngredient(string ingredient, [Service] ParserService parserService)

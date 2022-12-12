@@ -100,9 +100,9 @@ public class RecipeMutations
         var recipe = RecipeMapper.MapInput(input);
         recipe.ImageId = imageId;
         recipe.UserId = loggedInUser.Id;
+        if (recipe.Slugs == null) recipe.Slugs = new List<string>();
         if (!string.IsNullOrEmpty(input.Slug) && loggedInUser.HasRole(Role.MODERATOR))
         {
-            if (recipe.Slugs == null) recipe.Slugs = new List<string>();
             recipe.Slugs.Add(input.Slug);
         }
         if (loggedInUser.HasRole(Role.MODERATOR))
