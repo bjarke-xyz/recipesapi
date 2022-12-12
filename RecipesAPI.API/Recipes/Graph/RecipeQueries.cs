@@ -37,8 +37,12 @@ public class RecipeQueries
 
         return recipes;
     }
-    public async Task<Recipe?> GetRecipe(string slugOrId, [User] User loggedInUser, [Service] RecipeService recipeService, CancellationToken cancellationToken)
+    public async Task<Recipe?> GetRecipe(string id, string? slugOrId, [User] User loggedInUser, [Service] RecipeService recipeService, CancellationToken cancellationToken)
     {
+        if (string.IsNullOrEmpty(slugOrId))
+        {
+            slugOrId = id;
+        }
         var recipe = await recipeService.GetRecipeBySlug(slugOrId, cancellationToken, loggedInUser);
         if (recipe == null)
         {
