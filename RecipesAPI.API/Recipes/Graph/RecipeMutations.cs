@@ -149,7 +149,7 @@ public class RecipeMutations
     }
 
     [RoleAuthorize(RoleEnums = new[] { Role.USER })]
-    public async Task<Recipe> UpdateRecipe(string id, RecipeInput input, [Service] IHttpContextAccessor httpContextAccessor, [User] User loggedInUser, [Service] RecipeService recipeService, [Service] IFileService fileService, [Service] ImageProcessingService imageProcessingService, CancellationToken cancellationToken)
+    public async Task<Recipe> UpdateRecipe(string id, bool? unpublish, RecipeInput input, [Service] IHttpContextAccessor httpContextAccessor, [User] User loggedInUser, [Service] RecipeService recipeService, [Service] IFileService fileService, [Service] ImageProcessingService imageProcessingService, CancellationToken cancellationToken)
     {
         var httpContext = httpContextAccessor.HttpContext;
         if (httpContext == null) throw new GraphQLErrorException("Something went wrong");
@@ -204,14 +204,21 @@ public class RecipeMutations
             recipe.ModeratedAt = DateTime.UtcNow;
         }
         recipe.ImageId = imageId;
-        if (!recipe.Published && existingRecipe.Published)
+        if (unpublish.HasValue && unpublish.Value)
         {
-            existingRecipe.Draft = recipe.DeepClone();
-            recipe = existingRecipe;
+            recipe.Published = false;
         }
         else
         {
-            recipe.Draft = null;
+            if (!recipe.Published && existingRecipe.Published)
+            {
+                existingRecipe.Draft = recipe.DeepClone();
+                recipe = existingRecipe;
+            }
+            else
+            {
+                recipe.Draft = null;
+            }
         }
         var updatedRecipe = await recipeService.UpdateRecipe(recipe, cancellationToken);
         return updatedRecipe;
