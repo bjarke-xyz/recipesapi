@@ -51,7 +51,7 @@ spec:
               cpu: "500m"
           ports:
             - containerPort: 80
-          readinessProbe:
+          startupProbe:
             httpGet:
               scheme: HTTP
               path: /healthcheck/ready
