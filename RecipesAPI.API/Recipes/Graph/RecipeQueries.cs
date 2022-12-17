@@ -47,6 +47,10 @@ public class RecipeQueries
         {
             slugOrId = id;
         }
+        if (string.IsNullOrEmpty(slugOrId))
+        {
+            throw new GraphQLErrorException($"{nameof(slugOrId)} was null");
+        }
         var recipe = await recipeService.GetRecipeBySlug(slugOrId, cancellationToken, loggedInUser);
         if (recipe == null)
         {
