@@ -51,6 +51,20 @@ spec:
               cpu: "500m"
           ports:
             - containerPort: 80
+          readinessProbe:
+            httpGet:
+              scheme: HTTP
+              path: /healthcheck/ready
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 1
+          livenessProbe:
+            httpGet:
+              scheme: HTTP
+              path: /healthcheck/alive
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 1
 ---
 apiVersion: v1
 kind: Service

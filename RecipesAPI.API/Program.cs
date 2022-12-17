@@ -26,6 +26,7 @@ using RecipesAPI.API.Features.Users.Graph;
 using RecipesAPI.API.Features.Recipes.Graph;
 using RecipesAPI.API.Features.Food.Graph;
 using RecipesAPI.API.Features.Admin.Graph;
+using RecipesAPI.API.Features.Healthcheck.BLL;
 
 CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
 
@@ -65,6 +66,7 @@ StackExchange.Redis.ConfigurationOptions GetRedisConfigurationOptions(WebApplica
 var jwtUtil = new JwtUtil(builder.Configuration["FirebaseAppId"]!, null);
 
 builder.Services
+    .AddControllers().AddControllersAsServices().Services
     .AddRouting()
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(options =>
@@ -138,6 +140,7 @@ builder.Services
     .AddSingleton<IFileService, FileService>()
     .AddSingleton<AdminService>()
     .AddSingleton<ImageProcessingService>()
+    .AddSingleton<HealthcheckService>()
     .AddHostedService<CacheRefreshBackgroundService>()
     .AddHttpContextAccessor()
     .AddSingleton<IConnectionMultiplexer>(sp =>
@@ -218,7 +221,7 @@ app
             ctx.Response.Redirect("/graphql");
             return Task.CompletedTask;
         });
-        endpoint.Map("/healthcheck", () => "OK");
+        endpoint.MapControllers();
         endpoint.MapGraphQL();
         endpoint.MapHangfireDashboard(new DashboardOptions { Authorization = new List<IDashboardAuthorizationFilter> { new HangfireDashboardAuthorizationFilter() } });
     });
