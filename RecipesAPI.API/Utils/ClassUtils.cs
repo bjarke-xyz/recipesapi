@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -5,7 +6,7 @@ namespace RecipesAPI.API.Utils;
 
 public static class ClassUtils
 {
-    public static bool IsPropertyOf<T>(string propertyName, out PropertyInfo? propertyInfo)
+    public static bool IsPropertyOf<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] T>(string propertyName, out PropertyInfo? propertyInfo)
     {
         var type = typeof(T);
         propertyInfo = null;
@@ -15,7 +16,7 @@ public static class ClassUtils
         return propertyInfo != null;
     }
 
-    public static IQueryable<TEntity> OrderBy<TEntity>(this IQueryable<TEntity> source, string orderByProperty, bool desc)
+    public static IQueryable<TEntity> OrderBy<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TEntity>(this IQueryable<TEntity> source, string orderByProperty, bool desc)
     {
         string command = desc ? "OrderByDescending" : "OrderBy";
         var type = typeof(TEntity);
