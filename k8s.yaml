@@ -56,8 +56,9 @@ spec:
               scheme: HTTP
               path: /healthcheck/ready
               port: 80
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 1
+            failureThreshold: 5
           livenessProbe:
             httpGet:
               scheme: HTTP
