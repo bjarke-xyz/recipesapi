@@ -1,10 +1,8 @@
 using System.Security.Claims;
 using HotChocolate.AspNetCore;
 using HotChocolate.Execution;
-using RecipesAPI.API.Users;
-using RecipesAPI.API.Users.BLL;
-using RecipesAPI.API.Users.Common;
-using RecipesAPI.API.Users.DAL;
+using RecipesAPI.API.Features.Users.BLL;
+using RecipesAPI.API.Features.Users.Common;
 
 namespace RecipesAPI.API.Auth;
 

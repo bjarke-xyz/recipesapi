@@ -1,6 +1,5 @@
 using HotChocolate.AspNetCore.Authorization;
-using RecipesAPI.API.Users;
-using RecipesAPI.API.Users.Common;
+using RecipesAPI.API.Features.Users.Common;
 
 namespace RecipesAPI.API.Auth;
 

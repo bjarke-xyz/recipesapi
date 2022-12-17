@@ -2,7 +2,7 @@ using System.Security.Claims;
 using System.Text;
 using Hangfire.Annotations;
 using Hangfire.Dashboard;
-using RecipesAPI.API.Users.BLL;
+using RecipesAPI.API.Features.Users.BLL;
 
 namespace RecipesAPI.API.Auth;
 
@@ -66,7 +66,7 @@ public class HangfireDashboardAuthorizationMiddleware : IMiddleware
                     return;
                 }
 
-                if (!user.HasRole(Users.Common.Role.ADMIN))
+                if (!user.HasRole(Features.Users.Common.Role.ADMIN))
                 {
                     Unauthorized(context);
                     return;
@@ -108,7 +108,7 @@ public class HangfireDashboardAuthorizationMiddleware : IMiddleware
                     return;
                 }
 
-                if (!user.HasRole(Users.Common.Role.ADMIN))
+                if (!user.HasRole(Features.Users.Common.Role.ADMIN))
                 {
                     Unauthorized(context);
                     return;

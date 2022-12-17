@@ -1,8 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
-using RecipesAPI.API.Files.BLL;
-using RecipesAPI.API.Recipes.BLL;
+using RecipesAPI.API.Features.Files.BLL;
+using RecipesAPI.API.Features.Recipes.BLL;
 
 namespace RecipesAPI.API.Tests;
 

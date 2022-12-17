@@ -1,4 +1,4 @@
-using RecipesAPI.API.Admin.Common;
+using RecipesAPI.API.Features.Admin.Common;
 
 namespace RecipesAPI.API.Infrastructure;
 
