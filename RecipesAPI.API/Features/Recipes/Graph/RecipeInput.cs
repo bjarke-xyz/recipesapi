@@ -12,6 +12,8 @@ public class RecipeInput
     public string? Yield { get; set; }
     public List<RecipePartInput>? Parts { get; set; }
     public string? Slug { get; set; }
+    public List<string>? EquipmentIds { get; set; }
+
 }
 
 public class RecipePartInput

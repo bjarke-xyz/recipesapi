@@ -16,4 +16,5 @@ public class CachedResourceTypeHelper
     public static readonly CachedResourceType RECIPES = new CachedResourceType("RECIPES");
     public static readonly CachedResourceType USERS = new CachedResourceType("USERS");
     public static readonly CachedResourceType FILES = new CachedResourceType("FILES");
+    public static readonly CachedResourceType EQUIPMENT = new CachedResourceType("EQUIPMENT");
 }

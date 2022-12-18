@@ -43,6 +43,9 @@ public class RecipeDto
 
     [FirestoreProperty("draft")]
     public RecipeDto? Draft { get; set; } = default!;
+
+    [FirestoreProperty("equipmentIds")]
+    public List<string> EquipmentIds { get; set; } = new List<string>();
 }
 
 [FirestoreData]

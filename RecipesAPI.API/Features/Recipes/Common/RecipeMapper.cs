@@ -12,6 +12,7 @@ public static class RecipeMapper
         cfg.CreateMap<RecipeDto, Recipe>()
             .ForMember(e => e.Parts, opt => opt.MapFrom(dto => dto.Parts ?? new List<RecipePartDto>()))
             .ForMember(e => e.Slugs, opt => opt.MapFrom(dto => dto.Slugs ?? new List<string>()))
+            .ForMember(e => e.EquipmentIds, opt => opt.MapFrom(dto => dto.EquipmentIds ?? new List<string>()))
             ;
         cfg.CreateMap<RecipePartDto, RecipePart>()
             .ForMember(e => e.Ingredients, opt => opt.MapFrom(dto => dto.Ingredients ?? new List<RecipeIngredientDto>()));
@@ -22,6 +23,7 @@ public static class RecipeMapper
             .ForMember(dto => dto.LastModifiedAt, opt => opt.MapFrom(src => src.LastModifiedAt.ToString("O")))
             .ForMember(dto => dto.ModeratedAt, opt => opt.MapFrom(src => src.ModeratedAt.HasValue ? src.ModeratedAt.Value.ToString("O") : null))
             .ForMember(dto => dto.Parts, opt => opt.MapFrom(src => src.Parts ?? new List<RecipePart>()))
+            .ForMember(dto => dto.EquipmentIds, opt => opt.MapFrom(src => src.EquipmentIds ?? new List<string>()))
             ;
         cfg.CreateMap<RecipePart, RecipePartDto>()
             .ForMember(dto => dto.Ingredients, opt => opt.MapFrom(src => src.Ingredients ?? new List<RecipeIngredient>()))

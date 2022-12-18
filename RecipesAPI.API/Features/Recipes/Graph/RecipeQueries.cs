@@ -8,6 +8,8 @@ using RecipesAPI.API.Features.Food.BLL;
 using RecipesAPI.API.Features.Food.Common;
 using RecipesAPI.API.Features.Files.BLL;
 using RecipesAPI.API.Features.Users.BLL;
+using RecipesAPI.API.Features.Equipment.Common;
+using RecipesAPI.API.Features.Equipment.BLL;
 
 namespace RecipesAPI.API.Features.Recipes.Graph;
 
@@ -129,5 +131,11 @@ public class ExtendedRecipeQueries
             DisplayName = user.DisplayName ?? "",
             UserId = recipe.UserId,
         };
+    }
+
+    public async Task<List<EquipmentItem>> GetEquipment([Parent] Recipe recipe, EquipmentDataLoader equipmentDataLoader, CancellationToken cancellationToken)
+    {
+        var equipment = await equipmentDataLoader.LoadAsync(recipe.EquipmentIds, cancellationToken);
+        return equipment.Where(x => x != null).ToList();
     }
 }

@@ -20,6 +20,8 @@ public class Recipe
     public string? Slug => (Slugs ?? new List<string>()).LastOrDefault();
 
     public Recipe? Draft { get; set; }
+
+    public List<string> EquipmentIds { get; set; } = new List<string>();
 }
 
 public class RecipeAuthor

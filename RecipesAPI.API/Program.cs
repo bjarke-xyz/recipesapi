@@ -27,6 +27,9 @@ using RecipesAPI.API.Features.Recipes.Graph;
 using RecipesAPI.API.Features.Food.Graph;
 using RecipesAPI.API.Features.Admin.Graph;
 using RecipesAPI.API.Features.Healthcheck.BLL;
+using RecipesAPI.API.Features.Equipment.Graph;
+using RecipesAPI.API.Features.Equipment.DAL;
+using RecipesAPI.API.Features.Equipment.BLL;
 
 CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
 
@@ -141,6 +144,8 @@ builder.Services
     .AddSingleton<AdminService>()
     .AddSingleton<ImageProcessingService>()
     .AddSingleton<HealthcheckService>()
+    .AddSingleton<EquipmentRepository>()
+    .AddSingleton<EquipmentService>()
     .AddHostedService<CacheRefreshBackgroundService>()
     .AddHttpContextAccessor()
     .AddSingleton<IConnectionMultiplexer>(sp =>
@@ -186,6 +191,9 @@ builder.Services
             // Admin
             .AddTypeExtension<AdminQueries>()
             .AddTypeExtension<AdminMutations>()
+            // Equipment
+            .AddTypeExtension<EquipmentQueries>()
+            .AddTypeExtension<EquipmentMutations>()
         .AddType<UploadType>()
 ;
 
