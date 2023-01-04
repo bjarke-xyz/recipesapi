@@ -41,7 +41,6 @@ var builder = WebApplication.CreateBuilder(args);
 
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
-    // Filter out ASP.NET Core infrastructre logs that are Information and below
     .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
     .WriteTo.Console(new RenderedCompactJsonFormatter())
     .CreateBootstrapLogger();
@@ -64,7 +63,6 @@ builder.WebHost.UseKestrel(serverOptions =>
 });
 
 builder.Host.UseSerilog(Log.Logger);
-// builder.Host.UseSerilog((ctx, lc) => lc.WriteTo.Console());
 
 FirebaseApp.Create();
 
@@ -75,10 +73,13 @@ StackExchange.Redis.ConfigurationOptions GetRedisConfigurationOptions(WebApplica
         User = b.Configuration["REDIS_USER"],
         Password = b.Configuration["REDIS_PASSWORD"],
         ClientName = "RecipesApi",
-        // ResolveDns = true,
     };
-    // var redisPort = int.Parse(b.Configuration["REDIS_PORT"] ?? "6379");
-    configuration.EndPoints.Add(b.Configuration["REDIS_HOST"]);
+    var redisHost = b.Configuration["REDIS_HOST"];
+    if (string.IsNullOrEmpty(redisHost))
+    {
+        throw new ArgumentNullException("REDIS_HOST must not be null");
+    }
+    configuration.EndPoints.Add(redisHost);
     return configuration;
 }
 
