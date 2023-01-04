@@ -14,11 +14,12 @@ jobs:
         uses: actions/checkout@v3
       - uses: superfly/flyctl-actions/setup-flyctl@master
       - name: deploy
+        id: deploy
         run: flyctl deploy --remote-only
 
       - name: Notify on error
         uses: fjogeleit/http-request-action@v1
-        if: failure() && steps.deploy.outcome == 'failure'
+        if: steps.deploy.outcome == 'failure'
         with:
           url: "${{ secrets.NOTIFICATIONS_URL }}"
           method: "POST"
@@ -27,7 +28,7 @@ jobs:
           data: '{ "channels": ["discord", "email"], "message": { "message": "⚠️ recipesapi failed to release. <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}>" } }'
       - name: Notify on success
         uses: fjogeleit/http-request-action@v1
-        if: success() && steps.deploy.outcome == 'success'
+        if: steps.deploy.outcome == 'success'
         with:
           url: "${{ secrets.NOTIFICATIONS_URL }}"
           method: "POST"
