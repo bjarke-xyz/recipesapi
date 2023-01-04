@@ -1,6 +1,10 @@
 scripts/frida/output/tmp
 RecipesAPI.API/bin
 RecipesAPI.API/obj
+RecipesAPI.Tests/bin
+RecipesAPI.Tests/obj
+.vscode
+.github
 
 # Created by https://www.gitignore.io/api/csharp
 

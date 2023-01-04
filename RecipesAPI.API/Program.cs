@@ -30,17 +30,30 @@ using RecipesAPI.API.Features.Healthcheck.BLL;
 using RecipesAPI.API.Features.Equipment.Graph;
 using RecipesAPI.API.Features.Equipment.DAL;
 using RecipesAPI.API.Features.Equipment.BLL;
+using Serilog.Events;
+using Serilog.Formatting.Compact;
 
 CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
 
 DotNetEnv.Env.Load();
 
+var builder = WebApplication.CreateBuilder(args);
+
 Log.Logger = new LoggerConfiguration()
-    .WriteTo.Console()
+    .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
+    // Filter out ASP.NET Core infrastructre logs that are Information and below
+    .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
+    .WriteTo.Console(new RenderedCompactJsonFormatter())
     .CreateBootstrapLogger();
 
 
-var builder = WebApplication.CreateBuilder(args);
+
+var googleAppCredContent = builder.Configuration["GOOGLE_APPLICATION_CREDENTIALS_CONTENT"];
+if (!string.IsNullOrEmpty(googleAppCredContent))
+{
+    await File.WriteAllTextAsync("/tmp/serviceaccount.json", googleAppCredContent);
+    System.Environment.SetEnvironmentVariable("GOOGLE_APPLICATION_CREDENTIALS", "/tmp/serviceaccount.json");
+}
 
 var port = 5001;
 if (int.TryParse(builder.Configuration["PORT"], out var _port)) port = _port;
@@ -50,7 +63,8 @@ builder.WebHost.UseKestrel(serverOptions =>
     serverOptions.ListenAnyIP(port);
 });
 
-builder.Host.UseSerilog((ctx, lc) => lc.WriteTo.Console());
+builder.Host.UseSerilog(Log.Logger);
+// builder.Host.UseSerilog((ctx, lc) => lc.WriteTo.Console());
 
 FirebaseApp.Create();
 
@@ -61,8 +75,10 @@ StackExchange.Redis.ConfigurationOptions GetRedisConfigurationOptions(WebApplica
         User = b.Configuration["REDIS_USER"],
         Password = b.Configuration["REDIS_PASSWORD"],
         ClientName = "RecipesApi",
+        // ResolveDns = true,
     };
-    configuration.EndPoints.Add($"{b.Configuration["REDIS_HOST"]}:{b.Configuration["REDIS_PORT"]}");
+    // var redisPort = int.Parse(b.Configuration["REDIS_PORT"] ?? "6379");
+    configuration.EndPoints.Add(b.Configuration["REDIS_HOST"]);
     return configuration;
 }
 
