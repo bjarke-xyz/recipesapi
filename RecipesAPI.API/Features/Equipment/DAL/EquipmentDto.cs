@@ -12,10 +12,10 @@ public class EquipmentItemDto
     public string Title { get; set; } = default!;
 
     [FirestoreProperty("description")]
-    public string Description { get; set; } = default!;
+    public string? Description { get; set; } = default!;
 
     [FirestoreProperty("icon")]
-    public string Icon { get; set; } = default!;
+    public string? Icon { get; set; } = default!;
 
     [FirestoreProperty("links")]
     public List<EquipmentLinkDto> Links { get; set; } = new List<EquipmentLinkDto>();
