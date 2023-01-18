@@ -32,6 +32,7 @@ public class RecipePartIngredientInput
     public string? Unit { get; set; }
     public List<string>? Meta { get; set; } = default!;
     public bool? ManuallyEntered { get; set; }
+    public bool? Optional { get; set; }
 }
 
 public class RecipeFilter
