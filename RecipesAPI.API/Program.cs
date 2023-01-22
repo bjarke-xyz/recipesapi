@@ -86,6 +86,7 @@ StackExchange.Redis.ConfigurationOptions GetRedisConfigurationOptions(WebApplica
 var jwtUtil = new JwtUtil(builder.Configuration["FirebaseAppId"]!, null);
 
 builder.Services
+    .AddHttpClient()
     .AddControllers().AddControllersAsServices().Services
     .AddRouting()
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -163,6 +164,15 @@ builder.Services
     .AddSingleton<HealthcheckService>()
     .AddSingleton<EquipmentRepository>()
     .AddSingleton<EquipmentService>()
+    .AddSingleton<PartnerAdsService>(sp =>
+    {
+        var url = builder.Configuration["PartnerAdsUrl"] ?? "";
+        var key = builder.Configuration["PartnerAdsKey"] ?? "";
+        var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
+        var httpClient = httpClientFactory.CreateClient(nameof(PartnerAdsService));
+        var logger = sp.GetRequiredService<ILogger<PartnerAdsService>>();
+        return new PartnerAdsService(url, key, httpClient, logger);
+    })
     .AddHostedService<CacheRefreshBackgroundService>()
     .AddHttpContextAccessor()
     .AddSingleton<IConnectionMultiplexer>(sp =>
