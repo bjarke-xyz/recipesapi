@@ -7,6 +7,7 @@ using RecipesAPI.API.Features.Recipes.Common;
 using RecipesAPI.API.Features.Users.Common;
 using RecipesAPI.API.Features.Admin.Common;
 using RecipesAPI.API.Features.Food.BLL;
+using RecipesAPI.API.Features.Equipment.BLL;
 
 namespace RecipesAPI.API.Features.Recipes.BLL;
 
@@ -16,6 +17,7 @@ public class RecipeService : ICacheKeyGetter
     private readonly ICacheProvider cache;
     private readonly ParserService parserService;
     private readonly ILogger<RecipeService> logger;
+    private readonly EquipmentService equipmentService;
 
     public const string GetRecipesCacheKey = "GetRecipes";
     public string GetRecipeCacheKey(string id) => $"GetRecipe:{id}";
@@ -23,12 +25,13 @@ public class RecipeService : ICacheKeyGetter
     public string GetRecipeBySlugCacheKey(string slug) => $"GetRecipeBySlug:{slug}";
     public string RecipeStatsCacheKey(bool published) => $"RecipeStats:{published}";
 
-    public RecipeService(RecipeRepository recipeRepository, ICacheProvider cache, ParserService parserService, FoodService foodService, ILogger<RecipeService> logger)
+    public RecipeService(RecipeRepository recipeRepository, ICacheProvider cache, ParserService parserService, FoodService foodService, ILogger<RecipeService> logger, EquipmentService equipmentService)
     {
         this.recipeRepository = recipeRepository;
         this.cache = cache;
         this.parserService = parserService;
         this.logger = logger;
+        this.equipmentService = equipmentService;
     }
 
     public CacheKeyInfo GetCacheKeyInfo()
@@ -250,6 +253,7 @@ public class RecipeService : ICacheKeyGetter
                 throw new GraphQLErrorException($"Slug '{recipe.Slug}' is in use");
             }
         }
+        await ValidateEquipment(recipe, cancellationToken);
         await recipeRepository.SaveRecipe(recipe, cancellationToken);
         await ClearCache(null, recipe.UserId);
         var savedRecipe = await GetRecipe(recipe.Id, cancellationToken, null);
@@ -270,6 +274,7 @@ public class RecipeService : ICacheKeyGetter
                 throw new GraphQLErrorException($"Slug '{recipe.Slug}' is in use");
             }
         }
+        await ValidateEquipment(recipe, cancellationToken);
         await recipeRepository.SaveRecipe(recipe, cancellationToken);
         await ClearCache(recipe.Id, recipe.UserId, recipe.Slugs);
         var savedRecipe = await GetRecipe(recipe.Id, cancellationToken, null);
@@ -278,6 +283,33 @@ public class RecipeService : ICacheKeyGetter
             throw new GraphQLErrorException("failed to get saved recipe");
         }
         return savedRecipe;
+    }
+
+    private async Task ValidateEquipment(Recipe recipe, CancellationToken cancellationToken)
+    {
+        try
+        {
+            if (recipe.EquipmentIds?.Count > 0)
+            {
+                var equipment = await equipmentService.GetEquipmentByIds(recipe.EquipmentIds, cancellationToken);
+                var idsToDelete = new List<string>();
+                foreach (var id in recipe.EquipmentIds)
+                {
+                    if (!equipment.ContainsKey(id))
+                    {
+                        idsToDelete.Add(id);
+                    }
+                }
+                foreach (var id in idsToDelete)
+                {
+                    recipe.EquipmentIds.Remove(id);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Unhandled exception when validating recipe equipment. {id}", recipe.Id);
+        }
     }
 
     public async Task DeleteRecipe(Recipe recipe, CancellationToken cancellationToken)
