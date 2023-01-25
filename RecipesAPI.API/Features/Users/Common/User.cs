@@ -35,7 +35,8 @@ public class SimpleUser
 
 public enum Role
 {
-    USER,
+    BANNED = -10,
+    USER = 0,
     ADMIN,
     MODERATOR,
 }
