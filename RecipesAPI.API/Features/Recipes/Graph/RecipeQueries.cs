@@ -138,4 +138,5 @@ public class ExtendedRecipeQueries
         var equipment = await equipmentDataLoader.LoadAsync(recipe.EquipmentIds, cancellationToken);
         return equipment.Where(x => x != null).ToList();
     }
+
 }

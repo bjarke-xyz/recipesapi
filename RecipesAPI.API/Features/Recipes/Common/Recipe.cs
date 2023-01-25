@@ -22,6 +22,8 @@ public class Recipe
     public Recipe? Draft { get; set; }
 
     public List<string> EquipmentIds { get; set; } = new List<string>();
+
+    public RecipeRating? Rating { get; set; } = null;
 }
 
 public class RecipeAuthor
@@ -77,4 +79,10 @@ public class RecipeStats
 {
     public int RecipeCount { get; set; }
     public int ChefCount { get; set; }
+}
+
+public class RecipeRating
+{
+    public double Score { get; set; }
+    public int Raters { get; set; }
 }

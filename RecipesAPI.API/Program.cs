@@ -32,6 +32,8 @@ using RecipesAPI.API.Features.Equipment.DAL;
 using RecipesAPI.API.Features.Equipment.BLL;
 using Serilog.Events;
 using Serilog.Formatting.Compact;
+using RecipesAPI.API.Features.Ratings.DAL;
+using RecipesAPI.API.Features.Ratings.BLL;
 
 CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
 
@@ -164,6 +166,8 @@ builder.Services
     .AddSingleton<HealthcheckService>()
     .AddSingleton<EquipmentRepository>()
     .AddSingleton<EquipmentService>()
+    .AddSingleton<RatingsRepository>()
+    .AddSingleton<RatingsService>()
     .AddSingleton<PartnerAdsService>(sp =>
     {
         var url = builder.Configuration["PartnerAdsUrl"] ?? "";
@@ -190,6 +194,7 @@ builder.Services
         .AddDiagnosticEventListener<ErrorLoggingDiagnosticsEventListener>()
         .AddErrorFilter(error =>
         {
+            Log.Error(error.Exception, "Exception was thrown");
             if (error.Exception is GraphQLErrorException)
             {
                 return error.WithMessage(error.Exception.Message).RemoveExtensions();

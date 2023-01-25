@@ -9,6 +9,8 @@ using RecipesAPI.API.Exceptions;
 using RecipesAPI.API.Features.Files.BLL;
 using RecipesAPI.API.Features.Files.DAL;
 using RecipesAPI.API.Features.Graph;
+using RecipesAPI.API.Features.Ratings.BLL;
+using RecipesAPI.API.Features.Ratings.Common;
 using RecipesAPI.API.Features.Recipes.BLL;
 using RecipesAPI.API.Features.Recipes.Common;
 using RecipesAPI.API.Features.Users.Common;
@@ -230,7 +232,7 @@ public class RecipeMutations
         var recipe = await recipeService.GetRecipe(id, cancellationToken, loggedInUser);
         if (recipe == null)
         {
-            throw new GraphQLErrorException($"Recipe with id {id} not found");
+            throw new RecipeNotFoundException();
         }
         if (recipe.UserId != loggedInUser.Id)
         {
@@ -264,6 +266,41 @@ public class RecipeMutations
             {
                 throw new GraphQLErrorException("Could not delete recipe image");
             }
+        }
+
+        return true;
+    }
+
+    [RoleAuthorize(RoleEnums = new[] { Role.USER })]
+    public async Task<bool> AddRating(string id, RateRecipeInput input, [User] User loggedInUser, [Service] RecipeService recipeService, [Service] RatingsService ratingsService, CancellationToken cancellationToken)
+    {
+        var recipe = await recipeService.GetRecipe(id, cancellationToken, loggedInUser);
+        if (recipe == null)
+        {
+            throw new RecipeNotFoundException();
+        }
+
+        var rating = await ratingsService.GetRating(RatingType.Recipe, recipe.Id, loggedInUser.Id, cancellationToken);
+        if (rating == null)
+        {
+            rating = new Rating
+            {
+                EntityType = RatingType.Recipe,
+                EntityId = recipe.Id,
+                UserId = loggedInUser.Id,
+            };
+        }
+        rating.Score = input.Score;
+
+        await ratingsService.SaveRating(rating, cancellationToken);
+
+        try
+        {
+            await recipeService.UpdateRating(recipe, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            throw new GraphQLErrorException("Failed to update recipe rating", ex);
         }
 
         return true;

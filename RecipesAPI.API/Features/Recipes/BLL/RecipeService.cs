@@ -8,6 +8,7 @@ using RecipesAPI.API.Features.Users.Common;
 using RecipesAPI.API.Features.Admin.Common;
 using RecipesAPI.API.Features.Food.BLL;
 using RecipesAPI.API.Features.Equipment.BLL;
+using RecipesAPI.API.Features.Ratings.BLL;
 
 namespace RecipesAPI.API.Features.Recipes.BLL;
 
@@ -18,6 +19,7 @@ public class RecipeService : ICacheKeyGetter
     private readonly ParserService parserService;
     private readonly ILogger<RecipeService> logger;
     private readonly EquipmentService equipmentService;
+    private readonly RatingsService ratingsService;
 
     public const string GetRecipesCacheKey = "GetRecipes";
     public string GetRecipeCacheKey(string id) => $"GetRecipe:{id}";
@@ -25,13 +27,14 @@ public class RecipeService : ICacheKeyGetter
     public string GetRecipeBySlugCacheKey(string slug) => $"GetRecipeBySlug:{slug}";
     public string RecipeStatsCacheKey(bool published) => $"RecipeStats:{published}";
 
-    public RecipeService(RecipeRepository recipeRepository, ICacheProvider cache, ParserService parserService, FoodService foodService, ILogger<RecipeService> logger, EquipmentService equipmentService)
+    public RecipeService(RecipeRepository recipeRepository, ICacheProvider cache, ParserService parserService, FoodService foodService, ILogger<RecipeService> logger, EquipmentService equipmentService, RatingsService ratingsService)
     {
         this.recipeRepository = recipeRepository;
         this.cache = cache;
         this.parserService = parserService;
         this.logger = logger;
         this.equipmentService = equipmentService;
+        this.ratingsService = ratingsService;
     }
 
     public CacheKeyInfo GetCacheKeyInfo()
@@ -315,6 +318,19 @@ public class RecipeService : ICacheKeyGetter
     public async Task DeleteRecipe(Recipe recipe, CancellationToken cancellationToken)
     {
         await recipeRepository.DeleteRecipe(recipe, cancellationToken);
+        await ClearCache(recipe.Id, recipe.UserId, recipe.Slugs);
+    }
+
+    public async Task UpdateRating(Recipe recipe, CancellationToken cancellationToken)
+    {
+        var ratings = await ratingsService.GetRatings(Ratings.Common.RatingType.Recipe, recipe.Id, cancellationToken);
+        var avgRating = ratings.Select(x => x.Score).Average();
+        var recipeRating = new RecipeRating
+        {
+            Raters = ratings.Count,
+            Score = avgRating,
+        };
+        await recipeRepository.UpdateRating(recipe.Id, recipeRating, cancellationToken);
         await ClearCache(recipe.Id, recipe.UserId, recipe.Slugs);
     }
 

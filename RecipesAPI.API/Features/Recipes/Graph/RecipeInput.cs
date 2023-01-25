@@ -54,3 +54,8 @@ public class CreateUploadUrlInput
     public long ContentLength { get; set; } = default!;
     public string FileName { get; set; } = default!;
 }
+
+public class RateRecipeInput
+{
+    public int Score { get; set; }
+}

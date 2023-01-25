@@ -46,6 +46,9 @@ public class RecipeDto
 
     [FirestoreProperty("equipmentIds")]
     public List<string> EquipmentIds { get; set; } = new List<string>();
+
+    [FirestoreProperty("rating")]
+    public RecipeRatingDto? Rating { get; set; } = null;
 }
 
 [FirestoreData]
@@ -80,4 +83,13 @@ public class RecipeIngredientDto
     public bool ManuallyEntered { get; set; }
     [FirestoreProperty("optional")]
     public bool Optional { get; set; }
+}
+
+[FirestoreData]
+public class RecipeRatingDto
+{
+    [FirestoreProperty("score")]
+    public double Score { get; set; }
+    [FirestoreProperty("raters")]
+    public int Raters { get; set; }
 }

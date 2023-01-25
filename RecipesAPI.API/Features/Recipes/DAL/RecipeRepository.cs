@@ -28,6 +28,15 @@ public class RecipeRepository
         return snapshot.Count == 0;
     }
 
+    public async Task UpdateRating(string recipeId, RecipeRating rating, CancellationToken cancellationToken)
+    {
+        var ratingDto = RecipeMapper.Map(rating);
+        var updates = new Dictionary<string, object>{
+            {"rating", ratingDto}
+        };
+        await db.Collection(recipeCollection).Document(recipeId).UpdateAsync(updates, null, cancellationToken);
+    }
+
     public async Task<List<Recipe>> GetRecipes(CancellationToken cancellationToken)
     {
         var snapshot = await db.Collection(recipeCollection).GetSnapshotAsync(cancellationToken);

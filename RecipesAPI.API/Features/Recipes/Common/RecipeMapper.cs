@@ -36,6 +36,9 @@ public static class RecipeMapper
 
         cfg.CreateMap<ImageDimensionsDto, ImageDimensions>();
         cfg.CreateMap<ImageDimensionDto, ImageDimension>();
+
+        cfg.CreateMap<RecipeRatingDto, RecipeRating>();
+        cfg.CreateMap<RecipeRating, RecipeRatingDto>();
     }).CreateMapper();
 
     public static Recipe MapDto(RecipeDto dto, string docId)
@@ -63,5 +66,15 @@ public static class RecipeMapper
     public static Recipe MapInput(RecipeInput input)
     {
         return mapper.Map<RecipeInput, Recipe>(input);
+    }
+
+    public static RecipeRatingDto Map(RecipeRating rating)
+    {
+        return mapper.Map<RecipeRating, RecipeRatingDto>(rating);
+    }
+
+    public static RecipeRating MapDto(RecipeRatingDto dto)
+    {
+        return mapper.Map<RecipeRatingDto, RecipeRating>(dto);
     }
 }
