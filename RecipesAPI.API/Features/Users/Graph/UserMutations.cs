@@ -75,7 +75,7 @@ public class UserMutations
         var existingUser = await userService.GetUserById(loggedInUser.Id, cancellationToken);
         if (existingUser == null)
         {
-            throw new GraphQLErrorException($"User with id '{loggedInUser.Id}' not found");
+            throw new UserNotFoundException(loggedInUser.Id);
         }
         if (!string.IsNullOrEmpty(input.Email) && !IsEmailValid(input.Email))
         {
@@ -106,7 +106,7 @@ public class UserMutations
         var existingUser = await userService.GetUserById(userId, cancellationToken);
         if (existingUser == null)
         {
-            throw new GraphQLErrorException($"User with id '{userId}' not found");
+            throw new UserNotFoundException(userId);
         }
         if (!string.IsNullOrEmpty(input.Email) && !IsEmailValid(input.Email))
         {

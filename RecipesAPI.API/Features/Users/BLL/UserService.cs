@@ -204,7 +204,7 @@ public class UserService : ICacheKeyGetter
         var userBeforeUpdate = await GetUserById(userId, cancellationToken);
         if (userBeforeUpdate == null)
         {
-            throw new GraphQLErrorException($"User with id {userId} not found");
+            throw new UserNotFoundException(userId);
         }
         try
         {

@@ -31,7 +31,7 @@ public class EquipmentMutations
         var existingEquipment = await equipmentService.GetEquipment(id, cancellationToken);
         if (existingEquipment == null)
         {
-            throw new GraphQLErrorException($"Equipment id {id} not found");
+            throw new EquipmentNotFoundException(id);
         }
         var equipment = EquipmentMapper.MapInput(input);
         equipment.Id = id;
@@ -45,7 +45,7 @@ public class EquipmentMutations
         var existingEquipment = await equipmentService.GetEquipment(id, cancellationToken);
         if (existingEquipment == null)
         {
-            throw new GraphQLErrorException($"Equipment id {id} not found");
+            throw new EquipmentNotFoundException(id);
         }
         // TODO: Delete recipes using this equipment id
         await equipmentService.DeleteEquipment(existingEquipment, cancellationToken);

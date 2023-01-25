@@ -165,7 +165,7 @@ public class RecipeMutations
         var existingRecipe = await recipeService.GetRecipe(id, cancellationToken, loggedInUser);
         if (existingRecipe == null)
         {
-            throw new GraphQLErrorException($"Recipe with id {id} not found");
+            throw new RecipeNotFoundException(id);
         }
         if (existingRecipe.UserId != loggedInUser.Id)
         {
@@ -232,7 +232,7 @@ public class RecipeMutations
         var recipe = await recipeService.GetRecipe(id, cancellationToken, loggedInUser);
         if (recipe == null)
         {
-            throw new RecipeNotFoundException();
+            throw new RecipeNotFoundException(id);
         }
         if (recipe.UserId != loggedInUser.Id)
         {
@@ -277,7 +277,7 @@ public class RecipeMutations
         var recipe = await recipeService.GetRecipe(id, cancellationToken, loggedInUser);
         if (recipe == null)
         {
-            throw new RecipeNotFoundException();
+            throw new RecipeNotFoundException(id);
         }
 
         var rating = await ratingsService.GetRating(RatingType.Recipe, recipe.Id, loggedInUser.Id, cancellationToken);
