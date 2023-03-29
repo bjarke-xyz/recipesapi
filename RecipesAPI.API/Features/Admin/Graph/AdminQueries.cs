@@ -2,6 +2,7 @@ using RecipesAPI.API.Auth;
 using RecipesAPI.API.Exceptions;
 using RecipesAPI.API.Features.Admin.BLL;
 using RecipesAPI.API.Features.Admin.Common;
+using RecipesAPI.API.Features.Admin.Common.Adtraction;
 using RecipesAPI.API.Features.Users.Common;
 
 namespace RecipesAPI.API.Features.Admin.Graph;
@@ -78,6 +79,33 @@ public class AdminQueries
         {
             var clickSummary = await partnerAdsService.GetClickSummary();
             return clickSummary;
+        }
+        catch (Exception ex)
+        {
+            throw new GraphQLErrorException(ex.Message, ex);
+        }
+    }
+
+    [RoleAuthorize(RoleEnums = new[] { Role.ADMIN })]
+    public async Task<AdtractionAccountBalance> GetAdtractionAccountBalance([Service] AdtractionService adtractionService, string currency = "DKK")
+    {
+        try
+        {
+            var balance = await adtractionService.GetBalance(currency);
+            return balance;
+        }
+        catch (Exception ex)
+        {
+            throw new GraphQLErrorException(ex.Message, ex);
+        }
+    }
+
+    [RoleAuthorize(RoleEnums = new[] { Role.ADMIN })]
+    public async Task<List<AdtractionApplication>> GetAdtractionApplications([Service] AdtractionService adtractionService)
+    {
+        try
+        {
+            return await adtractionService.GetApplications();
         }
         catch (Exception ex)
         {

@@ -177,6 +177,15 @@ builder.Services
         var logger = sp.GetRequiredService<ILogger<PartnerAdsService>>();
         return new PartnerAdsService(url, key, httpClient, logger);
     })
+    .AddSingleton<AdtractionService>(sp =>
+    {
+        var url = builder.Configuration["AdtractionApiUrl"] ?? "";
+        var key = builder.Configuration["AdtractionApiKey"] ?? "";
+        var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
+        var httpClient = httpClientFactory.CreateClient(nameof(AdtractionService));
+        var logger = sp.GetRequiredService<ILogger<AdtractionService>>();
+        return new AdtractionService(logger, url, key, httpClient);
+    })
     .AddHostedService<CacheRefreshBackgroundService>()
     .AddHttpContextAccessor()
     .AddSingleton<IConnectionMultiplexer>(sp =>
