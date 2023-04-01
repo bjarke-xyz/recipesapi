@@ -186,7 +186,9 @@ builder.Services
         var logger = sp.GetRequiredService<ILogger<AdtractionService>>();
         return new AdtractionService(logger, url, key, httpClient);
     })
+    .AddSingleton<RequestInfoService>()
     .AddHostedService<CacheRefreshBackgroundService>()
+    .AddHostedService<AutoStopperBackgroundService>()
     .AddHttpContextAccessor()
     .AddSingleton<IConnectionMultiplexer>(sp =>
     {
@@ -244,6 +246,8 @@ var app = builder.Build();
 app.Use((ctx, next) =>
 {
     HttpRequestRewindExtensions.EnableBuffering(ctx.Request);
+    var requestInfoService = ctx.RequestServices.GetRequiredService<RequestInfoService>();
+    requestInfoService.OnNewRequestReceived(ctx.Request);
     return next(ctx);
 });
 

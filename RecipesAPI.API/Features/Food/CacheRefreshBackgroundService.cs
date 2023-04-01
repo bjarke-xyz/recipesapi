@@ -9,6 +9,8 @@ public class CacheRefreshBackgroundService : BackgroundService
     private readonly FoodService foodService;
     private readonly HealthcheckService healthcheckService;
 
+    private CancellationToken stoppingToken = CancellationToken.None;
+
     public CacheRefreshBackgroundService(FoodService foodService, ILogger<CacheRefreshBackgroundService> logger, HealthcheckService healthcheckService)
     {
         this.foodService = foodService;
@@ -16,7 +18,14 @@ public class CacheRefreshBackgroundService : BackgroundService
         this.healthcheckService = healthcheckService;
     }
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        this.stoppingToken = stoppingToken;
+        _ = Task.Run(GetData, stoppingToken);
+        return Task.CompletedTask;
+    }
+
+    private async Task GetData()
     {
         logger.LogInformation("getting food data");
         try

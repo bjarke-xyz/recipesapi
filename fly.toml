@@ -1,48 +1,32 @@
 # fly.toml file generated for recipesapi on 2023-01-04T18:12:35+01:00
 
-app = "recipesapi"
-kill_signal = "SIGINT"
-kill_timeout = 5
-processes = []
+app = "recipesapi-v2"
+primary_region = "fra"
 
 [env]
-  PORT = 8080
+PORT = "8080"
+ENABLE_AUTOSTOP = "true"
+AUTOSTOP_MINUTES = "20"
 
-[experimental]
-  allowed_public_ports = []
-  auto_rollback = true
+
+[http_service]
+internal_port = 8080
+force_https = true
+[http_service.concurrency]
+soft_limit = 200
+hard_limit = 250
+type = "requests"
+
+[checks]
+[checks.http_healthcheck]
+grace_period = "5s"
+interval = "15s"
+method = "get"
+path = "/healthcheck/ready"
+port = 8080
+type = "http"
+timeout = "5s"
 
 [metrics]
-  port = 1234
-  path = "/metrics"
-
-
-[[services]]
-  internal_port = 8080
-  processes = ["app"]
-  protocol = "tcp"
-  script_checks = []
-  [services.concurrency]
-    hard_limit = 25
-    soft_limit = 20
-    type = "connections"
-
-  [[services.ports]]
-    force_https = true
-    handlers = ["http"]
-    port = 80
-
-  [[services.ports]]
-    handlers = ["tls", "http"]
-    port = 443
-
-  [[services.http_checks]]
-    interval = 10000
-    grace_period = "5s"
-    method = "get"
-    path = "/healthcheck/ready"
-    protocol = "http"
-    restart_limit = 0
-    timeout = 2000
-    tls_skip_verify = false
-  
+port = 1234
+path = "/metrics"
