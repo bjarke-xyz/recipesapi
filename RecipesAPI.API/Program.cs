@@ -189,6 +189,7 @@ builder.Services
     .AddSingleton<RequestInfoService>()
     .AddHostedService<CacheRefreshBackgroundService>()
     .AddHostedService<AutoStopperBackgroundService>()
+    .AddHostedService<HangfireRecurringJobs>()
     .AddHttpContextAccessor()
     .AddSingleton<IConnectionMultiplexer>(sp =>
     {
@@ -239,7 +240,6 @@ builder.Services
             .AddTypeExtension<EquipmentMutations>()
         .AddType<UploadType>()
 ;
-
 
 var app = builder.Build();
 
