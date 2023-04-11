@@ -5,7 +5,7 @@ primary_region = "fra"
 
 [env]
 PORT = "8080"
-ENABLE_AUTOSTOP = "true"
+ENABLE_AUTOSTOP = "false"
 AUTOSTOP_MINUTES = "20"
 
 
