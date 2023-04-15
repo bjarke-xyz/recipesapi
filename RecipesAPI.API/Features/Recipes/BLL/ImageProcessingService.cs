@@ -1,4 +1,6 @@
 using RecipesAPI.API.Features.Files.BLL;
+using RecipesAPI.API.Features.Files.DAL;
+using RecipesAPI.API.Infrastructure;
 using SixLabors.ImageSharp.Processing;
 
 namespace RecipesAPI.API.Features.Recipes.BLL;
@@ -7,47 +9,60 @@ public class ImageProcessingService
 {
     private readonly IFileService fileService;
     private readonly ILogger<ImageProcessingService> logger;
+    private readonly IStorageClient storageClient;
+    private readonly string storageBucket;
 
-    public ImageProcessingService(IFileService fileService, ILogger<ImageProcessingService> logger)
+    public ImageProcessingService(IFileService fileService, ILogger<ImageProcessingService> logger, IStorageClient storageClient, string storageBucket)
     {
         this.fileService = fileService;
         this.logger = logger;
+        this.storageClient = storageClient;
+        this.storageBucket = storageBucket;
     }
 
-    public async Task<SixLabors.ImageSharp.Image<SixLabors.ImageSharp.PixelFormats.Rgb24>> LoadImage(Stream fileContent, CancellationToken cancellationToken)
+    public async Task<(SixLabors.ImageSharp.Image, SixLabors.ImageSharp.Formats.IImageFormat?)> LoadImage(Stream fileContent, CancellationToken cancellationToken)
     {
-        var image = await SixLabors.ImageSharp.Image.LoadAsync<SixLabors.ImageSharp.PixelFormats.Rgb24>(fileContent, cancellationToken);
-        return image;
+        var (image, format) = await SixLabors.ImageSharp.Image.LoadWithFormatAsync(fileContent, cancellationToken);
+        return (image, format);
     }
 
-    public (string blurHash, int width, int height) GetBlurHash(SixLabors.ImageSharp.Image<SixLabors.ImageSharp.PixelFormats.Rgb24> image)
+    public (int width, int height, bool requiresResize) GetImageThumbnailDimensions(int imageWidth, int imageHeight, ThumbnailSize thumbnailSize)
     {
-        var width = 300;
-        var height = 300;
-        var aspectRatio = (double)image.Width / (double)image.Height;
-        var doResize = true;
-        if (image.Width > width)
+        var (width, height) = thumbnailSize switch
+        {
+            ThumbnailSize.Small => (50, 50),
+            ThumbnailSize.Large => (500, 500),
+            _ => (300, 300),
+        };
+        var aspectRatio = (double)imageWidth / (double)imageHeight;
+        var requiresResize = true;
+        if (imageWidth > width)
         {
             height = (int)(width / aspectRatio);
         }
-        else if (image.Height > height)
+        else if (imageHeight > height)
         {
             width = (int)(height * aspectRatio);
         }
         else
         {
-            doResize = false;
+            width = imageWidth;
+            height = imageHeight;
+            requiresResize = false;
         }
+        return (width, height, requiresResize);
+    }
 
+    public void ResizeImage(SixLabors.ImageSharp.Image image, ThumbnailSize thumbnailSize)
+    {
+        var (width, height, doResize) = GetImageThumbnailDimensions(image.Width, image.Height, thumbnailSize);
         if (doResize)
         {
             image.Mutate(x => x.Resize(width, height));
         }
-        var blurHash = Blurhash.ImageSharp.Blurhasher.Encode(image, 4, 3);
-        return (blurHash, width, height);
     }
 
-    public async ValueTask ProcessRecipeImage(string imageId, CancellationToken cancellationToken)
+    public async ValueTask ProcessRecipeImage(string imageId, string recipeId, ThumbnailSize thumbnailSize, CancellationToken cancellationToken)
     {
         var file = await fileService.GetFile(imageId, cancellationToken);
         if (file == null)
@@ -63,42 +78,79 @@ public class ImageProcessingService
         }
         fileContent.Position = 0;
 
-        string blurHash = "";
-        int blurHashWidth = -1;
-        int blurHashHeight = -1;
+        ImageThumbnailDto? thumbnailDto = null;
         int originalWidth = -1;
         int originalHeight = -1;
+        SixLabors.ImageSharp.Image? image = null;
         try
         {
-            using var image = await LoadImage(fileContent, cancellationToken);
+            var imageAndFormat = await LoadImage(fileContent, cancellationToken);
+            image = imageAndFormat.Item1;
+            if (image == null)
+            {
+                throw new Exception("Failed to load image, image was null");
+            }
+            var format = imageAndFormat.Item2;
+            if (format == null)
+            {
+                throw new Exception("Unable to detect format of image");
+            }
+            // Store original image width and height before resizing to thumbnail size
             originalWidth = image.Width;
             originalHeight = image.Height;
-            (blurHash, blurHashWidth, blurHashHeight) = GetBlurHash(image);
+            ResizeImage(image, thumbnailSize);
+            var thumbnailKey = $"recipes/{recipeId}/thumbnails/{thumbnailSize}";
+            var encoder = SixLabors.ImageSharp.Configuration.Default.ImageFormatsManager.FindEncoder(format);
+            if (encoder == null)
+            {
+                throw new Exception($"Unable to find encoder for image format '{format.Name}'");
+            }
+            using var imageMs = new MemoryStream();
+            image.Save(imageMs, encoder);
+            await storageClient.PutStream(storageBucket, thumbnailKey, imageMs, format.DefaultMimeType, cancellationToken);
+            thumbnailDto = new ImageThumbnailDto
+            {
+                ThumbnailSize = thumbnailSize,
+                ContentType = format.DefaultMimeType,
+                Key = thumbnailKey,
+                Size = imageMs.Length,
+                Dimensions = new ImageDimensionDto
+                {
+                    Height = image.Height,
+                    Width = image.Width,
+                }
+            };
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "blur hash failed");
+            logger.LogError(ex, "thumbnail generation failed failed");
             throw;
         }
-        if (string.IsNullOrEmpty(blurHash))
+        finally
         {
-            logger.LogError("blur hash was empty");
-            throw new Exception("blur hash was empty");
+            image?.Dispose();
         }
-        if (blurHashWidth == -1 || blurHashHeight == -1 || originalWidth == -1 || originalHeight == -1)
+        if (thumbnailDto == null)
         {
-            logger.LogError("failed to get width/height values");
-            throw new Exception("failed to get width/height values");
+            logger.LogError("thumbnailDto was null");
+            throw new Exception("Failed to generate thumbnail");
         }
 
-        file.BlurHash = blurHash;
+        if (file.Thumbnails == null) file.Thumbnails = new();
+        switch (thumbnailSize)
+        {
+            case ThumbnailSize.Small:
+                file.Thumbnails.Small = thumbnailDto;
+                break;
+            case ThumbnailSize.Large:
+                file.Thumbnails.Large = thumbnailDto;
+                break;
+            default:
+                file.Thumbnails.Medium = thumbnailDto;
+                break;
+        }
         file.Dimensions = new Files.DAL.ImageDimensionsDto
         {
-            BlurHash = new Files.DAL.ImageDimensionDto
-            {
-                Width = blurHashWidth,
-                Height = blurHashHeight,
-            },
             Original = new Files.DAL.ImageDimensionDto
             {
                 Width = originalWidth,
@@ -107,5 +159,6 @@ public class ImageProcessingService
         };
         await fileService.SaveFile(file, cancellationToken);
     }
+
 
 }

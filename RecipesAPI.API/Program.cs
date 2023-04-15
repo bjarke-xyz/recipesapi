@@ -66,6 +66,8 @@ builder.WebHost.UseKestrel(serverOptions =>
 
 builder.Host.UseSerilog(Log.Logger);
 
+var storageBucket = "recipes-5000.appspot.com";
+
 FirebaseApp.Create();
 
 StackExchange.Redis.ConfigurationOptions GetRedisConfigurationOptions(WebApplicationBuilder b)
@@ -160,9 +162,23 @@ builder.Services
     .AddSingleton<ICacheKeyGetter>(sp => sp.GetRequiredService<RecipeService>())
     .AddSingleton<ParserService>()
     .AddSingleton<FileRepository>()
-    .AddSingleton<IFileService, FileService>()
+    .AddSingleton<SettingsService>()
+    .AddSingleton<IFileService, FileService>(sp =>
+    {
+        var fileRepository = sp.GetRequiredService<FileRepository>();
+        var cacheProvider = sp.GetRequiredService<ICacheProvider>();
+        var storageClient = sp.GetRequiredService<IStorageClient>();
+        var logger = sp.GetRequiredService<ILogger<FileService>>();
+        return new FileService(fileRepository, cacheProvider, storageClient, logger, storageBucket);
+    })
     .AddSingleton<AdminService>()
-    .AddSingleton<ImageProcessingService>()
+    .AddSingleton<ImageProcessingService>(sp =>
+    {
+        var fileService = sp.GetRequiredService<IFileService>();
+        var logger = sp.GetRequiredService<ILogger<ImageProcessingService>>();
+        var storageClient = sp.GetRequiredService<IStorageClient>();
+        return new ImageProcessingService(fileService, logger, storageClient, storageBucket);
+    })
     .AddSingleton<HealthcheckService>()
     .AddSingleton<EquipmentRepository>()
     .AddSingleton<EquipmentService>()

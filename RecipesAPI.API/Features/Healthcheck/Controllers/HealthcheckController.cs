@@ -1,10 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
 using RecipesAPI.API.Features.Healthcheck.BLL;
+using RecipesAPI.API.Infrastructure;
 
 namespace RecipesAPI.API.Features.Healthcheck.Controllers;
 
-[Route("{controller}")]
-public class HealthcheckController : ControllerBase
+public class HealthcheckController : BaseController
 {
     private readonly HealthcheckService healthcheckService;
 

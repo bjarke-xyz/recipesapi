@@ -25,7 +25,7 @@ public class RecipeMutations
 
     private static IReadOnlySet<string> allowedContentTypes = new HashSet<string> { "image/jpeg", "image/jpg", "image/png", "image/svg+xml", "image/gif" };
 
-    private static async Task<string> UploadImage(string fileCode, IFileService fileService, ImageProcessingService imageProcessingService, CancellationToken cancellationToken)
+    private static async Task<string> UploadImage(string fileCode, string recipeId, ThumbnailSize thumbnailSize, IFileService fileService, ImageProcessingService imageProcessingService, CancellationToken cancellationToken)
     {
         var uploadUrlTicket = await fileService.GetUploadUrlTicket(fileCode);
         if (uploadUrlTicket == null)
@@ -52,7 +52,7 @@ public class RecipeMutations
         {
             await fileService.SaveFile(fileDto, cancellationToken);
 #pragma warning disable 4014 // Hangfire awaits the method
-            BackgroundJob.Enqueue<ImageProcessingService>(s => s.ProcessRecipeImage(fileDto.Id, CancellationToken.None));
+            BackgroundJob.Enqueue<ImageProcessingService>(s => s.ProcessRecipeImage(fileDto.Id, recipeId, thumbnailSize, CancellationToken.None));
 #pragma warning restore 4014
             return fileDto.Id;
         }
@@ -82,7 +82,7 @@ public class RecipeMutations
             throw new GraphQLErrorException("Image was not an image");
         }
         var fileId = Guid.NewGuid().ToString();
-        var uploadTicket = await fileService.GetSignedUploadUrl("recipes-5000.appspot.com", $"images/{fileId}", fileId, input.ContentType, (ulong)input.ContentLength, input.FileName, cancellationToken);
+        var uploadTicket = await fileService.GetSignedUploadUrl($"images/{fileId}", fileId, input.ContentType, (ulong)input.ContentLength, input.FileName, cancellationToken);
 
         return new UploadUrlPayload
         {
@@ -94,13 +94,8 @@ public class RecipeMutations
     [RoleAuthorize(RoleEnums = new[] { Role.USER })]
     public async Task<Recipe> CreateRecipe(RecipeInput input, [User] User loggedInUser, [Service] RecipeService recipeService, [Service] IFileService fileService, [Service] ImageProcessingService imageProcessingService, CancellationToken cancellationToken)
     {
-        string? imageId = null;
-        if (input.FileCode != null)
-        {
-            imageId = await UploadImage(input.FileCode, fileService, imageProcessingService, cancellationToken);
-        }
+        var thumbnailSize = ThumbnailSize.Medium;
         var recipe = RecipeMapper.MapInput(input);
-        recipe.ImageId = imageId;
         recipe.UserId = loggedInUser.Id;
         if (recipe.Slugs == null) recipe.Slugs = new List<string>();
         if (!string.IsNullOrEmpty(input.Slug) && loggedInUser.HasRole(Role.MODERATOR))
@@ -112,7 +107,14 @@ public class RecipeMutations
             recipe.ModeratedAt = DateTime.UtcNow;
         }
         var createdRecipe = await recipeService.CreateRecipe(recipe, cancellationToken);
-        return createdRecipe;
+        string? imageId = null;
+        if (input.FileCode != null)
+        {
+            imageId = await UploadImage(input.FileCode, createdRecipe.Id, thumbnailSize, fileService, imageProcessingService, cancellationToken);
+        }
+        createdRecipe.ImageId = imageId;
+        var updatedRecipe = await recipeService.UpdateRecipe(createdRecipe, cancellationToken);
+        return updatedRecipe;
     }
 
     private async Task<IDictionary<string, object>?> GetRawInput(HttpContext httpContext, string[] keys)
@@ -153,6 +155,7 @@ public class RecipeMutations
     [RoleAuthorize(RoleEnums = new[] { Role.USER })]
     public async Task<Recipe> UpdateRecipe(string id, bool? unpublish, RecipeInput input, [Service] IHttpContextAccessor httpContextAccessor, [User] User loggedInUser, [Service] RecipeService recipeService, [Service] IFileService fileService, [Service] ImageProcessingService imageProcessingService, CancellationToken cancellationToken)
     {
+        var thumbnailSize = ThumbnailSize.Medium;
         var httpContext = httpContextAccessor.HttpContext;
         if (httpContext == null) throw new GraphQLErrorException("Something went wrong");
 
@@ -179,7 +182,7 @@ public class RecipeMutations
         // If a FileCode is provided, upload and store image id
         if (input.FileCode != null)
         {
-            imageId = await UploadImage(input.FileCode, fileService, imageProcessingService, cancellationToken);
+            imageId = await UploadImage(input.FileCode, existingRecipe.Id, thumbnailSize, fileService, imageProcessingService, cancellationToken);
         }
         // If FileCode property was provided, and it was set to null, delete image
         else if (input.FileCode == null && inputVariablesDict.Keys.Contains(nameof(RecipeInput.FileCode), StringComparer.OrdinalIgnoreCase))

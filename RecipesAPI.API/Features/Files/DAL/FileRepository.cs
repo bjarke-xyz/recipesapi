@@ -1,5 +1,4 @@
 using Google.Cloud.Firestore;
-using RecipesAPI.API.Infrastructure;
 
 namespace RecipesAPI.API.Features.Files.DAL;
 
@@ -102,10 +101,17 @@ public class FileDto
     public long Size { get; set; } = default!;
     [FirestoreProperty("fileName")]
     public string FileName { get; set; } = default!;
-    [FirestoreProperty("blurHash")]
-    public string? BlurHash { get; set; }
     [FirestoreProperty("dimensions")]
     public ImageDimensionsDto? Dimensions { get; set; }
+    [FirestoreProperty("thumbnails")]
+    public ImageThumbnailsDto? Thumbnails { get; set; }
+
+    public ImageThumbnailDto? GetImageThumbnail(ThumbnailSize size) => size switch
+    {
+        ThumbnailSize.Small => Thumbnails?.Small,
+        ThumbnailSize.Large => Thumbnails?.Large,
+        _ => Thumbnails?.Medium,
+    };
 
     public DateTimeOffset? CreatedAt { get; set; }
 
@@ -118,8 +124,6 @@ public class ImageDimensionsDto
 {
     [FirestoreProperty("original")]
     public ImageDimensionDto? Original { get; set; }
-    [FirestoreProperty("blurHash")]
-    public ImageDimensionDto? BlurHash { get; set; }
 }
 
 [FirestoreData]
@@ -129,4 +133,37 @@ public class ImageDimensionDto
     public int Width { get; set; }
     [FirestoreProperty("height")]
     public int Height { get; set; }
+}
+
+[FirestoreData]
+public class ImageThumbnailDto
+{
+    [FirestoreProperty("thumbnailSize")]
+    public ThumbnailSize ThumbnailSize { get; set; }
+    [FirestoreProperty("dimensions")]
+    public ImageDimensionDto Dimensions { get; set; } = new();
+    [FirestoreProperty("key")]
+    public string Key { get; set; } = default!;
+    [FirestoreProperty("contentType")]
+    public string ContentType { get; set; } = default!;
+    [FirestoreProperty("size")]
+    public long Size { get; set; } = default!;
+}
+
+[FirestoreData]
+public class ImageThumbnailsDto
+{
+    [FirestoreProperty("small")]
+    public ImageThumbnailDto? Small { get; set; }
+    [FirestoreProperty("medium")]
+    public ImageThumbnailDto? Medium { get; set; }
+    [FirestoreProperty("large")]
+    public ImageThumbnailDto? Large { get; set; }
+}
+
+public enum ThumbnailSize
+{
+    Small, // 50x??
+    Medium, // 300x??
+    Large // 500x??
 }

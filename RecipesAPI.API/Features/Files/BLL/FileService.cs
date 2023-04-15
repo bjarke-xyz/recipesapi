@@ -6,13 +6,14 @@ namespace RecipesAPI.API.Features.Files.BLL;
 
 public interface IFileService : ICacheKeyGetter
 {
-    Task<UploadUrlTicket> GetSignedUploadUrl(string bucket, string key, string fileId, string contentType, ulong contentLength, string fileName, CancellationToken cancellationToken);
+    Task<UploadUrlTicket> GetSignedUploadUrl(string key, string fileId, string contentType, ulong contentLength, string fileName, CancellationToken cancellationToken);
     Task<UploadUrlTicket?> GetUploadUrlTicket(string code);
     Task<FileDto?> GetFile(string id, CancellationToken cancellationToken);
     Task<Dictionary<string, FileDto>> GetFiles(IReadOnlyList<string> ids, CancellationToken cancellationToken);
     Task<Stream?> GetFileContent(string fileId, CancellationToken cancellationToken);
     Task<Stream?> GetFileContent(string bucket, string key, CancellationToken cancellationToken);
     string GetPublicUrl(FileDto file);
+    string GetPublicUrl(string bucket, string key);
     Task<FileDto?> SaveFile(FileDto file, CancellationToken cancellationToken);
     Task<FileDto?> SaveFile(FileDto file, Stream content, CancellationToken cancellationToken);
     Task DeleteFile(FileDto file, CancellationToken cancellationToken);
@@ -23,18 +24,20 @@ public class FileService : IFileService
     private readonly FileRepository fileRepository;
     private readonly ICacheProvider cache;
     private readonly IStorageClient storageClient;
+    private readonly string bucket;
 
     private readonly ILogger<FileService> logger;
 
     private string FileCacheKey(string id) => $"GetFile:{id}";
     private string UploadTicketKey(string code) => $"UploadTicket:{code}";
 
-    public FileService(FileRepository fileRepository, ICacheProvider cache, IStorageClient storageClient, ILogger<FileService> logger)
+    public FileService(FileRepository fileRepository, ICacheProvider cache, IStorageClient storageClient, ILogger<FileService> logger, string bucket)
     {
         this.fileRepository = fileRepository;
         this.cache = cache;
         this.storageClient = storageClient;
         this.logger = logger;
+        this.bucket = bucket;
     }
 
     public CacheKeyInfo GetCacheKeyInfo()
@@ -48,7 +51,7 @@ public class FileService : IFileService
         };
     }
 
-    public async Task<UploadUrlTicket> GetSignedUploadUrl(string bucket, string key, string fileId, string contentType, ulong contentLength, string fileName, CancellationToken cancellationToken)
+    public async Task<UploadUrlTicket> GetSignedUploadUrl(string key, string fileId, string contentType, ulong contentLength, string fileName, CancellationToken cancellationToken)
     {
         var uploadUrl = await storageClient.GetSignedUploadUrl(bucket, key, contentType, contentLength, cancellationToken);
         var ticket = new UploadUrlTicket
@@ -123,8 +126,13 @@ public class FileService : IFileService
 
     public string GetPublicUrl(FileDto file)
     {
+        return GetPublicUrl(file.Bucket, file.Key);
+    }
+
+    public string GetPublicUrl(string bucket, string key)
+    {
         // return $"https://pub-fc8159a8900d44e2b3f022917f202fc1.r2.dev/{file.Key}";
-        return $"https://storage.googleapis.com/{file.Bucket}/{file.Key}";
+        return $"https://storage.googleapis.com/{bucket}/{key}";
     }
 
     public async Task<FileDto?> SaveFile(FileDto file, CancellationToken cancellationToken)

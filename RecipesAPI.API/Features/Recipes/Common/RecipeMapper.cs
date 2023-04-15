@@ -57,6 +57,12 @@ public static class RecipeMapper
         var imageDimensions = mapper.Map<ImageDimensionsDto, ImageDimensions>(dto);
         return imageDimensions;
     }
+    public static ImageDimension? MapDto(ImageDimensionDto? dto)
+    {
+        if (dto == null) return null;
+        var imageDimensions = mapper.Map<ImageDimensionDto, ImageDimension>(dto);
+        return imageDimensions;
+    }
 
     public static RecipeDto Map(Recipe recipe)
     {

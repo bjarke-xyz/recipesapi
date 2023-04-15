@@ -10,6 +10,8 @@ using RecipesAPI.API.Features.Files.BLL;
 using RecipesAPI.API.Features.Users.BLL;
 using RecipesAPI.API.Features.Equipment.Common;
 using RecipesAPI.API.Features.Equipment.BLL;
+using RecipesAPI.API.Features.Files.DAL;
+using RecipesAPI.API.Infrastructure;
 
 namespace RecipesAPI.API.Features.Recipes.Graph;
 
@@ -104,11 +106,51 @@ public class RecipeIngredientQueries
 [ExtendObjectType(typeof(Recipe))]
 public class ExtendedRecipeQueries
 {
-    public async Task<Image?> GetImage([Parent] Recipe recipe, [Service] IFileService fileService, FileDataLoader fileDataLoader, CancellationToken cancellationToken)
+    public async Task<Image?> GetImage([Parent] Recipe recipe, [Service] IFileService fileService, FileDataLoader fileDataLoader, [Service] ImageProcessingService imageProcessingService, [Service] SettingsService settingsService, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(recipe.ImageId)) return null;
         var file = await fileDataLoader.LoadAsync(recipe.ImageId, cancellationToken);
         if (file == null) return null;
+        ImageThumbnails? thumbnails = null;
+        var originalDimensions = file.Dimensions?.Original;
+        thumbnails = new ImageThumbnails();
+        var sizes = new List<ThumbnailSize> { ThumbnailSize.Small, ThumbnailSize.Medium, ThumbnailSize.Large };
+        foreach (var thumbnailSize in sizes)
+        {
+            var thumbnailDto = file.GetImageThumbnail(thumbnailSize);
+            if (thumbnailDto == null && originalDimensions != null)
+            {
+                var baseUrl = settingsService.Configuration["ApiUrl"];
+                var generateThumbnailApiUrl = $"{baseUrl}/api/recipes/thumbnail/{recipe.Id}?thumbnailSize={thumbnailSize}";
+                var (width, height, _) = imageProcessingService.GetImageThumbnailDimensions(originalDimensions.Width, originalDimensions.Height, thumbnailSize);
+                var thumbnail = new ImageThumbnail
+                {
+                    Size = 0,
+                    Src = generateThumbnailApiUrl,
+                    Type = file.ContentType,
+                    ThumbnailSize = thumbnailSize,
+                    Dimensions = new ImageDimension
+                    {
+                        Width = width,
+                        Height = height,
+                    },
+                };
+                thumbnails.SetThumbnail(thumbnailSize, thumbnail);
+            }
+            else if (thumbnailDto != null)
+            {
+                var thumbnailSrc = fileService.GetPublicUrl(file.Bucket, thumbnailDto.Key);
+                var thumbnail = new ImageThumbnail
+                {
+                    Size = thumbnailDto.Size,
+                    Type = thumbnailDto.ContentType,
+                    Src = thumbnailSrc,
+                    ThumbnailSize = thumbnailSize,
+                    Dimensions = RecipeMapper.MapDto(thumbnailDto.Dimensions),
+                };
+                thumbnails.SetThumbnail(thumbnailSize, thumbnail);
+            }
+        }
         var imageSrc = fileService.GetPublicUrl(file);
         var image = new Image
         {
@@ -117,7 +159,7 @@ public class ExtendedRecipeQueries
             Size = file.Size,
             Type = file.ContentType,
             Src = imageSrc,
-            BlurHash = file.BlurHash,
+            Thumbnails = thumbnails,
             Dimensions = RecipeMapper.MapDto(file.Dimensions),
         };
         return image;

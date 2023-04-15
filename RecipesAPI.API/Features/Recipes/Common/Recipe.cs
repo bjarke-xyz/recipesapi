@@ -1,4 +1,7 @@
 
+using RecipesAPI.API.Features.Files.DAL;
+using RecipesAPI.API.Features.Recipes.BLL;
+
 namespace RecipesAPI.API.Features.Recipes.Common;
 
 public class Recipe
@@ -59,20 +62,51 @@ public class Image
     public string Type { get; set; } = default!;
     public long Size { get; set; } = default!;
     public string Name { get; set; } = default!;
-    public string? BlurHash { get; set; } = default!;
     public ImageDimensions? Dimensions { get; set; }
+    public ImageThumbnails? Thumbnails { get; set; }
 }
 
 public class ImageDimensions
 {
     public ImageDimension? Original { get; set; }
-    public ImageDimension? BlurHash { get; set; }
 }
 
 public class ImageDimension
 {
     public int Width { get; set; }
     public int Height { get; set; }
+}
+
+public class ImageThumbnail
+{
+    public ThumbnailSize ThumbnailSize { get; set; }
+    public ImageDimension? Dimensions { get; set; } = new();
+    public string Src { get; set; } = default!;
+    public string Type { get; set; } = default!;
+    public long Size { get; set; } = default!;
+}
+
+public class ImageThumbnails
+{
+    public ImageThumbnail? Small { get; set; }
+    public ImageThumbnail? Medium { get; set; }
+    public ImageThumbnail? Large { get; set; }
+
+    public void SetThumbnail(ThumbnailSize thumbnailSize, ImageThumbnail thumbnail)
+    {
+        switch (thumbnailSize)
+        {
+            case ThumbnailSize.Small:
+                this.Small = thumbnail;
+                break;
+            case ThumbnailSize.Large:
+                this.Large = thumbnail;
+                break;
+            default:
+                this.Medium = thumbnail;
+                break;
+        }
+    }
 }
 
 public class RecipeStats
