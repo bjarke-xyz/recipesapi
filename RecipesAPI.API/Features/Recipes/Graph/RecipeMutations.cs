@@ -200,10 +200,6 @@ public class RecipeMutations
             if (recipe.Slugs == null) recipe.Slugs = new List<string>();
             recipe.Slugs.Add(input.Slug);
         }
-        if (existingRecipe.UserId == loggedInUser.Id)
-        {
-            recipe.ModeratedAt = null;
-        }
         if (loggedInUser.HasRole(Role.MODERATOR))
         {
             recipe.ModeratedAt = DateTime.UtcNow;
