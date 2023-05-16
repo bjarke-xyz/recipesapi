@@ -101,7 +101,7 @@ public class AdminQueries
     }
 
     [RoleAuthorize(RoleEnums = new[] { Role.ADMIN })]
-    public async Task<List<AdtractionApplication>> GetAdtractionApplications([Service] AdtractionService adtractionService)
+    public async Task<List<AdtractionApplication>> GetAdtractionApplications([Service] AdtractionService adtractionService, [IdToken] string idToken)
     {
         try
         {

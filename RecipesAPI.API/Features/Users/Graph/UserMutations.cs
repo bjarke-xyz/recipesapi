@@ -66,7 +66,7 @@ public class UserMutations
 
 
     [RoleAuthorize(RoleEnums = new[] { Role.USER })]
-    public async Task<User> UpdateMe(UpdateMeInput input, [User] User loggedInUser, [Service] UserService userService, CancellationToken cancellationToken)
+    public async Task<User> UpdateMe(UpdateMeInput input, [User] User loggedInUser, [Service] UserService userService, [IdToken] string idToken, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(input.Email) && string.IsNullOrEmpty(input.DisplayName) && string.IsNullOrEmpty(input.Password))
         {
@@ -88,7 +88,7 @@ public class UserMutations
         {
             password = null;
         }
-        var user = await userService.UpdateUser(loggedInUser.Id, email, displayName, password, existingUser.Role ?? Role.USER, cancellationToken);
+        var user = await userService.UpdateUser(loggedInUser.Id, email, displayName, password, existingUser.Role ?? Role.USER, idToken, cancellationToken);
         if (user == null)
         {
             throw new GraphQLErrorException("updated user was null");
@@ -116,7 +116,7 @@ public class UserMutations
         var email = input.Email ?? existingUser.Email;
         var displayName = input.DisplayName ?? existingUser.DisplayName ?? "";
         var roles = input.Role ?? existingUser.Role ?? Role.USER;
-        var updatedUser = await userService.UpdateUser(userId, email, displayName, null, roles, cancellationToken);
+        var updatedUser = await userService.UpdateUser(userId, email, displayName, null, roles, null, cancellationToken);
         if (updatedUser == null)
         {
             throw new GraphQLErrorException("updated user was null");

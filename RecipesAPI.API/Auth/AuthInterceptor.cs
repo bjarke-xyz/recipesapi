@@ -35,6 +35,16 @@ public class AuthInterceptor : DefaultHttpRequestInterceptor
             }
         }
         requestBuilder.SetProperty(UserAttribute.DictKey, user ?? new User());
+        var idToken = "";
+        if (!string.IsNullOrEmpty(context.Request.Headers.Authorization.ToString()))
+        {
+            var parts = context.Request.Headers.Authorization.ToString().Split("Bearer ");
+            if (parts.Length >= 2)
+            {
+                idToken = parts[1].Trim();
+            }
+        }
+        requestBuilder.SetProperty(IdTokenAttribute.DictKey, idToken);
         await base.OnCreateAsync(context, requestExecutor, requestBuilder, cancellationToken);
     }
 

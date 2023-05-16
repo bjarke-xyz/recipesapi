@@ -143,7 +143,7 @@ builder.Services
     .AddSingleton(sp =>
     {
         var db = sp.GetRequiredService<FirestoreDb>();
-        return new UserRepository(builder.Configuration["FirebaseWebApiKey"]!, db);
+        return new UserRepository(builder.Configuration["FirebaseWebApiKey"]!, db, sp.GetRequiredService<ILogger<UserRepository>>());
     })
     .AddSingleton<FoodRepository>(sp =>
     {

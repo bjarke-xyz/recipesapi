@@ -12,19 +12,17 @@ public class UserService : ICacheKeyGetter
     private readonly ILogger<UserService> logger;
     private readonly DAL.UserRepository userRepository;
     private readonly ICacheProvider cache;
-    private readonly IEmailService emailService;
 
     public const string GetUsersCacheKey = "GetUsers";
     public string UserByIdCacheKey(string userId) => $"GetUserById:{userId}";
     public string UserInfoByIdCacheKey(string userId) => $"GetUserInfo:{userId}";
     public const string UserCountCacheKey = "UserCount";
 
-    public UserService(DAL.UserRepository userRepository, ICacheProvider cache, ILogger<UserService> logger, IEmailService emailService)
+    public UserService(DAL.UserRepository userRepository, ICacheProvider cache, ILogger<UserService> logger)
     {
         this.userRepository = userRepository;
         this.cache = cache;
         this.logger = logger;
-        this.emailService = emailService;
     }
 
     public CacheKeyInfo GetCacheKeyInfo()
@@ -43,16 +41,7 @@ public class UserService : ICacheKeyGetter
 
     public async Task SendResetPasswordMail(string email, CancellationToken cancellationToken)
     {
-        try
-        {
-            var passwordResetLink = await FirebaseAuth.DefaultInstance.GeneratePasswordResetLinkAsync(email, null, cancellationToken);
-            ArgumentNullException.ThrowIfNull(passwordResetLink);
-            await emailService.SendEmail(email, "Reset password", $"Nogen har bedt om at resette dit password. Tryk på linket for at fortsætte: {passwordResetLink}");
-        }
-        catch (FirebaseAuthException ex)
-        {
-            logger.LogError(ex, "Failed to send reset password to {email}", email);
-        }
+        await userRepository.SendResetPasswordMail(email, cancellationToken);
     }
 
     private void EnrichUsers(List<User> users, Dictionary<string, UserInfo> userInfos)
@@ -195,11 +184,12 @@ public class UserService : ICacheKeyGetter
     {
         var user = await userRepository.CreateUser(email, password, displayName, cancellationToken);
         await ClearCache();
-        await SendConfirmEmail(email, includeWelcome: true);
+        var signInResp = await SignIn(email, password, cancellationToken);
+        await SendConfirmEmail(signInResp.IdToken);
         return user;
     }
 
-    public async Task<User?> UpdateUser(string userId, string email, string displayName, string? password, Role role, CancellationToken cancellationToken)
+    public async Task<User?> UpdateUser(string userId, string email, string displayName, string? password, Role role, string? userIdToken, CancellationToken cancellationToken)
     {
         var userBeforeUpdate = await GetUserById(userId, cancellationToken);
         if (userBeforeUpdate == null)
@@ -226,28 +216,16 @@ public class UserService : ICacheKeyGetter
         {
             throw new GraphQLErrorException("failed to get updated user");
         }
-        if (updatedUser != null && updatedUser.Email != userBeforeUpdate.Email)
+        if (updatedUser != null && updatedUser.Email != userBeforeUpdate.Email && !string.IsNullOrEmpty(userIdToken))
         {
-            await SendConfirmEmail(updatedUser.Email, includeWelcome: false);
+            await SendConfirmEmail(userIdToken);
         }
         return updatedUser;
     }
 
-    private async Task SendConfirmEmail(string email, bool includeWelcome)
+    private async Task SendConfirmEmail(string idToken)
     {
-        var verifyEmailLink = await FirebaseAuth.DefaultInstance.GenerateEmailVerificationLinkAsync(email);
-        if (!string.IsNullOrEmpty(verifyEmailLink))
-        {
-            try
-            {
-                await emailService.SendEmail(email, "Bekræft email", $"{(includeWelcome ? "Velkommen til gastrik. " : "")}Bekræft venligst din email ved at trykke på linket: {verifyEmailLink}");
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "failed to send email confirmation email to {to}", email);
-            }
-        }
-
+        await userRepository.SendConfirmEmail(idToken);
     }
 
     public Task<VerifyPasswordResponse> SignIn(string email, string password, CancellationToken cancellationToken)

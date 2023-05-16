@@ -12,14 +12,16 @@ public class UserRepository
     private readonly string firebaseWebApiKey;
     private readonly HttpClient httpClient;
     private readonly FirestoreDb db;
+    private readonly ILogger<UserRepository> logger;
 
     private const string usersCollection = "users";
 
-    public UserRepository(string firebaseWebApiKey, FirestoreDb db)
+    public UserRepository(string firebaseWebApiKey, FirestoreDb db, ILogger<UserRepository> logger)
     {
         this.firebaseWebApiKey = firebaseWebApiKey;
         this.db = db;
         httpClient = new HttpClient();
+        this.logger = logger;
     }
 
     private User? MapUserRecord(UserRecord? userRecord)
@@ -59,6 +61,50 @@ public class UserRepository
             UserId = userInfo.UserId
         };
         return dto;
+    }
+
+    public async Task SendResetPasswordMail(string email, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var payload = new
+            {
+                requestType = "PASSWORD_RESET",
+                email = email,
+            };
+            var resp = await httpClient.PostAsJsonAsync($"https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key={firebaseWebApiKey}", payload, cancellationToken: cancellationToken);
+            if (!resp.IsSuccessStatusCode)
+            {
+                var respBody = await resp.Content.ReadAsStringAsync();
+                logger.LogError("send password reset mail failed: {status}: {body}", resp.StatusCode, respBody);
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "failed to send reset password to {email}", email);
+        }
+    }
+
+    public async Task SendConfirmEmail(string idToken)
+    {
+        try
+        {
+            var payload = new
+            {
+                requestType = "VERIFY_EMAIL",
+                idToken = idToken
+            };
+            var resp = await httpClient.PostAsJsonAsync($"https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key={firebaseWebApiKey}", payload);
+            if (!resp.IsSuccessStatusCode)
+            {
+                var respBody = await resp.Content.ReadAsStringAsync();
+                logger.LogError("send password reset mail failed: {status}: {body}", resp.StatusCode, respBody);
+            }
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "failed to send email confirmation mail to {idToken}", idToken);
+        }
     }
 
     public async Task<int> GetUserCount(CancellationToken cancellationToken)
