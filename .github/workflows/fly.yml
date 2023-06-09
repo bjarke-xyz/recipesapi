@@ -17,21 +17,4 @@ jobs:
         id: deploy
         run: flyctl deploy --remote-only
 
-      - name: Notify on error
-        uses: fjogeleit/http-request-action@v1
-        if: steps.deploy.outcome == 'failure'
-        with:
-          url: "${{ secrets.NOTIFICATIONS_URL }}"
-          method: "POST"
-          username: "${{ secrets.NOTIFICATIONS_USERNAME }}"
-          password: "${{ secrets.NOTIFICATIONS_PASSWORD }}"
-          data: '{ "channels": ["discord", "email"], "message": { "message": "⚠️ recipesapi failed to release. <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}>" } }'
-      - name: Notify on success
-        uses: fjogeleit/http-request-action@v1
-        if: steps.deploy.outcome == 'success'
-        with:
-          url: "${{ secrets.NOTIFICATIONS_URL }}"
-          method: "POST"
-          username: "${{ secrets.NOTIFICATIONS_USERNAME }}"
-          password: "${{ secrets.NOTIFICATIONS_PASSWORD }}"
-          data: '{ "channels": ["discord", "email"], "message": { "message": "🚀 recipesapi has been released. <https://github.com/${{ github.repository }}/>" } }'
+    
