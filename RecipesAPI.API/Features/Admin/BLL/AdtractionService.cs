@@ -1,3 +1,5 @@
+using System.Net.Http.Headers;
+using Newtonsoft.Json;
 using RecipesAPI.API.Features.Admin.Common.Adtraction;
 
 namespace RecipesAPI.API.Features.Admin.BLL;
@@ -43,6 +45,38 @@ public class AdtractionService
         catch (Exception ex)
         {
             logger.LogError(ex, "failed to get applications");
+            throw;
+        }
+    }
+
+    public async Task<List<AdtractionProgram>> GetPrograms(string market, int programId, int channelId, int approvalStatus, int status)
+    {
+        try
+        {
+            var input = new
+            {
+                market,
+                programId,
+                channelId,
+                approvalStatus,
+                status
+            };
+            var inputJson = JsonConvert.SerializeObject(input);
+            var request = new HttpRequestMessage
+            {
+                RequestUri = new Uri($"{url}/v3/partner/programs/?token={apiKey}"),
+                Method = HttpMethod.Post,
+                Content = new StringContent(inputJson, new MediaTypeHeaderValue("application/json"))
+            };
+            var resp = await httpClient.SendAsync(request);
+            var respJson = await resp.Content.ReadAsStringAsync();
+            var parsedResp = JsonConvert.DeserializeObject<List<AdtractionProgram>>(respJson);
+            if (parsedResp == null) throw new Exception("Failed to deserialize programs response");
+            return parsedResp;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to get programs");
             throw;
         }
     }

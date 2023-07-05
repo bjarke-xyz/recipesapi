@@ -112,6 +112,18 @@ public class AdminQueries
             throw new GraphQLErrorException(ex.Message, ex);
         }
     }
+
+    public async Task<List<AdtractionProgram>> GetAdtractionPrograms([Service] AdtractionService adtractionService, AdtractionProgramsInput input)
+    {
+        try
+        {
+            return await adtractionService.GetPrograms(input.Market, input.ProgramId, input.ChannelId, input.ApprovalStatus, input.Status);
+        }
+        catch (Exception ex)
+        {
+            throw new GraphQLErrorException(ex.Message, ex);
+        }
+    }
 }
 
 public class PartnerAdsEarningsInput
@@ -124,4 +136,33 @@ public class PartnerAdsProgramStatsInput
 {
     public DateOnly From { get; set; }
     public DateOnly To { get; set; }
+}
+
+public class AdtractionProgramsInput
+{
+
+    /// <summary>
+    /// Geographical market on which a partner program is available, defined by an ISO 3166-1 Alpha-2 country code
+    /// </summary>
+    public string Market { get; set; }
+
+    /// <summary>
+    /// Numerical ID of an partner program
+    /// </summary>
+    public int ProgramId { get; set; }
+
+    /// <summary>
+    /// Numerical ID of a channel
+    /// </summary>
+    public int ChannelId { get; set; }
+
+    /// <summary>
+    /// Approval status for a partner program: 0 = rejected, 1 = approved, 2 = pending review
+    /// </summary>
+    public int ApprovalStatus { get; set; }
+
+    /// <summary>
+    /// The status of the partner program on the Adtraction platform, where Live = 0 and Closing = 3
+    /// </summary>
+    public int Status { get; set; }
 }
