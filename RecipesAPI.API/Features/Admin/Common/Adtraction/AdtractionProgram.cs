@@ -107,13 +107,13 @@ public class AdtractionProgram
     public List<Feed>? Feeds { get; set; }
 
     [JsonProperty("logoURL")]
-    public string LogoURL { get; set; }
+    public string? LogoURL { get; set; }
 
     [JsonProperty("trackingURL")]
-    public string TrackingURL { get; set; }
+    public string? TrackingURL { get; set; }
 
     [JsonProperty("categoryName")]
-    public string CategoryName { get; set; }
+    public string? CategoryName { get; set; }
 
     [JsonProperty("categoryId")]
     public int? CategoryId { get; set; }
