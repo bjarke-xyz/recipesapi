@@ -149,20 +149,20 @@ public class AdtractionProgramsInput
     /// <summary>
     /// Numerical ID of an partner program
     /// </summary>
-    public int ProgramId { get; set; }
+    public int? ProgramId { get; set; }
 
     /// <summary>
     /// Numerical ID of a channel
     /// </summary>
-    public int ChannelId { get; set; }
+    public int? ChannelId { get; set; }
 
     /// <summary>
     /// Approval status for a partner program: 0 = rejected, 1 = approved, 2 = pending review
     /// </summary>
-    public int ApprovalStatus { get; set; }
+    public int? ApprovalStatus { get; set; }
 
     /// <summary>
     /// The status of the partner program on the Adtraction platform, where Live = 0 and Closing = 3
     /// </summary>
-    public int Status { get; set; }
+    public int? Status { get; set; }
 }

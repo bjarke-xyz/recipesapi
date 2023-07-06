@@ -49,7 +49,7 @@ public class AdtractionService
         }
     }
 
-    public async Task<List<AdtractionProgram>> GetPrograms(string market, int programId, int channelId, int approvalStatus, int status)
+    public async Task<List<AdtractionProgram>> GetPrograms(string market, int? programId, int? channelId, int? approvalStatus, int? status)
     {
         try
         {
@@ -70,6 +70,11 @@ public class AdtractionService
             };
             var resp = await httpClient.SendAsync(request);
             var respJson = await resp.Content.ReadAsStringAsync();
+            if (!resp.IsSuccessStatusCode)
+            {
+                var errorResp = JsonConvert.DeserializeObject<AdtractionError>(respJson);
+                throw new Exception(errorResp?.Message ?? "Unknown adtraction error");
+            }
             var parsedResp = JsonConvert.DeserializeObject<List<AdtractionProgram>>(respJson);
             if (parsedResp == null) throw new Exception("Failed to deserialize programs response");
             return parsedResp;
