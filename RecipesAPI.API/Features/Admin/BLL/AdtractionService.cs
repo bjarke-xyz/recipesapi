@@ -55,9 +55,7 @@ public class AdtractionService
         var xmlString = await httpClient.GetStringAsync(feedUrl);
         var stringReader = new StringReader(xmlString);
         var xmlSerializer = new XmlSerializer(typeof(AdtractionProductFeed));
-        var feedProducts = ((xmlSerializer.Deserialize(stringReader) as AdtractionProductFeed ?? new()).ProductFeed ?? new())
-            .Skip(skip)
-            .Take(limit);
+        IEnumerable<AdtractionFeedProduct> feedProducts = (xmlSerializer.Deserialize(stringReader) as AdtractionProductFeed ?? new()).ProductFeed ?? new();
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
             feedProducts = feedProducts
@@ -66,6 +64,9 @@ public class AdtractionService
                     || p.Category?.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) == true
                     || p.Brand?.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) == true);
         }
+        feedProducts = feedProducts
+            .Skip(skip)
+            .Take(limit);
         return feedProducts.ToList();
     }
 
