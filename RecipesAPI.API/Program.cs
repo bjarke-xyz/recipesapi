@@ -250,6 +250,7 @@ builder.Services
             .AddTypeExtension<FoodQueries>()
             // Admin
             .AddTypeExtension<AdminQueries>()
+            .AddTypeExtension<AdtractionFeedQueries>()
             .AddTypeExtension<AdminMutations>()
             // Equipment
             .AddTypeExtension<EquipmentQueries>()

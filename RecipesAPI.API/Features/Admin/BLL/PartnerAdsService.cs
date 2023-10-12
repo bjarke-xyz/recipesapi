@@ -40,7 +40,7 @@ public class PartnerAdsService
     {
         try
         {
-            var resp = await httpClient.GetStreamAsync($"{url}/programoversigt_xml.php?key={key}");
+            var resp = await httpClient.GetStreamAsync($"{url}/programoversigt_xml.php?key={key}&godkendte=1");
             var serializer = new XmlSerializer(typeof(PartnerAdsPrograms));
             var programs = serializer.Deserialize(resp) as PartnerAdsPrograms;
             return programs?.Programs ?? new List<PartnerAdsProgram>();

@@ -126,6 +126,34 @@ public class AdminQueries
     }
 }
 
+[ExtendObjectType(typeof(Feed))]
+public class AdtractionFeedQueries
+{
+    public async Task<List<AdtractionFeedProduct>> GetProductFeed([Parent] Feed feed, [Service] AdtractionService adtractionService, GetProductFeedInput? input = null)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(feed.FeedUrl))
+            {
+                return new();
+            }
+            var productFeed = await adtractionService.ParseProductFeed(feed.FeedUrl, input?.Skip ?? 0, input?.Limit ?? 1000, input?.SearchQuery);
+            return productFeed;
+        }
+        catch (Exception ex)
+        {
+            throw new GraphQLErrorException(ex.Message, ex);
+        }
+    }
+}
+
+public class GetProductFeedInput
+{
+    public int? Skip { get; set; }
+    public int? Limit { get; set; }
+    public string? SearchQuery { get; set; }
+}
+
 public class PartnerAdsEarningsInput
 {
     public DateOnly From { get; set; }
@@ -144,7 +172,7 @@ public class AdtractionProgramsInput
     /// <summary>
     /// Geographical market on which a partner program is available, defined by an ISO 3166-1 Alpha-2 country code
     /// </summary>
-    public string Market { get; set; }
+    public string Market { get; set; } = "";
 
     /// <summary>
     /// Numerical ID of an partner program

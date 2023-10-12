@@ -1,3 +1,5 @@
+using System.Xml;
+using System.Xml.Serialization;
 using Newtonsoft.Json;
 
 namespace RecipesAPI.API.Features.Admin.Common.Adtraction;
@@ -125,3 +127,79 @@ public class AdtractionProgram
     public int? Status { get; set; }
 }
 
+[XmlRoot("productFeed")]
+public class AdtractionProductFeed
+{
+    [XmlElement("product")]
+    public List<AdtractionFeedProduct> ProductFeed { get; set; } = new();
+}
+
+public class AdtractionFeedProduct
+{
+    [XmlElement("SKU")]
+    public string? Sku { get; set; }
+    public string? Name { get; set; }
+    public string? Description { get; set; }
+    public string? Category { get; set; }
+    public decimal? Price { get; set; }
+    public string? Shipping { get; set; }
+    public string? Currency { get; set; }
+
+    [XmlElement("Instock"), GraphQLIgnore]
+    public string? InstockStr { get; set; }
+
+    public bool InStock => string.Equals(InstockStr, "yes", StringComparison.OrdinalIgnoreCase);
+
+    public string? ProductUrl { get; set; }
+    public string? ImageUrl { get; set; }
+    public string? TrackingUrl { get; set; }
+    public string? Brand { get; set; }
+    public string? OriginalPrice { get; set; }
+    public string? Ean { get; set; }
+    public string? ManufacturerArticleNumber { get; set; }
+
+    [XmlElement("Extras"), GraphQLIgnore]
+    public object? ExtrasXmlNodes { get; set; }
+
+    [XmlIgnore]
+    public List<AdtractionFeedProductExtra> Extras
+    {
+        get
+        {
+            var extras = new List<AdtractionFeedProductExtra>();
+            try
+            {
+                var xmlNodes = ExtrasXmlNodes as XmlNode[];
+                if (xmlNodes == null)
+                {
+                    return extras;
+                }
+                var current = new AdtractionFeedProductExtra();
+                foreach (var node in xmlNodes)
+                {
+                    if (string.Equals(node.Name, "name", StringComparison.OrdinalIgnoreCase))
+                    {
+                        current.Name = node.FirstChild?.Value;
+                    }
+                    else if (string.Equals(node.Name, "value", StringComparison.OrdinalIgnoreCase))
+                    {
+                        current.Value = node.FirstChild?.Value;
+                        extras.Add(current);
+                        current = new AdtractionFeedProductExtra();
+                    }
+                }
+                return extras;
+            }
+            catch (Exception ex)
+            {
+                return extras;
+            }
+        }
+    }
+}
+
+public class AdtractionFeedProductExtra
+{
+    public string? Name { get; set; }
+    public string? Value { get; set; }
+}

@@ -1,4 +1,5 @@
 using System.Net.Http.Headers;
+using System.Xml.Serialization;
 using Newtonsoft.Json;
 using RecipesAPI.API.Features.Admin.Common.Adtraction;
 
@@ -47,6 +48,25 @@ public class AdtractionService
             logger.LogError(ex, "failed to get applications");
             throw;
         }
+    }
+
+    public async Task<List<AdtractionFeedProduct>> ParseProductFeed(string feedUrl, int skip, int limit, string? searchQuery)
+    {
+        var xmlString = await httpClient.GetStringAsync(feedUrl);
+        var stringReader = new StringReader(xmlString);
+        var xmlSerializer = new XmlSerializer(typeof(AdtractionProductFeed));
+        var feedProducts = ((xmlSerializer.Deserialize(stringReader) as AdtractionProductFeed ?? new()).ProductFeed ?? new())
+            .Skip(skip)
+            .Take(limit);
+        if (!string.IsNullOrWhiteSpace(searchQuery))
+        {
+            feedProducts = feedProducts
+                .Where(p => p.Name?.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) == true
+                    || p.Description?.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) == true
+                    || p.Category?.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) == true
+                    || p.Brand?.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) == true);
+        }
+        return feedProducts.ToList();
     }
 
     public async Task<List<AdtractionProgram>> GetPrograms(string market, int? programId, int? channelId, int? approvalStatus, int? status)
