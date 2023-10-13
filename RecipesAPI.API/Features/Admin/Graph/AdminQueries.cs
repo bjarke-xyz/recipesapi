@@ -137,8 +137,8 @@ public class AdtractionFeedQueries
             {
                 return new();
             }
-            var productFeed = await adtractionService.ParseProductFeed(feed.FeedUrl, input?.Skip ?? 0, input?.Limit ?? 1000, input?.SearchQuery);
-            return productFeed;
+            var feedProducts = await adtractionService.GetFeedProducts(feed.ProgramId, feed.FeedId, input?.Skip ?? 0, input?.Limit ?? 1000, input?.SearchQuery);
+            return feedProducts;
         }
         catch (Exception ex)
         {

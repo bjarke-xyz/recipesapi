@@ -2,6 +2,7 @@ using System.Net.Http.Headers;
 using System.Xml.Serialization;
 using Newtonsoft.Json;
 using RecipesAPI.API.Features.Admin.Common.Adtraction;
+using RecipesAPI.API.Features.Admin.DAL;
 
 namespace RecipesAPI.API.Features.Admin.BLL;
 
@@ -11,13 +12,15 @@ public class AdtractionService
     private readonly string url;
     private readonly string apiKey;
     private readonly HttpClient httpClient;
+    private readonly AdtractionRepository adtractionRepository;
 
-    public AdtractionService(ILogger<AdtractionService> logger, string url, string apiKey, HttpClient httpClient)
+    public AdtractionService(ILogger<AdtractionService> logger, string url, string apiKey, HttpClient httpClient, AdtractionRepository adtractionRepository)
     {
         this.logger = logger;
         this.url = url;
         this.apiKey = apiKey;
         this.httpClient = httpClient;
+        this.adtractionRepository = adtractionRepository;
     }
 
     public async Task<AdtractionAccountBalance> GetBalance(string currency)
@@ -50,24 +53,53 @@ public class AdtractionService
         }
     }
 
-    public async Task<List<AdtractionFeedProduct>> ParseProductFeed(string feedUrl, int skip, int limit, string? searchQuery)
+    public async Task<List<AdtractionFeedProduct>> ParseProductFeed(string feedUrl)
     {
-        var xmlString = await httpClient.GetStringAsync(feedUrl);
-        var stringReader = new StringReader(xmlString);
+        var xmlStream = await httpClient.GetStreamAsync(feedUrl);
         var xmlSerializer = new XmlSerializer(typeof(AdtractionProductFeed));
-        IEnumerable<AdtractionFeedProduct> feedProducts = (xmlSerializer.Deserialize(stringReader) as AdtractionProductFeed ?? new()).ProductFeed ?? new();
-        if (!string.IsNullOrWhiteSpace(searchQuery))
+        IEnumerable<AdtractionFeedProduct> feedProducts = (xmlSerializer.Deserialize(xmlStream) as AdtractionProductFeed ?? new()).ProductFeed ?? new();
+        foreach (var p in feedProducts)
         {
-            feedProducts = feedProducts
-                .Where(p => p.Name?.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) == true
-                    || p.Description?.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) == true
-                    || p.Category?.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) == true
-                    || p.Brand?.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) == true);
+            p.SetExtrasFromXml();
         }
-        feedProducts = feedProducts
-            .Skip(skip)
-            .Take(limit);
         return feedProducts.ToList();
+    }
+
+    public async Task RefreshProductFeeds(string market, int channelId)
+    {
+        var programs = await GetPrograms(market, null, channelId, 1, null);
+        foreach (var program in programs)
+        {
+            foreach (var feed in program.Feeds ?? new())
+            {
+                if (!feed.FeedId.HasValue || !feed.LastUpdated.HasValue || string.IsNullOrWhiteSpace(feed.FeedUrl))
+                {
+                    continue;
+                }
+
+                var productFeed = await ParseProductFeed(feed.FeedUrl);
+
+                await adtractionRepository.SaveProductFeed(program.ProgramId, feed, productFeed);
+            }
+        }
+    }
+
+    public async Task<List<AdtractionFeedProduct>> GetFeedProducts(int? programId, int? feedId, int? skip, int? limit, string? searchQuery)
+    {
+        if (!programId.HasValue || !feedId.HasValue)
+        {
+            return new();
+        }
+
+        var productFeed = await adtractionRepository.GetProductFeed(programId.Value, feedId.Value);
+        if (productFeed == null)
+        {
+            // TODO: refresh when not found
+            return new();
+        }
+
+        var feedProducts = await adtractionRepository.GetFeedProducts(productFeed, skip, limit, searchQuery);
+        return feedProducts;
     }
 
     public async Task<List<AdtractionProgram>> GetPrograms(string market, int? programId, int? channelId, int? approvalStatus, int? status)
@@ -98,6 +130,14 @@ public class AdtractionService
             }
             var parsedResp = JsonConvert.DeserializeObject<List<AdtractionProgram>>(respJson);
             if (parsedResp == null) throw new Exception("Failed to deserialize programs response");
+
+            foreach (var program in parsedResp)
+            {
+                foreach (var feed in program.Feeds ?? new())
+                {
+                    feed.ProgramId = program.ProgramId;
+                }
+            }
             return parsedResp;
         }
         catch (Exception ex)

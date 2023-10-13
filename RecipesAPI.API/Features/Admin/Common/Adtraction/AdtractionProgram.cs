@@ -53,6 +53,8 @@ public class Feed
 
     [JsonProperty("name")]
     public string? Name { get; set; }
+
+    public int? ProgramId { get; set; }
 }
 
 public class AdtractionProgram
@@ -161,40 +163,54 @@ public class AdtractionFeedProduct
     [XmlElement("Extras"), GraphQLIgnore]
     public object? ExtrasXmlNodes { get; set; }
 
+    public void SetExtrasFromXml()
+    {
+        var extras = new List<AdtractionFeedProductExtra>();
+        try
+        {
+            if (ExtrasXmlNodes is not XmlNode[] xmlNodes)
+            {
+                Extras = extras;
+                return;
+            }
+            var current = new AdtractionFeedProductExtra();
+            foreach (var node in xmlNodes)
+            {
+                if (string.Equals(node.Name, "name", StringComparison.OrdinalIgnoreCase))
+                {
+                    current.Name = node.FirstChild?.Value;
+                }
+                else if (string.Equals(node.Name, "value", StringComparison.OrdinalIgnoreCase))
+                {
+                    current.Value = node.FirstChild?.Value;
+                    extras.Add(current);
+                    current = new AdtractionFeedProductExtra();
+                }
+            }
+            Extras = extras;
+        }
+        catch (Exception ex)
+        {
+            Extras = extras;
+        }
+    }
+
+    public void SetExtrasFromJson(string? extrasJson)
+    {
+        try
+        {
+            Extras = JsonConvert.DeserializeObject<List<AdtractionFeedProductExtra>>(extrasJson ?? "[]") ?? new();
+        }
+        catch (Exception ex)
+        {
+            Extras = new();
+        }
+    }
+
     [XmlIgnore]
     public List<AdtractionFeedProductExtra> Extras
     {
-        get
-        {
-            var extras = new List<AdtractionFeedProductExtra>();
-            try
-            {
-                var xmlNodes = ExtrasXmlNodes as XmlNode[];
-                if (xmlNodes == null)
-                {
-                    return extras;
-                }
-                var current = new AdtractionFeedProductExtra();
-                foreach (var node in xmlNodes)
-                {
-                    if (string.Equals(node.Name, "name", StringComparison.OrdinalIgnoreCase))
-                    {
-                        current.Name = node.FirstChild?.Value;
-                    }
-                    else if (string.Equals(node.Name, "value", StringComparison.OrdinalIgnoreCase))
-                    {
-                        current.Value = node.FirstChild?.Value;
-                        extras.Add(current);
-                        current = new AdtractionFeedProductExtra();
-                    }
-                }
-                return extras;
-            }
-            catch (Exception ex)
-            {
-                return extras;
-            }
-        }
+        get; private set;
     }
 }
 

@@ -22,6 +22,7 @@
     <PackageReference Include="Automapper" Version="12.0.0" />
     <PackageReference Include="AWSSDK.S3" Version="3.7.101" />
     <PackageReference Include="CsvHelper" Version="29.0.0" />
+    <PackageReference Include="Dapper" Version="2.1.4" />
     <PackageReference Include="DotNetEnv" Version="2.3.0" />
     <PackageReference Include="FirebaseAdmin" Version="2.3.0" />
     <PackageReference Include="Google.Cloud.Firestore" Version="3.0.0" />
@@ -32,6 +33,7 @@
     <PackageReference Include="HotChocolate.AspNetCore" Version="12.15.0" />
     <PackageReference Include="HotChocolate.AspNetCore.Authorization" Version="12.15.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="7.0.0" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="7.0.12" />
     <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="7.0.0" />
     <PackageReference Include="prometheus-net.AspNetCore" Version="7.0.0" />
     <PackageReference Include="RecipeIngredientParser.Core" Version="2.0.0" />

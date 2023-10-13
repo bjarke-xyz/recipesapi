@@ -34,6 +34,7 @@ using Serilog.Events;
 using Serilog.Formatting.Compact;
 using RecipesAPI.API.Features.Ratings.DAL;
 using RecipesAPI.API.Features.Ratings.BLL;
+using RecipesAPI.API.Features.Admin.DAL;
 
 CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
 
@@ -193,6 +194,7 @@ builder.Services
         var logger = sp.GetRequiredService<ILogger<PartnerAdsService>>();
         return new PartnerAdsService(url, key, httpClient, logger);
     })
+    .AddSingleton<AdtractionRepository>()
     .AddSingleton<AdtractionService>(sp =>
     {
         var url = builder.Configuration["AdtractionApiUrl"] ?? "";
@@ -200,9 +202,11 @@ builder.Services
         var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
         var httpClient = httpClientFactory.CreateClient(nameof(AdtractionService));
         var logger = sp.GetRequiredService<ILogger<AdtractionService>>();
-        return new AdtractionService(logger, url, key, httpClient);
+        var adtractionRepository = sp.GetRequiredService<AdtractionRepository>();
+        return new AdtractionService(logger, url, key, httpClient, adtractionRepository);
     })
     .AddSingleton<RequestInfoService>()
+    .AddSingleton<SqliteDataContext>()
     .AddHostedService<CacheRefreshBackgroundService>()
     .AddHostedService<AutoStopperBackgroundService>()
     .AddHostedService<HangfireRecurringJobs>()
@@ -259,6 +263,19 @@ builder.Services
 ;
 
 var app = builder.Build();
+
+{
+    try
+    {
+        using var scope = app.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<SqliteDataContext>();
+        await context.Init();
+    }
+    catch (Exception ex)
+    {
+        Log.Error(ex, "failed to initialise sqlite");
+    }
+}
 
 app.Use((ctx, next) =>
 {
