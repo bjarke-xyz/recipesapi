@@ -34,10 +34,10 @@ public class AdtractionRepository
             SELECT * FROM AdtractionProductFeedItems WHERE AdtractionProductFeedId = @id
             """
         );
-        if (!string.IsNullOrWhiteSpace(searchQuery))
-        {
-            sqlSb.Append(" WHERE Name LIKE ('%' || @query || '%')");
-        }
+        // if (!string.IsNullOrWhiteSpace(searchQuery))
+        // {
+        //     sqlSb.Append(" WHERE Name LIKE ('%' || @query || '%')");
+        // }
         if (limit.HasValue)
         {
             sqlSb.Append(" LIMIT @limit");
