@@ -76,10 +76,13 @@ public class AdtractionService
                 {
                     continue;
                 }
+                var feedDto = await adtractionRepository.GetProductFeed(program.ProgramId, feed.FeedId.Value);
+                if (feedDto == null || feedDto.LastUpdated < feed.LastUpdated)
+                {
+                    var productFeed = await ParseProductFeed(feed.FeedUrl);
+                    await adtractionRepository.SaveProductFeed(program.ProgramId, feed, productFeed);
+                }
 
-                var productFeed = await ParseProductFeed(feed.FeedUrl);
-
-                await adtractionRepository.SaveProductFeed(program.ProgramId, feed, productFeed);
             }
         }
     }
