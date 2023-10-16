@@ -60,6 +60,37 @@ public class SqliteDataContext
                     ExtrasJson TEXT
                 );
                 CREATE INDEX IF NOT EXISTS adtraction_product_feed_items_product_feed_id ON AdtractionProductFeedItems(AdtractionProductFeedId);
+
+
+                CREATE TABLE IF NOT EXISTS 
+                PartnerAdsProductFeed (
+                    Id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                    ProgramId TEXT NOT NULL,
+                    FeedLink TEXT NOT NULL,
+                    FeedUpdated TEXT NOT NULL,
+                    UNIQUE(ProgramId, FeedLink)
+                );
+                CREATE INDEX IF NOT EXISTS partnerads_product_feed_program_feed ON PartnerAdsProductFeed(ProgramId,FeedLink);
+
+                CREATE TABLE IF NOT EXISTS
+                PartnerAdsProductFeedItems (
+                    PartnerAdsProductFeedId INTEGER,
+                    Retailer TEXT,
+                    CategoryName TEXT,
+                    Brand TEXT,
+                    ProductName TEXT,
+                    ProductId TEXT,
+                    Description TEXT,
+                    NewPrice REAL,
+                    OldPrice REAL,
+                    DeliveryCost TEXT,
+                    StockQuantity TEXT,
+                    DeliveryTime TEXT,
+                    Size TEXT,
+                    ImageUrl TEXT,
+                    ProductUrl TEXT
+                );
+                CREATE INDEX IF NOT EXISTS partnerads_product_feed_items_product_feed_id ON PartnerAdsProductFeedItems(PartnerAdsProductFeedId);
             """;
             await connection.ExecuteAsync(sql);
         }

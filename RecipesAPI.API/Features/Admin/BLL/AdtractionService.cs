@@ -13,14 +13,18 @@ public class AdtractionService
     private readonly string apiKey;
     private readonly HttpClient httpClient;
     private readonly AdtractionRepository adtractionRepository;
+    private readonly string defaultMarket;
+    private readonly int defaultChannelId;
 
-    public AdtractionService(ILogger<AdtractionService> logger, string url, string apiKey, HttpClient httpClient, AdtractionRepository adtractionRepository)
+    public AdtractionService(ILogger<AdtractionService> logger, string url, string apiKey, HttpClient httpClient, AdtractionRepository adtractionRepository, string defaultMarket, int defaultChannelId)
     {
         this.logger = logger;
         this.url = url;
         this.apiKey = apiKey;
         this.httpClient = httpClient;
         this.adtractionRepository = adtractionRepository;
+        this.defaultMarket = defaultMarket;
+        this.defaultChannelId = defaultChannelId;
     }
 
     public async Task<AdtractionAccountBalance> GetBalance(string currency)
@@ -87,7 +91,7 @@ public class AdtractionService
         }
     }
 
-    public async Task<List<AdtractionFeedProduct>> GetFeedProducts(int? programId, int? feedId, int? skip, int? limit, string? searchQuery)
+    public async Task<List<AdtractionFeedProduct>> GetFeedProducts(int? programId, int? feedId, int? skip, int? limit, string? searchQuery, bool retry = true)
     {
         if (!programId.HasValue || !feedId.HasValue)
         {
@@ -97,8 +101,15 @@ public class AdtractionService
         var productFeed = await adtractionRepository.GetProductFeed(programId.Value, feedId.Value);
         if (productFeed == null)
         {
-            // TODO: refresh when not found
-            return new();
+            if (retry)
+            {
+                await RefreshProductFeeds(defaultMarket, defaultChannelId);
+                return await GetFeedProducts(programId, feedId, skip, limit, searchQuery, retry: false);
+            }
+            else
+            {
+                return new();
+            }
         }
 
         var feedProducts = await adtractionRepository.GetFeedProducts(productFeed, skip, limit, searchQuery);

@@ -185,6 +185,7 @@ builder.Services
     .AddSingleton<EquipmentService>()
     .AddSingleton<RatingsRepository>()
     .AddSingleton<RatingsService>()
+    .AddSingleton<PartnerAdsRepository>()
     .AddSingleton<PartnerAdsService>(sp =>
     {
         var url = builder.Configuration["PartnerAdsUrl"] ?? "";
@@ -192,7 +193,8 @@ builder.Services
         var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
         var httpClient = httpClientFactory.CreateClient(nameof(PartnerAdsService));
         var logger = sp.GetRequiredService<ILogger<PartnerAdsService>>();
-        return new PartnerAdsService(url, key, httpClient, logger);
+        var partnerAdsRepository = sp.GetRequiredService<PartnerAdsRepository>();
+        return new PartnerAdsService(url, key, httpClient, logger, partnerAdsRepository);
     })
     .AddSingleton<AdtractionRepository>()
     .AddSingleton<AdtractionService>(sp =>
@@ -203,7 +205,9 @@ builder.Services
         var httpClient = httpClientFactory.CreateClient(nameof(AdtractionService));
         var logger = sp.GetRequiredService<ILogger<AdtractionService>>();
         var adtractionRepository = sp.GetRequiredService<AdtractionRepository>();
-        return new AdtractionService(logger, url, key, httpClient, adtractionRepository);
+        var defaultMarket = "DK";
+        var defaultChannelId = builder.Configuration.GetValue<int>("AdtractionChannelId");
+        return new AdtractionService(logger, url, key, httpClient, adtractionRepository, defaultMarket, defaultChannelId);
     })
     .AddSingleton<RequestInfoService>()
     .AddSingleton<SqliteDataContext>()
@@ -255,6 +259,7 @@ builder.Services
             // Admin
             .AddTypeExtension<AdminQueries>()
             .AddTypeExtension<AdtractionFeedQueries>()
+            .AddTypeExtension<PartnerAdsProgramQueries>()
             .AddTypeExtension<AdminMutations>()
             // Equipment
             .AddTypeExtension<EquipmentQueries>()

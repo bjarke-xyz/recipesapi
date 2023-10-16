@@ -113,6 +113,7 @@ public class AdminQueries
         }
     }
 
+    [RoleAuthorize(RoleEnums = new[] { Role.ADMIN })]
     public async Task<List<AdtractionProgram>> GetAdtractionPrograms([Service] AdtractionService adtractionService, AdtractionProgramsInput input)
     {
         try
@@ -129,6 +130,7 @@ public class AdminQueries
 [ExtendObjectType(typeof(Feed))]
 public class AdtractionFeedQueries
 {
+    [RoleAuthorize(RoleEnums = new[] { Role.ADMIN })]
     public async Task<List<AdtractionFeedProduct>> GetProductFeed([Parent] Feed feed, [Service] AdtractionService adtractionService, GetProductFeedInput? input = null)
     {
         try
@@ -138,6 +140,28 @@ public class AdtractionFeedQueries
                 return new();
             }
             var feedProducts = await adtractionService.GetFeedProducts(feed.ProgramId, feed.FeedId, input?.Skip ?? 0, input?.Limit ?? 1000, input?.SearchQuery);
+            return feedProducts;
+        }
+        catch (Exception ex)
+        {
+            throw new GraphQLErrorException(ex.Message, ex);
+        }
+    }
+}
+
+[ExtendObjectType(typeof(PartnerAdsProgram))]
+public class PartnerAdsProgramQueries
+{
+    [RoleAuthorize(RoleEnums = new[] { Role.ADMIN })]
+    public async Task<List<PartnerAdsFeedProduct>> GetProductFeed([Parent] PartnerAdsProgram program, [Service] PartnerAdsService partnerAdsService, GetProductFeedInput? input = null)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(program.FeedLink))
+            {
+                return new();
+            }
+            var feedProducts = await partnerAdsService.GetFeedProducts(program.ProgramId, program.FeedLink, input?.Skip ?? 0, input?.Limit ?? 1000, input?.SearchQuery);
             return feedProducts;
         }
         catch (Exception ex)

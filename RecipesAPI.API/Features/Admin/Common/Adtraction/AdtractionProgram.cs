@@ -194,7 +194,7 @@ public class AdtractionFeedProduct
             }
             Extras = extras;
         }
-        catch (Exception ex)
+        catch
         {
             Extras = extras;
         }
@@ -206,17 +206,14 @@ public class AdtractionFeedProduct
         {
             Extras = JsonConvert.DeserializeObject<List<AdtractionFeedProductExtra>>(extrasJson ?? "[]") ?? new();
         }
-        catch (Exception ex)
+        catch
         {
             Extras = new();
         }
     }
 
     [XmlIgnore]
-    public List<AdtractionFeedProductExtra> Extras
-    {
-        get; private set;
-    }
+    public List<AdtractionFeedProductExtra> Extras { get; private set; } = new();
 }
 
 public class AdtractionFeedProductExtra
