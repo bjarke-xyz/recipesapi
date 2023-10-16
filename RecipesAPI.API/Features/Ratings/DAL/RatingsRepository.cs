@@ -97,6 +97,8 @@ public class RatingDto
     public string EntityId { get; set; } = "";
     [FirestoreProperty("score")]
     public int Score { get; set; }
+    [FirestoreProperty("comment")]
+    public string? Comment { get; set; }
 
     [FirestoreDocumentCreateTimestamp]
     public DateTimeOffset CreatedAt { get; set; }

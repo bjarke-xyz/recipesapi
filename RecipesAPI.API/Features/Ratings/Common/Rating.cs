@@ -7,6 +7,7 @@ public class Rating
     public RatingType EntityType { get; set; }
     public string EntityId { get; set; } = "";
     public int Score { get; set; }
+    public string? Comment { get; set; }
 }
 
 public enum RatingType

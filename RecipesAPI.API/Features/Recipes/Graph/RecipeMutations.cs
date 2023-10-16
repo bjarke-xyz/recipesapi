@@ -290,6 +290,7 @@ public class RecipeMutations
             };
         }
         rating.Score = input.Score;
+        rating.Comment = input.Comment;
 
         await ratingsService.SaveRating(rating, cancellationToken);
 
