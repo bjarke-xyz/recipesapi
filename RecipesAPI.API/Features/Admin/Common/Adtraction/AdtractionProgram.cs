@@ -156,7 +156,12 @@ public class AdtractionFeedProduct
     public string? ImageUrl { get; set; }
     public string? TrackingUrl { get; set; }
     public string? Brand { get; set; }
-    public string? OriginalPrice { get; set; }
+
+    [XmlElement("OriginalPrice"), GraphQLIgnore]
+    public string? OriginalPriceStr { get; set; }
+
+    public decimal? OriginalPrice => decimal.TryParse(OriginalPriceStr, out _) ? decimal.Parse(OriginalPriceStr) : null;
+
     public string? Ean { get; set; }
     public string? ManufacturerArticleNumber { get; set; }
 

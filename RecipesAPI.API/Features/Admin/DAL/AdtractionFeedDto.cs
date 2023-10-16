@@ -42,7 +42,7 @@ public class AdtractionProductFeedItemDto
         ImageUrl = product.ImageUrl;
         TrackingUrl = product.TrackingUrl;
         Brand = product.Brand;
-        OriginalPrice = product.OriginalPrice;
+        OriginalPrice = product.OriginalPriceStr;
         Ean = product.Ean;
         ManufacturerArticleNumber = product.ManufacturerArticleNumber;
         ExtrasJson = JsonConvert.SerializeObject(product.Extras);
@@ -80,7 +80,7 @@ public class AdtractionProductFeedItemDto
             ImageUrl = ImageUrl,
             TrackingUrl = TrackingUrl,
             Brand = Brand,
-            OriginalPrice = OriginalPrice,
+            OriginalPriceStr = OriginalPrice,
             Ean = Ean,
             ManufacturerArticleNumber = ManufacturerArticleNumber,
         };
