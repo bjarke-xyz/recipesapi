@@ -69,13 +69,17 @@ public class AdtractionService
         return feedProducts.ToList();
     }
 
-    public async Task RefreshProductFeeds(string market, int channelId)
+    public async Task RefreshProductFeeds(string market, int channelId, int? programId, int? feedId)
     {
-        var programs = await GetPrograms(market, null, channelId, 1, null);
+        var programs = await GetPrograms(market, programId, channelId, 1, null);
         foreach (var program in programs)
         {
             foreach (var feed in program.Feeds ?? new())
             {
+                if (feedId.HasValue && feed.FeedId != feedId)
+                {
+                    continue;
+                }
                 if (!feed.FeedId.HasValue || !feed.LastUpdated.HasValue || string.IsNullOrWhiteSpace(feed.FeedUrl))
                 {
                     continue;
@@ -103,7 +107,7 @@ public class AdtractionService
         {
             if (retry)
             {
-                await RefreshProductFeeds(defaultMarket, defaultChannelId);
+                await RefreshProductFeeds(defaultMarket, defaultChannelId, programId, feedId);
                 return await GetFeedProducts(programId, feedId, skip, limit, searchQuery, retry: false);
             }
             else

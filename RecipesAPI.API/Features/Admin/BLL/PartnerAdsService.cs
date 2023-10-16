@@ -119,9 +119,13 @@ public class PartnerAdsService
         return productFeed;
     }
 
-    public async Task RefreshProductFeeds()
+    public async Task RefreshProductFeeds(string? programId, string? feedLink)
     {
         var programs = await GetPrograms();
+        if (!string.IsNullOrEmpty(programId) && !string.IsNullOrEmpty(feedLink))
+        {
+            programs = programs.Where(x => x.ProgramId == programId && x.FeedLink == feedLink).ToList();
+        }
         foreach (var program in programs)
         {
             if (program.Feed && !string.IsNullOrWhiteSpace(program.FeedLink) && program.FeedUpdated.HasValue)
@@ -148,7 +152,7 @@ public class PartnerAdsService
         {
             if (retry)
             {
-                await RefreshProductFeeds();
+                await RefreshProductFeeds(programId, feedLink);
                 return await GetFeedProducts(programId, feedLink, skip, limit, searchQuery, retry: false);
             }
             else
