@@ -1,6 +1,8 @@
 scripts/frida/output/tmp
 RecipesAPI.API/bin
 RecipesAPI.API/obj
+RecipesAPI.API/LocalData.db
+RecipesAPI.API/.env
 RecipesAPI.Tests/bin
 RecipesAPI.Tests/obj
 .vscode

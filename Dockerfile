@@ -4,7 +4,6 @@ WORKDIR /app
 COPY . ./
 
 RUN dotnet publish "RecipesAPI.API/RecipesAPI.API.csproj" -c Release -o /app/publish \
-    --runtime linux-x64 \
     --self-contained true \
     /p:PublishSingleFile=true
 
