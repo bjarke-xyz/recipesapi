@@ -89,12 +89,11 @@ public class PartnerAdsProgram
 
     [XmlElement("feedupdated"), GraphQLIgnore]
     public string? FeedUpdatedStr { get; set; }
-    private static readonly CultureInfo daDkCultureInfo = new("da-dk");
     public DateTime? FeedUpdated
     {
         get
         {
-            if (DateTime.TryParseExact(FeedUpdatedStr, "yyyy-MM-dd HH:mm:ss", daDkCultureInfo, DateTimeStyles.None, out var parsedDateTime))
+            if (DateTime.TryParseExact(FeedUpdatedStr, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDateTime))
             {
                 return parsedDateTime;
             }

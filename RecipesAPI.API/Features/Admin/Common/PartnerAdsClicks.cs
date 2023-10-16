@@ -22,7 +22,7 @@ public class PartnerAdsClick
     public string DateStr { get; set; } = "";
     [XmlElement("tid")]
     public string TimeStr { get; set; } = "";
-    public DateTime? Timestamp => DateTime.TryParseExact($"{DateStr} {TimeStr}", "d-M-yyyy HH:mm", CultureInfo.GetCultureInfo("da-dk"), System.Globalization.DateTimeStyles.None, out var parsed) ? parsed : null;
+    public DateTime? Timestamp => DateTime.TryParseExact($"{DateStr} {TimeStr}", "d-M-yyyy HH:mm", CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var parsed) ? parsed : null;
 
     [XmlElement("url")]
     public string? Url { get; set; }
