@@ -42,11 +42,19 @@ DotNetEnv.Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
-Log.Logger = new LoggerConfiguration()
+var loggerConfig = new LoggerConfiguration()
     .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
-    .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning)
-    .WriteTo.Console(new RenderedCompactJsonFormatter())
-    .CreateBootstrapLogger();
+    .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning);
+if (!builder.Environment.IsDevelopment())
+{
+    loggerConfig = loggerConfig.WriteTo.Console(new RenderedCompactJsonFormatter());
+}
+else
+{
+    loggerConfig = loggerConfig.WriteTo.Console();
+}
+
+Log.Logger = loggerConfig.CreateBootstrapLogger();
 
 
 

@@ -133,7 +133,7 @@ public class HangfireDashboardAuthorizationMiddleware : IMiddleware
     {
         context.Response.Cookies.Delete(cookieKey);
         context.Response.StatusCode = 401;
-        context.Response.Headers.Add("WWW-Authenticate", "Basic realm=\"Hangfire\"");
+        context.Response.Headers.Append("WWW-Authenticate", "Basic realm=\"Hangfire\"");
     }
 }
 

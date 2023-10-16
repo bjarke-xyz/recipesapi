@@ -1,14 +1,14 @@
-FROM mcr.microsoft.com/dotnet/sdk:7.0-alpine AS build
+FROM mcr.microsoft.com/dotnet/sdk:8.0-alpine AS build
 WORKDIR /app
 
 COPY . ./
 
 RUN dotnet publish "RecipesAPI.API/RecipesAPI.API.csproj" -c Release -o /app/publish \
-    --runtime alpine-x64 \
+    --runtime linux-x64 \
     --self-contained true \
     /p:PublishSingleFile=true
 
-FROM mcr.microsoft.com/dotnet/aspnet:7.0-alpine
+FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine
 
 WORKDIR /app
 COPY --from=build /app/publish .
