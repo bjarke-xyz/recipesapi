@@ -14,3 +14,9 @@ public enum RatingType
 {
     Recipe = 0
 }
+
+public class RatingHelper
+{
+    public const int MaxRating = 5;
+    public const int MinRating = 1;
+}

@@ -262,6 +262,7 @@ builder.Services
             .AddTypeExtension<RecipeMutations>()
             .AddTypeExtension<RecipeIngredientQueries>()
             .AddTypeExtension<ExtendedRecipeQueries>()
+            .AddTypeExtension<ExtendedRecipeRatingQueries>()
             // Food
             .AddTypeExtension<FoodQueries>()
             // Admin

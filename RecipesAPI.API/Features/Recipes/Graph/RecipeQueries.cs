@@ -12,6 +12,8 @@ using RecipesAPI.API.Features.Equipment.Common;
 using RecipesAPI.API.Features.Equipment.BLL;
 using RecipesAPI.API.Features.Files.DAL;
 using RecipesAPI.API.Infrastructure;
+using RecipesAPI.API.Features.Ratings.BLL;
+using RecipesAPI.API.Features.Ratings.Common;
 
 namespace RecipesAPI.API.Features.Recipes.Graph;
 
@@ -103,9 +105,31 @@ public class RecipeIngredientQueries
 
 }
 
+[ExtendObjectType(typeof(Rating))]
+public class ExtendedRecipeRatingQueries
+{
+    public async Task<RecipeAuthor?> GetUser([Parent] Rating extendedRecipeRating, UserDataLoader userDataLoader, CancellationToken cancellationToken)
+    {
+        var user = await userDataLoader.LoadAsync(extendedRecipeRating.UserId, cancellationToken);
+        if (user == null) return null;
+        return new RecipeAuthor { UserId = user.Id, DisplayName = user.DisplayName ?? "" };
+    }
+}
+
 [ExtendObjectType(typeof(Recipe))]
 public class ExtendedRecipeQueries
 {
+
+    public async Task<ExtendedRecipeRating?> GetExtendedRating([Parent] Recipe recipe, [User] User? loggedInUser, RecipeRatingsDataLoader recipeRatingsDataLoader, CancellationToken cancellationToken)
+    {
+        var recipeRatings = await recipeRatingsDataLoader.LoadAsync(recipe.Id, cancellationToken);
+        if (recipeRatings == null || recipeRatings.Count == 0)
+        {
+            return null;
+        }
+        return new ExtendedRecipeRating(recipeRatings, loggedInUser);
+    }
+
     public async Task<Image?> GetImage([Parent] Recipe recipe, [Service] IFileService fileService, FileDataLoader fileDataLoader, [Service] ImageProcessingService imageProcessingService, [Service] SettingsService settingsService, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(recipe.ImageId)) return null;

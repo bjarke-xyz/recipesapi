@@ -41,6 +41,24 @@ public class RatingsRepository
         return ratings;
     }
 
+    public async Task<Dictionary<string, List<Rating>>> GetRatings(RatingType type, List<string> ids, CancellationToken cancellationToken)
+    {
+        if (ids == null || ids.Count == 0)
+        {
+            return new();
+        }
+        var snapshot = await db.Collection(ratingCollection).WhereEqualTo("entityType", type).WhereIn("entityId", ids).GetSnapshotAsync(cancellationToken);
+        var ratings = new List<Rating>();
+        foreach (var doc in snapshot.Documents)
+        {
+            var dto = doc.ConvertTo<RatingDto>();
+            var rating = RatingMapper.MapDto(dto);
+            ratings.Add(rating);
+        }
+        var dict = ratings.GroupBy(x => x.EntityId).ToDictionary(x => x.Key, x => x.ToList());
+        return dict;
+    }
+
     public async Task<Rating?> GetRating(RatingType type, string id, string userId, CancellationToken cancellationToken)
     {
         var snapshot = await db.Collection(ratingCollection).WhereEqualTo("entityType", type).WhereEqualTo("entityId", id).WhereEqualTo("userId", userId).GetSnapshotAsync(cancellationToken);

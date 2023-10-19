@@ -1,6 +1,9 @@
 
+using Microsoft.Extensions.ObjectPool;
 using RecipesAPI.API.Features.Files.DAL;
+using RecipesAPI.API.Features.Ratings.Common;
 using RecipesAPI.API.Features.Recipes.BLL;
+using RecipesAPI.API.Features.Users.Common;
 
 namespace RecipesAPI.API.Features.Recipes.Common;
 
@@ -119,4 +122,37 @@ public class RecipeRating
 {
     public double Score { get; set; }
     public int Raters { get; set; }
+}
+
+public class ExtendedRecipeRating
+{
+
+    public ExtendedRecipeRating() { }
+    public ExtendedRecipeRating(List<Rating> ratings, User? loggedInUser)
+    {
+        Ratings = ratings;
+
+        for (var i = RatingHelper.MinRating; i <= RatingHelper.MaxRating; i++)
+        {
+            RatingGroups.Add(new RecipeRating { Score = i, Raters = 0 });
+        }
+        RatingGroups.Reverse();
+        foreach (var rating in ratings)
+        {
+            var rg = RatingGroups.FirstOrDefault(x => (int)x.Score == rating.Score);
+            if (rg != null)
+            {
+                rg.Raters++;
+            }
+        }
+
+        if (loggedInUser != null)
+        {
+            UserRating = Ratings.FirstOrDefault(x => x.UserId == loggedInUser.Id);
+        }
+
+    }
+    public List<RecipeRating> RatingGroups { get; set; } = [];
+    public List<Rating> Ratings { get; set; } = [];
+    public Rating? UserRating { get; set; } = null;
 }
