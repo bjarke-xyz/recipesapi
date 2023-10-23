@@ -220,7 +220,6 @@ builder.Services
     .AddSingleton<RequestInfoService>()
     .AddSingleton<SqliteDataContext>()
     .AddHostedService<CacheRefreshBackgroundService>()
-    .AddHostedService<AutoStopperBackgroundService>()
     .AddHostedService<HangfireRecurringJobs>()
     .AddHttpContextAccessor()
     .AddSingleton<IConnectionMultiplexer>(sp =>
@@ -281,6 +280,7 @@ var app = builder.Build();
 {
     try
     {
+        Log.Information("LocalData: {connStr}", app.Configuration.GetConnectionString("LocalData"));
         using var scope = app.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<SqliteDataContext>();
         await context.Init();
