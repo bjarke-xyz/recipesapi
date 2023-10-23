@@ -1,12 +1,11 @@
 # fly.toml file generated for recipesapi on 2023-01-04T18:12:35+01:00
 
 app = "recipesapi-v2"
-primary_region = "fra"
+primary_region = "ams"
 
 [env]
 PORT = "8080"
-ENABLE_AUTOSTOP = "false"
-AUTOSTOP_MINUTES = "20"
+ConnectionStrings__LocalData = "Data Source=LocalData.db"
 
 
 [http_service]
