@@ -1,6 +1,6 @@
 
 
-resource "oci_core_instance" "ubuntu_instance" {
+resource "oci_core_instance" "web01_instance" {
   # Required
   availability_domain = data.oci_identity_availability_domains.ads.availability_domains[0].name
   compartment_id      = oci_identity_compartment.tf-compartment.id
@@ -18,7 +18,7 @@ resource "oci_core_instance" "ubuntu_instance" {
   display_name = "recipesapi-web01"
   create_vnic_details {
     assign_public_ip = true
-    subnet_id        = module.vcn.vcn_id
+    subnet_id        = oci_core_subnet.vcn-public-subnet.id
   }
   metadata = {
     ssh_authorized_keys = file(var.ssh_pub_key_path)
