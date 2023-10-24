@@ -35,6 +35,10 @@ using Serilog.Formatting.Compact;
 using RecipesAPI.API.Features.Ratings.DAL;
 using RecipesAPI.API.Features.Ratings.BLL;
 using RecipesAPI.API.Features.Admin.DAL;
+using Sentry;
+using HotChocolate.AspNetCore.Authorization;
+
+const string loadedFromEnvVar = "LOADED FROM ENVIRONMENT VARIABLE";
 
 CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
 
@@ -72,6 +76,20 @@ builder.WebHost.UseKestrel(serverOptions =>
 {
     serverOptions.ListenAnyIP(port);
 });
+var sentryDsn = builder.Configuration["SENTRY_DSN"];
+var useSentry = !string.IsNullOrEmpty(sentryDsn) && sentryDsn != loadedFromEnvVar;
+if (useSentry)
+{
+    builder.WebHost.UseSentry(o =>
+    {
+        o.Dsn = sentryDsn;
+        // When configuring for the first time, to see what the SDK is doing:
+        o.Debug = true;
+        // Set TracesSampleRate to 1.0 to capture 100% of transactions for performance monitoring.
+        // We recommend adjusting this value in production.
+        o.TracesSampleRate = 1.0;
+    });
+}
 
 builder.Host.UseSerilog(Log.Logger);
 
@@ -315,7 +333,12 @@ app
         options.ReduceStatusCodeCardinality();
     })
     .UseSerilogRequestLogging()
-    .UseRouting()
+    .UseRouting();
+if (useSentry)
+{
+    app.UseSentryTracing();
+}
+app
     .UseAuthentication()
     .UseAuthorization()
     .UseWhen((ctx => ctx.Request.Path.StartsWithSegments("/hangfire")), hangfireApp => hangfireApp.UseHangfireAuthorizationMiddleware())
