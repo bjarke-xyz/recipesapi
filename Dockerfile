@@ -11,5 +11,5 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine
 
 WORKDIR /app
 COPY --from=build /app/publish .
-COPY --from=build /app/scripts/frida/output/final/frida.csv /data/frida.csv
+COPY --from=build /app/scripts/frida/output/final/frida.csv /static-data/frida.csv
 ENTRYPOINT ["./RecipesAPI.API"]

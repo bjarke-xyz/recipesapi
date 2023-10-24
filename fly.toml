@@ -5,7 +5,12 @@ primary_region = "ams"
 
 [env]
 PORT = "8080"
-ConnectionStrings__LocalData = "Data Source=LocalData.db"
+ConnectionStrings__LocalData = "Data Source=/data/LocalData.db"
+FridaCsvPath = "/static-data/frida.csv"
+
+[mounts]
+source = "recipesapi_data"
+destination = "/data"
 
 
 [http_service]

@@ -159,7 +159,11 @@ builder.Services
         var csvPath = "../scripts/frida/output/final/frida.csv";
         if (builder.Environment.IsProduction())
         {
-            csvPath = "/data/frida.csv";
+            csvPath = builder.Configuration["FridaCsvPath"];
+            if (string.IsNullOrEmpty(csvPath))
+            {
+                csvPath = "/data/frida.csv";
+            }
         }
         return new FoodRepository(csvPath);
     })
