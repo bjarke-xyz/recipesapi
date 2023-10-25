@@ -1,5 +1,6 @@
 
 using Microsoft.Extensions.ObjectPool;
+using RecipesAPI.API.Features.Admin.Common;
 using RecipesAPI.API.Features.Files.DAL;
 using RecipesAPI.API.Features.Ratings.Common;
 using RecipesAPI.API.Features.Recipes.BLL;
@@ -56,6 +57,7 @@ public class RecipeIngredient
     public List<string> Meta { get; set; } = default!;
     public bool ManuallyEntered { get; set; }
     public bool Optional { get; set; }
+    public List<AffiliateItemReference> AffiliateItemReferences { get; set; } = [];
 }
 
 public class Image

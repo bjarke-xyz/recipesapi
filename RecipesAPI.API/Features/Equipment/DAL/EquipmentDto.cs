@@ -1,4 +1,5 @@
 using Google.Cloud.Firestore;
+using RecipesAPI.API.Features.Admin.DAL;
 
 namespace RecipesAPI.API.Features.Equipment.DAL;
 
@@ -18,9 +19,10 @@ public class EquipmentItemDto
     public string? Icon { get; set; } = default!;
 
     [FirestoreProperty("links")]
-    public List<EquipmentLinkDto> Links { get; set; } = new List<EquipmentLinkDto>();
+    public List<EquipmentLinkDto> Links { get; set; } = [];
 
-    // TODO: CreatedAt,UpdatedAt,CreatedBy,UpdatedBy
+    [FirestoreProperty("affiliateItemReferences")]
+    public List<AffiliateItemReferenceDto> AffiliateItemReferences { get; set; } = [];
 }
 
 [FirestoreData]

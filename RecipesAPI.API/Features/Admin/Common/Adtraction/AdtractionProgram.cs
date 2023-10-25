@@ -214,6 +214,9 @@ public class AdtractionFeedProduct
 
     [XmlIgnore]
     public List<AdtractionFeedProductExtra> Extras { get; private set; } = new();
+
+    public int ProgramId { get; set; }
+    public int FeedId { get; set; }
 }
 
 public class AdtractionFeedProductExtra

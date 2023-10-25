@@ -239,6 +239,7 @@ builder.Services
         var defaultChannelId = builder.Configuration.GetValue<int>("AdtractionChannelId");
         return new AdtractionService(logger, url, key, httpClient, adtractionRepository, defaultMarket, defaultChannelId);
     })
+    .AddSingleton<AffiliateService>()
     .AddSingleton<RequestInfoService>()
     .AddSingleton<SqliteDataContext>()
     .AddHostedService<CacheRefreshBackgroundService>()
@@ -290,6 +291,7 @@ builder.Services
             .AddTypeExtension<AdminQueries>()
             .AddTypeExtension<AdtractionFeedQueries>()
             .AddTypeExtension<PartnerAdsProgramQueries>()
+            .AddTypeExtension<AffiliateItemReferenceQueries>()
             .AddTypeExtension<AdminMutations>()
             // Equipment
             .AddTypeExtension<EquipmentQueries>()

@@ -1,4 +1,6 @@
 
+using RecipesAPI.API.Features.Admin.Common;
+
 namespace RecipesAPI.API.Features.Equipment.Common;
 
 public class EquipmentItem
@@ -11,7 +13,9 @@ public class EquipmentItem
 
     public string? Icon { get; set; } = default!;
 
-    public List<EquipmentLink> Links { get; set; } = new List<EquipmentLink>();
+    public List<EquipmentLink> Links { get; set; } = [];
+
+    public List<AffiliateItemReference> AffiliateItemReferences { get; set; } = [];
 }
 
 public class EquipmentLink

@@ -158,6 +158,8 @@ public class PartnerAdsFeedProduct
 
     [XmlElement("vareurl")]
     public string? ProductUrl { get; set; }
+
+    public int ProgramId { get; set; }
 }
 
 [XmlRoot("produkter")]

@@ -41,8 +41,10 @@ public class PartnerAdsProductFeedItemDto
         Size = product.Size;
         ImageUrl = product.ImageUrl;
         ProductUrl = product.ProductUrl;
+        ProgramId = product.ProgramId;
     }
     public int PartnerAdsProductFeedId { get; set; }
+    public int ProgramId { get; set; }
 
     public string? Retailer { get; set; }
     public string? CategoryName { get; set; }
@@ -77,6 +79,7 @@ public class PartnerAdsProductFeedItemDto
             Size = Size,
             ImageUrl = ImageUrl,
             ProductUrl = ProductUrl,
+            ProgramId = ProgramId,
         };
         return feedProduct;
     }

@@ -48,6 +48,8 @@ public class AdtractionProductFeedItemDto
         ExtrasJson = JsonConvert.SerializeObject(product.Extras);
     }
     public int AdtractionProductFeedId { get; set; }
+    public int ProgramId { get; set; } // manually set
+    public int FeedId { get; set; } // manually set
     public string? Sku { get; set; }
     public string? Name { get; set; }
     public string? Description { get; set; }
@@ -83,6 +85,8 @@ public class AdtractionProductFeedItemDto
             OriginalPriceStr = OriginalPrice,
             Ean = Ean,
             ManufacturerArticleNumber = ManufacturerArticleNumber,
+            ProgramId = ProgramId,
+            FeedId = FeedId,
         };
         feedProduct.SetExtrasFromJson(ExtrasJson);
         return feedProduct;

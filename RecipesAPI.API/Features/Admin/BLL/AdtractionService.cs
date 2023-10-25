@@ -1,30 +1,35 @@
 using System.Net.Http.Headers;
 using System.Xml.Serialization;
 using Newtonsoft.Json;
+using RecipesAPI.API.Features.Admin.Common;
 using RecipesAPI.API.Features.Admin.Common.Adtraction;
 using RecipesAPI.API.Features.Admin.DAL;
 
 namespace RecipesAPI.API.Features.Admin.BLL;
 
-public class AdtractionService
+public class AdtractionService(ILogger<AdtractionService> logger, string url, string apiKey, HttpClient httpClient, AdtractionRepository adtractionRepository, string defaultMarket, int defaultChannelId)
 {
-    private readonly ILogger<AdtractionService> logger;
-    private readonly string url;
-    private readonly string apiKey;
-    private readonly HttpClient httpClient;
-    private readonly AdtractionRepository adtractionRepository;
-    private readonly string defaultMarket;
-    private readonly int defaultChannelId;
+    private readonly ILogger<AdtractionService> logger = logger;
+    private readonly string url = url;
+    private readonly string apiKey = apiKey;
+    private readonly HttpClient httpClient = httpClient;
+    private readonly AdtractionRepository adtractionRepository = adtractionRepository;
+    private readonly string defaultMarket = defaultMarket;
+    private readonly int defaultChannelId = defaultChannelId;
 
-    public AdtractionService(ILogger<AdtractionService> logger, string url, string apiKey, HttpClient httpClient, AdtractionRepository adtractionRepository, string defaultMarket, int defaultChannelId)
+    public async Task<AdtractionFeedProduct?> GetFeedProduct(AdtractionItemReference itemReference)
     {
-        this.logger = logger;
-        this.url = url;
-        this.apiKey = apiKey;
-        this.httpClient = httpClient;
-        this.adtractionRepository = adtractionRepository;
-        this.defaultMarket = defaultMarket;
-        this.defaultChannelId = defaultChannelId;
+        return await adtractionRepository.GetFeedProduct(itemReference.ProgramId, itemReference.FeedId, itemReference.Sku);
+    }
+
+    public async Task<List<AdtractionFeedProduct>> SearchFeedProducts(string? searchQuery, string? programId, int skip, int limit)
+    {
+        int? programIdInt = null;
+        if (int.TryParse(programId, out var _programIdInt))
+        {
+            programIdInt = _programIdInt;
+        }
+        return await adtractionRepository.SearchFeedProducts(searchQuery, programIdInt, skip, limit);
     }
 
     public async Task<AdtractionAccountBalance> GetBalance(string currency)

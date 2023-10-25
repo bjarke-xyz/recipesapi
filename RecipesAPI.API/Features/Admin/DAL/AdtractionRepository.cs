@@ -3,27 +3,66 @@ using System.Text;
 using Dapper;
 using RecipesAPI.API.Features.Admin.Common.Adtraction;
 using RecipesAPI.API.Infrastructure;
+using StackExchange.Redis;
 
 namespace RecipesAPI.API.Features.Admin.DAL;
 
-public class AdtractionRepository
+public class AdtractionRepository(SqliteDataContext context, ILogger<AdtractionRepository> logger)
 {
-    private readonly ILogger<AdtractionRepository> logger;
+    private readonly ILogger<AdtractionRepository> logger = logger;
 
-    private readonly SqliteDataContext context;
+    private readonly SqliteDataContext context = context;
 
-    public AdtractionRepository(SqliteDataContext context, ILogger<AdtractionRepository> logger)
-    {
-        this.context = context;
-        this.logger = logger;
-    }
-
-    private async Task<AdtractionProductFeedDto?> GetProductFeedInternal(IDbConnection conn, int programId, int feedId)
+    private static async Task<AdtractionProductFeedDto?> GetProductFeedInternal(IDbConnection conn, int programId, int feedId)
     {
         var sql = """
         SELECT * FROM AdtractionProductFeed WHERE ProgramId = @programId AND FeedId = @feedId
         """;
         return await conn.QuerySingleOrDefaultAsync<AdtractionProductFeedDto>(sql, new { programId, feedId });
+    }
+
+    public async Task<AdtractionFeedProduct?> GetFeedProduct(int programId, int feedId, string sku)
+    {
+        using var conn = context.CreateConnection();
+        var sql =
+         """
+         SELECT item.* FROM AdtractionProductFeedItems item 
+         JOIN AdtractionProductFeed feed ON item.AdtractionProductFeedId = feed.Id
+         WHERE item.Sku = @sku AND feed.ProgramId = @programId AND feed.FeedId = @feedId
+         LIMIT 1
+         """;
+        var dto = await conn.QueryFirstOrDefaultAsync<AdtractionProductFeedItemDto>(sql, new { programId, feedId, sku });
+        if (dto == null) return null;
+        dto.ProgramId = programId;
+        dto.FeedId = feedId;
+        return dto.ToFeedProduct();
+    }
+
+    public async Task<List<AdtractionFeedProduct>> SearchFeedProducts(string? searchQuery, int? programId, int skip, int limit)
+    {
+        using var conn = context.CreateConnection();
+        var sqlSb = new StringBuilder(
+            """
+            SELECT item.*, feed.ProgramId, feed.FeedId FROM AdtractionProductFeedItems item
+            JOIN AdtractionProductFeed feed ON item.AdtractionProductFeedId = feed.Id
+            """
+        );
+        var whereAdded = false;
+        if (!string.IsNullOrWhiteSpace(searchQuery))
+        {
+            whereAdded = true;
+            sqlSb.Append(" WHERE ((Name LIKE ('%' || @query || '%')) OR (Category LIKE ('%' || @query || '%')))");
+        }
+
+        if (programId.HasValue)
+        {
+            if (!whereAdded) sqlSb.Append(" WHERE ");
+            if (whereAdded) sqlSb.Append(" AND ");
+            sqlSb.Append(" feed.ProgramId = @programId");
+        }
+        sqlSb.AppendLine(" LIMIT @limit OFFSET @offset");
+        var dtos = await conn.QueryAsync<AdtractionProductFeedItemDto>(sqlSb.ToString(), new { query = searchQuery, limit, offset = skip, programId });
+        return dtos.Select(x => x.ToFeedProduct()).ToList();
     }
 
     public async Task<List<AdtractionFeedProduct>> GetFeedProducts(AdtractionProductFeedDto feedDto, int? skip, int? limit, string? searchQuery)
@@ -49,6 +88,11 @@ public class AdtractionRepository
         var feedItemDtos = await conn.QueryAsync<AdtractionProductFeedItemDto>(
             sqlSb.ToString(), new { id = feedDto.Id, query = searchQuery, limit, offset = skip }
         );
+        foreach (var dto in feedItemDtos)
+        {
+            dto.ProgramId = feedDto.ProgramId;
+            dto.FeedId = feedDto.FeedId;
+        }
         var feedProducts = feedItemDtos.Select(dto => dto.ToFeedProduct()).ToList();
         return feedProducts;
     }

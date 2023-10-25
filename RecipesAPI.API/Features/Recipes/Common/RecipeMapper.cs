@@ -1,4 +1,5 @@
 using AutoMapper;
+using RecipesAPI.API.Features.Admin.Common;
 using RecipesAPI.API.Features.Files.DAL;
 using RecipesAPI.API.Features.Recipes.DAL;
 using RecipesAPI.API.Features.Recipes.Graph;
@@ -16,7 +17,9 @@ public static class RecipeMapper
             ;
         cfg.CreateMap<RecipePartDto, RecipePart>()
             .ForMember(e => e.Ingredients, opt => opt.MapFrom(dto => dto.Ingredients ?? new List<RecipeIngredientDto>()));
-        cfg.CreateMap<RecipeIngredientDto, RecipeIngredient>();
+        cfg.CreateMap<RecipeIngredientDto, RecipeIngredient>()
+            .ForMember(e => e.AffiliateItemReferences, opt => opt.MapFrom(src => AdminMapper.MapDto(src.AffiliateItemReferences ?? new())))
+        ;
 
         cfg.CreateMap<Recipe, RecipeDto>()
             .ForMember(dto => dto.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt.ToString("O")))
@@ -28,7 +31,9 @@ public static class RecipeMapper
         cfg.CreateMap<RecipePart, RecipePartDto>()
             .ForMember(dto => dto.Ingredients, opt => opt.MapFrom(src => src.Ingredients ?? new List<RecipeIngredient>()))
             ;
-        cfg.CreateMap<RecipeIngredient, RecipeIngredientDto>();
+        cfg.CreateMap<RecipeIngredient, RecipeIngredientDto>()
+            .ForMember(e => e.AffiliateItemReferences, opt => opt.MapFrom(src => AdminMapper.Map(src.AffiliateItemReferences ?? new())))
+        ;
 
         cfg.CreateMap<RecipeInput, Recipe>();
         cfg.CreateMap<RecipePartInput, RecipePart>();

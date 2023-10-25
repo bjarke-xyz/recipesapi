@@ -1,3 +1,5 @@
+using RecipesAPI.API.Features.Admin.Common;
+
 namespace RecipesAPI.API.Features.Recipes.Graph;
 
 public class RecipeInput
@@ -33,6 +35,7 @@ public class RecipePartIngredientInput
     public List<string>? Meta { get; set; } = default!;
     public bool? ManuallyEntered { get; set; }
     public bool? Optional { get; set; }
+    public List<AffiliateItemReference>? AffiliateItemReferences { get; set; }
 }
 
 public class RecipeFilter

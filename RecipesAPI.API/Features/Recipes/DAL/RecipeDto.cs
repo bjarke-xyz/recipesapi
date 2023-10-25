@@ -1,4 +1,5 @@
 using Google.Cloud.Firestore;
+using RecipesAPI.API.Features.Admin.DAL;
 
 namespace RecipesAPI.API.Features.Recipes.DAL;
 
@@ -83,6 +84,9 @@ public class RecipeIngredientDto
     public bool ManuallyEntered { get; set; }
     [FirestoreProperty("optional")]
     public bool Optional { get; set; }
+
+    [FirestoreProperty("affiliateItemReferences")]
+    public List<AffiliateItemReferenceDto> AffiliateItemReferences { get; set; } = [];
 }
 
 [FirestoreData]

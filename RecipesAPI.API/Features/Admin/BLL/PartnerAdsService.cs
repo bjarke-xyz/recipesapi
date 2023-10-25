@@ -5,23 +5,19 @@ using RecipesAPI.API.Features.Admin.DAL;
 
 namespace RecipesAPI.API.Features.Admin.BLL;
 
-public class PartnerAdsService
+public class PartnerAdsService(string url, string key, HttpClient httpClient, ILogger<PartnerAdsService> logger, PartnerAdsRepository partnerAdsRepository)
 {
-    private readonly ILogger<PartnerAdsService> logger;
-    private readonly string url;
-    private readonly string key;
-    private readonly HttpClient httpClient;
-    private readonly PartnerAdsRepository partnerAdsRepository;
+    private readonly ILogger<PartnerAdsService> logger = logger;
+    private readonly string url = url;
+    private readonly string key = key;
+    private readonly HttpClient httpClient = httpClient;
+    private readonly PartnerAdsRepository partnerAdsRepository = partnerAdsRepository;
 
     private const string dateFormat = "yy-M-d";
 
-    public PartnerAdsService(string url, string key, HttpClient httpClient, ILogger<PartnerAdsService> logger, PartnerAdsRepository partnerAdsRepository)
+    public async Task<PartnerAdsFeedProduct?> GetFeedProduct(PartnerAdsItemReference itemReference)
     {
-        this.url = url;
-        this.key = key;
-        this.httpClient = httpClient;
-        this.logger = logger;
-        this.partnerAdsRepository = partnerAdsRepository;
+        return await partnerAdsRepository.GetFeedProduct(itemReference.ProgramId, itemReference.ProductId);
     }
 
     public async Task<PartnerAdsBalance> GetBalance()
@@ -165,5 +161,8 @@ public class PartnerAdsService
         return feedProducts;
     }
 
-
+    public async Task<List<PartnerAdsFeedProduct>> SearchFeedProducts(string? searchQuery, string? programId, int skip, int limit)
+    {
+        return await partnerAdsRepository.SearchFeedProducts(searchQuery, programId, skip, limit);
+    }
 }

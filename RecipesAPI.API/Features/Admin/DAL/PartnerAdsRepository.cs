@@ -26,6 +26,48 @@ public class PartnerAdsRepository
         return await conn.QuerySingleOrDefaultAsync<PartnerAdsProductFeedDto>(sql, new { programId, feedLink });
     }
 
+    public async Task<PartnerAdsFeedProduct?> GetFeedProduct(string programId, string productId)
+    {
+        using var conn = context.CreateConnection();
+        var sql =
+        """
+        SELECT item.* FROM PartnerAdsProductFeedItems item
+        JOIN PartnerAdsProductFeed feed ON item.PartnerAdsProductFeedId = feed.Id
+        WHERE feed.ProgramId = @programId AND item.ProductId = @productId
+        LIMIT 1
+        """;
+        var dto = await conn.QuerySingleOrDefaultAsync<PartnerAdsProductFeedItemDto>(sql, new { programId, productId });
+        if (dto == null) return null;
+        return dto.ToFeedProduct();
+    }
+
+    public async Task<List<PartnerAdsFeedProduct>> SearchFeedProducts(string? searchQuery, string? programId, int skip, int limit)
+    {
+        using var conn = context.CreateConnection();
+        var sqlSb = new StringBuilder(
+            """
+            SELECT item.*, feed.ProgramId FROM PartnerAdsProductFeedItems item
+            JOIN PartnerAdsProductFeed feed ON item.PartnerAdsProductFeedId = feed.Id
+            """
+        );
+        var whereAdded = false;
+        if (!string.IsNullOrWhiteSpace(searchQuery))
+        {
+            sqlSb.Append(" WHERE ((ProductName LIKE ('%' || @query || '%')) OR (CategoryName LIKE ('%' || @query || '%')))");
+            whereAdded = true;
+        }
+
+        if (!string.IsNullOrWhiteSpace(programId))
+        {
+            if (!whereAdded) sqlSb.Append(" WHERE ");
+            if (whereAdded) sqlSb.Append(" AND ");
+            sqlSb.Append(" feed.ProgramId = @programId");
+        }
+        sqlSb.AppendLine(" LIMIT @limit OFFSET @offset");
+        var dtos = await conn.QueryAsync<PartnerAdsProductFeedItemDto>(sqlSb.ToString(), new { query = searchQuery, limit, offset = skip, programId });
+        return dtos.Select(x => x.ToFeedProduct()).ToList();
+    }
+
     public async Task<List<PartnerAdsFeedProduct>> GetFeedProducts(PartnerAdsProductFeedDto feedDto, int? skip, int? limit, string? searchQuery)
     {
         using var conn = context.CreateConnection();
@@ -117,4 +159,5 @@ public class PartnerAdsRepository
         using var conn = context.CreateConnection();
         return await GetProductFeedInternal(conn, programId, feedLink);
     }
+
 }

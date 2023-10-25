@@ -125,6 +125,19 @@ public class AdminQueries
             throw new GraphQLErrorException(ex.Message, ex);
         }
     }
+
+    [RoleAuthorize(RoleEnums = new[] { Role.MODERATOR })]
+    public async Task<List<AffiliateItem>> SearchAffiliateItems(SearchProductFeedInput input, [Service] AffiliateService affiliateService)
+    {
+        try
+        {
+            return await affiliateService.SearchAffiliateItems(input.Provider, input.SearchQuery, input.ProgramId, input.Skip ?? 0, input.Limit ?? 1000);
+        }
+        catch (Exception ex)
+        {
+            throw new GraphQLErrorException(ex.Message, ex);
+        }
+    }
 }
 
 [ExtendObjectType(typeof(Feed))]
@@ -171,11 +184,31 @@ public class PartnerAdsProgramQueries
     }
 }
 
+[ExtendObjectType(typeof(AffiliateItemReference))]
+public class AffiliateItemReferenceQueries
+{
+    public async Task<AffiliateItem?> GetAffiliateItem([Parent] AffiliateItemReference? affiliateItemReference, [Service] AffiliateService affiliateService)
+    {
+        if (affiliateItemReference == null) return null;
+        var affiliateItem = await affiliateService.GetAffiliateItem(affiliateItemReference);
+        return affiliateItem;
+    }
+}
+
 public class GetProductFeedInput
 {
     public int? Skip { get; set; }
     public int? Limit { get; set; }
     public string? SearchQuery { get; set; }
+}
+
+public class SearchProductFeedInput
+{
+    public AffiliateProvider Provider { get; set; }
+    public int? Skip { get; set; }
+    public int? Limit { get; set; }
+    public string? SearchQuery { get; set; }
+    public string? ProgramId { get; set; }
 }
 
 public class PartnerAdsEarningsInput
