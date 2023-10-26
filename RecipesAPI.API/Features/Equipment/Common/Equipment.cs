@@ -14,9 +14,6 @@ public class EquipmentItem
     public string? Icon { get; set; } = default!;
 
     public List<EquipmentLink> Links { get; set; } = [];
-
-    [Obsolete("delete when frontend no longer uses")]
-    public List<AffiliateItemReference> AffiliateItemReferences { get; set; } = [];
 }
 
 public class EquipmentLink

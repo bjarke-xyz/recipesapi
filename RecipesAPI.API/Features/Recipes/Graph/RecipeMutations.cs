@@ -168,21 +168,6 @@ public class RecipeMutations
     [RoleAuthorize(RoleEnums = new[] { Role.USER })]
     public async Task<Recipe> UpdateRecipe(string id, bool? unpublish, RecipeInput input, [Service] IHttpContextAccessor httpContextAccessor, [User] User loggedInUser, [Service] RecipeService recipeService, [Service] IFileService fileService, [Service] ImageProcessingService imageProcessingService, CancellationToken cancellationToken)
     {
-        if (id == "42e7af83-9d59-4128-9627-cd49505353b5")
-        {
-            input.Parts[0].Ingredients[0].AffiliateItemReferences = new List<Admin.Common.AffiliateItemReference>
-            {
-                new Admin.Common.AffiliateItemReference
-                {
-                    Provider = Admin.Common.AffiliateProvider.PartnerAds,
-                    PartnerAds = new Admin.Common.PartnerAdsItemReference
-                    {
-                        ProgramId = "7035",
-                        ProductId = "2647244",
-                    }
-                }
-            };
-        }
         var thumbnailSize = ThumbnailSize.Medium;
         var httpContext = httpContextAccessor.HttpContext;
         if (httpContext == null) throw new GraphQLErrorException("Something went wrong");

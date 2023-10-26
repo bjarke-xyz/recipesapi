@@ -20,9 +20,6 @@ public class EquipmentItemDto
 
     [FirestoreProperty("links")]
     public List<EquipmentLinkDto> Links { get; set; } = [];
-
-    [FirestoreProperty("affiliateItemReferences")]
-    public List<AffiliateItemReferenceDto> AffiliateItemReferences { get; set; } = [];
 }
 
 [FirestoreData]

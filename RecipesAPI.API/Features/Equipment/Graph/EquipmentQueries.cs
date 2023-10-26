@@ -26,10 +26,6 @@ public class ExtendedEquipmentQueries
 {
     public async Task<List<AffiliateItem>> GetAffiliateItems([Parent] EquipmentItem equipmentItem, AffiliateSearchDataLoader affiliateSearchDataLoader)
     {
-        if (equipmentItem.AffiliateItemReferences?.Count > 0)
-        {
-            return [];
-        }
         var affiliateItems = await affiliateSearchDataLoader.LoadAsync(equipmentItem.Title);
         return affiliateItems;
     }
