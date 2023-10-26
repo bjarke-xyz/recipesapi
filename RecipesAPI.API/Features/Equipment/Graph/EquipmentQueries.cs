@@ -1,3 +1,5 @@
+using RecipesAPI.API.Features.Admin.BLL;
+using RecipesAPI.API.Features.Admin.Common;
 using RecipesAPI.API.Features.Equipment.BLL;
 using RecipesAPI.API.Features.Equipment.Common;
 
@@ -17,5 +19,18 @@ public class EquipmentQueries
         var equipment = await service.GetEquipment(id, cancellationToken);
         return equipment;
     }
+}
 
+[ExtendObjectType(typeof(EquipmentItem))]
+public class ExtendedEquipmentQueries
+{
+    public async Task<List<AffiliateItem>> GetAffiliateItems([Parent] EquipmentItem equipmentItem, AffiliateSearchDataLoader affiliateSearchDataLoader)
+    {
+        if (equipmentItem.AffiliateItemReferences?.Count > 0)
+        {
+            return [];
+        }
+        var affiliateItems = await affiliateSearchDataLoader.LoadAsync(equipmentItem.Title);
+        return affiliateItems;
+    }
 }

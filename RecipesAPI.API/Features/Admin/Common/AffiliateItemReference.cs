@@ -10,18 +10,20 @@ public class AffiliateItem
     {
         Provider = AffiliateProvider.Adtraction;
         Adtraction = adtractionFeedProduct;
-        if (!string.IsNullOrEmpty(adtractionFeedProduct.Brand) && !string.IsNullOrEmpty(adtractionFeedProduct.TrackingUrl))
+        if (!string.IsNullOrEmpty(adtractionFeedProduct.Name) && !string.IsNullOrEmpty(adtractionFeedProduct.TrackingUrl))
         {
             ItemInfo = new AffiliateItemInfo
             {
-                Title = adtractionFeedProduct.Brand,
+                Title = adtractionFeedProduct.Name,
                 Url = adtractionFeedProduct.TrackingUrl,
+                ProductName = adtractionFeedProduct.Name,
                 ImageUrl = adtractionFeedProduct.ImageUrl,
                 Description = adtractionFeedProduct.Description,
                 Category = adtractionFeedProduct.Category,
                 NewPrice = adtractionFeedProduct.Price,
                 OldPrice = adtractionFeedProduct.OriginalPrice,
                 InStock = adtractionFeedProduct.InStock,
+                Brand = adtractionFeedProduct.Brand,
             };
         }
     }
@@ -29,18 +31,20 @@ public class AffiliateItem
     {
         Provider = AffiliateProvider.PartnerAds;
         PartnerAds = partnerAdsFeedProduct;
-        if (!string.IsNullOrEmpty(partnerAdsFeedProduct.Brand) && !string.IsNullOrEmpty(partnerAdsFeedProduct.ProductUrl))
+        if (!string.IsNullOrEmpty(partnerAdsFeedProduct.ProductName) && !string.IsNullOrEmpty(partnerAdsFeedProduct.ProductUrl))
         {
             ItemInfo = new AffiliateItemInfo
             {
-                Title = partnerAdsFeedProduct.Brand,
+                Title = partnerAdsFeedProduct.ProductName,
                 Url = partnerAdsFeedProduct.ProductUrl,
+                ProductName = partnerAdsFeedProduct.ProductName,
                 ImageUrl = partnerAdsFeedProduct.ImageUrl,
                 Description = partnerAdsFeedProduct.Description,
                 Category = partnerAdsFeedProduct.CategoryName,
                 NewPrice = partnerAdsFeedProduct.NewPrice,
                 OldPrice = partnerAdsFeedProduct.OldPrice,
                 InStock = partnerAdsFeedProduct.InStock,
+                Brand = partnerAdsFeedProduct.Brand,
             };
         }
     }
@@ -48,6 +52,21 @@ public class AffiliateItem
     public AdtractionFeedProduct? Adtraction { get; set; }
     public PartnerAdsFeedProduct? PartnerAds { get; set; }
     public AffiliateItemInfo? ItemInfo { get; set; } = new();
+
+    public AffiliateItemReference? ToItemReference()
+    {
+        var itemRef = new AffiliateItemReference
+        {
+            Provider = Provider,
+            Adtraction = Provider == AffiliateProvider.Adtraction && Adtraction != null ? new AdtractionItemReference(Adtraction) : null,
+            PartnerAds = Provider == AffiliateProvider.PartnerAds && PartnerAds != null ? new PartnerAdsItemReference(PartnerAds) : null,
+        };
+        if (itemRef.Adtraction == null && itemRef.PartnerAds == null)
+        {
+            return null;
+        }
+        return itemRef;
+    }
 }
 
 public class AffiliateItemInfo
@@ -60,6 +79,8 @@ public class AffiliateItemInfo
     public decimal? NewPrice { get; set; }
     public decimal? OldPrice { get; set; }
     public bool? InStock { get; set; }
+    public string? Brand { get; set; }
+    public string ProductName { get; set; } = "";
 }
 
 public class AffiliateItemReference
@@ -71,6 +92,13 @@ public class AffiliateItemReference
 
 public class AdtractionItemReference
 {
+    public AdtractionItemReference() { }
+    public AdtractionItemReference(AdtractionFeedProduct adtractionFeedProduct)
+    {
+        ProgramId = adtractionFeedProduct.ProgramId;
+        FeedId = adtractionFeedProduct.FeedId;
+        Sku = adtractionFeedProduct.Sku ?? "";
+    }
     public int ProgramId { get; set; }
     public int FeedId { get; set; }
     public string Sku { get; set; } = "";
@@ -78,6 +106,12 @@ public class AdtractionItemReference
 
 public class PartnerAdsItemReference
 {
+    public PartnerAdsItemReference() { }
+    public PartnerAdsItemReference(PartnerAdsFeedProduct partnerAdsFeedProduct)
+    {
+        ProgramId = partnerAdsFeedProduct.ProgramId.ToString(); // TODO: why is this an int?
+        ProductId = partnerAdsFeedProduct.ProductId ?? "";
+    }
     public string ProgramId { get; set; } = "";
     public string ProductId { get; set; } = "";
 }

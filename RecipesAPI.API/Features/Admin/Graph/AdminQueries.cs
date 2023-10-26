@@ -131,7 +131,7 @@ public class AdminQueries
     {
         try
         {
-            return await affiliateService.SearchAffiliateItems(input.Provider, input.SearchQuery, input.ProgramId, input.Skip ?? 0, input.Limit ?? 1000);
+            return await affiliateService.SearchAffiliateItems(input.SearchQuery, input.Count ?? 1000);
         }
         catch (Exception ex)
         {
@@ -204,11 +204,17 @@ public class GetProductFeedInput
 
 public class SearchProductFeedInput
 {
-    public AffiliateProvider Provider { get; set; }
-    public int? Skip { get; set; }
-    public int? Limit { get; set; }
     public string? SearchQuery { get; set; }
+    public int? Count { get; set; }
+
+    [Obsolete("not used")]
     public string? ProgramId { get; set; }
+    [Obsolete("not used")]
+    public AffiliateProvider? Provider { get; set; }
+    [Obsolete("not used")]
+    public int? Skip { get; set; }
+    [Obsolete("not used")]
+    public int? Limit { get; set; }
 }
 
 public class PartnerAdsEarningsInput

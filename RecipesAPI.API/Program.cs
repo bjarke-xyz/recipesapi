@@ -295,6 +295,7 @@ builder.Services
             .AddTypeExtension<AdminMutations>()
             // Equipment
             .AddTypeExtension<EquipmentQueries>()
+            .AddTypeExtension<ExtendedEquipmentQueries>()
             .AddTypeExtension<EquipmentMutations>()
         .AddType<UploadType>()
 ;

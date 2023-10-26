@@ -12,7 +12,7 @@ public static class EquipmentMapper
     {
         cfg.CreateMap<EquipmentItemDto, EquipmentItem>()
             .ForMember(e => e.Links, opt => opt.MapFrom(src => src.Links ?? new List<EquipmentLinkDto>()))
-            .ForMember(e => e.AffiliateItemReferences, opt => opt.MapFrom(src => AdminMapper.MapDto(src.AffiliateItemReferences ?? new())))
+            .ForMember(e => e.AffiliateItemReferences, opt => opt.MapFrom(src => new List<AffiliateItemReference>()))
             ;
         cfg.CreateMap<EquipmentLinkDto, EquipmentLink>();
 
