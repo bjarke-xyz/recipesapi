@@ -76,7 +76,10 @@ public class AffiliateService(AdtractionService adtractionService, PartnerAdsSer
         }
 
         var rankedItems = RankItems(allItems, searchQuery, count);
-        await cache.Put(cacheKey, rankedItems, expiration: TimeSpan.FromHours(1));
+        if (count < 10)
+        {
+            await cache.Put(cacheKey, rankedItems, expiration: TimeSpan.FromHours(1));
+        }
         return rankedItems;
     }
 
