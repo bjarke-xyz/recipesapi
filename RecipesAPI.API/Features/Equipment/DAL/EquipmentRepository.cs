@@ -38,6 +38,7 @@ public class EquipmentRepository
     public async Task<Dictionary<string, EquipmentItem>> GetEquipment(List<string> ids, CancellationToken cancellationToken)
     {
         if (ids == null || ids.Count == 0) return new Dictionary<string, EquipmentItem>();
+        ids = ids.Where(x => !string.IsNullOrWhiteSpace(x)).ToList();
         var snapshot = await db.Collection(equipmentCollection).WhereIn(FieldPath.DocumentId, ids).GetSnapshotAsync(cancellationToken);
         var result = new Dictionary<string, EquipmentItem>();
         foreach (var doc in snapshot.Documents)
