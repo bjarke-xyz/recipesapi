@@ -96,7 +96,7 @@ builder.Services.AddOpenTelemetry()
             .AddHttpClientInstrumentation();
         if (useSentry)
         {
-            tracingProviderBuilder.AddSentry();
+            // tracingProviderBuilder.AddSentry();
         }
         else
         {
@@ -114,7 +114,7 @@ if (useSentry)
         // Set TracesSampleRate to 1.0 to capture 100% of transactions for performance monitoring.
         // We recommend adjusting this value in production.
         o.TracesSampleRate = 1.0;
-        o.UseOpenTelemetry();
+        // o.UseOpenTelemetry();
     });
 }
 
@@ -295,6 +295,11 @@ builder.Services
             {
                 return error.WithMessage("An error has occurred");
             }
+        })
+        .AddInstrumentation(o =>
+        {
+            o.RenameRootActivity = true;
+            o.IncludeDocument = true;
         })
         .AddAuthorization()
         .AddHttpRequestInterceptor<AuthInterceptor>()
