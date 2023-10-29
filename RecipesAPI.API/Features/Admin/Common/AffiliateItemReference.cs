@@ -9,7 +9,6 @@ public class AffiliateItem
     public AffiliateItem(AdtractionFeedProduct adtractionFeedProduct)
     {
         Provider = AffiliateProvider.Adtraction;
-        Adtraction = adtractionFeedProduct;
         if (!string.IsNullOrEmpty(adtractionFeedProduct.Name) && !string.IsNullOrEmpty(adtractionFeedProduct.TrackingUrl))
         {
             ItemInfo = new AffiliateItemInfo
@@ -30,7 +29,6 @@ public class AffiliateItem
     public AffiliateItem(PartnerAdsFeedProduct partnerAdsFeedProduct)
     {
         Provider = AffiliateProvider.PartnerAds;
-        PartnerAds = partnerAdsFeedProduct;
         if (!string.IsNullOrEmpty(partnerAdsFeedProduct.ProductName) && !string.IsNullOrEmpty(partnerAdsFeedProduct.ProductUrl))
         {
             ItemInfo = new AffiliateItemInfo
@@ -49,24 +47,7 @@ public class AffiliateItem
         }
     }
     public AffiliateProvider Provider { get; set; }
-    public AdtractionFeedProduct? Adtraction { get; set; }
-    public PartnerAdsFeedProduct? PartnerAds { get; set; }
     public AffiliateItemInfo? ItemInfo { get; set; } = new();
-
-    public AffiliateItemReference? ToItemReference()
-    {
-        var itemRef = new AffiliateItemReference
-        {
-            Provider = Provider,
-            Adtraction = Provider == AffiliateProvider.Adtraction && Adtraction != null ? new AdtractionItemReference(Adtraction) : null,
-            PartnerAds = Provider == AffiliateProvider.PartnerAds && PartnerAds != null ? new PartnerAdsItemReference(PartnerAds) : null,
-        };
-        if (itemRef.Adtraction == null && itemRef.PartnerAds == null)
-        {
-            return null;
-        }
-        return itemRef;
-    }
 }
 
 public class AffiliateItemInfo

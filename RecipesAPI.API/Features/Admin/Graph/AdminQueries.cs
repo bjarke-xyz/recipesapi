@@ -206,15 +206,6 @@ public class SearchProductFeedInput
 {
     public string? SearchQuery { get; set; }
     public int? Count { get; set; }
-
-    [Obsolete("not used")]
-    public string? ProgramId { get; set; }
-    [Obsolete("not used")]
-    public AffiliateProvider? Provider { get; set; }
-    [Obsolete("not used")]
-    public int? Skip { get; set; }
-    [Obsolete("not used")]
-    public int? Limit { get; set; }
 }
 
 public class PartnerAdsEarningsInput

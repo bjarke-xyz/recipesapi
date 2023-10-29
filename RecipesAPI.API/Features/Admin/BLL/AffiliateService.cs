@@ -61,11 +61,17 @@ public class AffiliateService(AdtractionService adtractionService, PartnerAdsSer
 
     public async Task<List<AffiliateItem>> SearchAffiliateItems(string? searchQuery, int count = 100)
     {
+        const int cacheCount = 15;
+        var originalCount = count;
+        if (count <= cacheCount)
+        {
+            count = cacheCount;
+        }
         var cacheKey = $"AffSvc:SearchItems:{searchQuery}:{count}";
-        var cached = await cache.Get<List<AffiliateItem>>(cacheKey);
+        var cached = count == cacheCount ? await cache.Get<List<AffiliateItem>>(cacheKey) : null;
         if (cached != null)
         {
-            return cached;
+            return cached.Take(originalCount).ToList();
         }
         var providers = new List<AffiliateProvider> { AffiliateProvider.Adtraction, AffiliateProvider.PartnerAds };
         var allItems = new List<AffiliateItem>();
@@ -76,11 +82,11 @@ public class AffiliateService(AdtractionService adtractionService, PartnerAdsSer
         }
 
         var rankedItems = RankItems(allItems, searchQuery, count);
-        if (count < 10)
+        if (count == cacheCount)
         {
             await cache.Put(cacheKey, rankedItems, expiration: TimeSpan.FromHours(1));
         }
-        return rankedItems;
+        return rankedItems.Take(originalCount).ToList();
     }
 
     private List<AffiliateItem> RankItems(List<AffiliateItem> allItems, string? searchQuery, int count)
