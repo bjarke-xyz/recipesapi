@@ -36,6 +36,7 @@ using OpenTelemetry.Trace;
 using Sentry.OpenTelemetry;
 using OpenTelemetry.Resources;
 using Serilog;
+using Sentry;
 
 CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
 
@@ -224,6 +225,10 @@ builder.Services
     .AddSingleton<IConnectionMultiplexer>(sp =>
     {
         return RedisConnectionHelper.GetConnection(builder.Configuration);
+    })
+    .AddSingleton<ISentryUserFactory>(sp =>
+    {
+        return new MySentryUserFactory(sp.GetRequiredService<IHttpContextAccessor>());
     })
     .AddStackExchangeRedisCache(options =>
     {
