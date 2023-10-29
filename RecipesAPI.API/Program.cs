@@ -7,7 +7,6 @@ using RecipesAPI.API.Auth;
 using RecipesAPI.API.Exceptions;
 using RecipesAPI.API.Infrastructure;
 using StackExchange.Redis;
-using Serilog;
 using Prometheus;
 using Hangfire;
 using Hangfire.Dashboard;
@@ -30,15 +29,13 @@ using RecipesAPI.API.Features.Healthcheck.BLL;
 using RecipesAPI.API.Features.Equipment.Graph;
 using RecipesAPI.API.Features.Equipment.DAL;
 using RecipesAPI.API.Features.Equipment.BLL;
-using Serilog.Events;
-using Serilog.Formatting.Compact;
 using RecipesAPI.API.Features.Ratings.DAL;
 using RecipesAPI.API.Features.Ratings.BLL;
 using RecipesAPI.API.Features.Admin.DAL;
 using OpenTelemetry.Trace;
 using Sentry.OpenTelemetry;
 using OpenTelemetry.Resources;
-using Sentry.AspNetCore;
+using Serilog;
 
 CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
 
@@ -46,19 +43,37 @@ DotNetEnv.Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
+
+Action<Sentry.SentryOptions> configureSentry = o =>
+{
+    var sentryDsn = builder.Configuration["SENTRY_DSN"];
+    o.Dsn = sentryDsn;
+    o.Environment = builder.Environment.EnvironmentName.ToLower();
+    // When configuring for the first time, to see what the SDK is doing:
+    // Set TracesSampleRate to 1.0 to capture 100% of transactions for performance monitoring.
+    // We recommend adjusting this value in production.
+    o.TracesSampleRate = 1.0;
+    o.UseOpenTelemetry();
+};
+
 var loggerConfig = new LoggerConfiguration()
-    .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
-    .MinimumLevel.Override("Microsoft.AspNetCore", LogEventLevel.Warning);
+    .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Information)
+    .MinimumLevel.Override("Microsoft.AspNetCore", Serilog.Events.LogEventLevel.Warning)
+    .Enrich.FromLogContext()
+    .WriteTo.Sentry(o =>
+    {
+        configureSentry(o);
+    });
 if (!builder.Environment.IsDevelopment())
 {
-    loggerConfig = loggerConfig.WriteTo.Console(new RenderedCompactJsonFormatter());
+    loggerConfig = loggerConfig.WriteTo.Console(new Serilog.Formatting.Compact.RenderedCompactJsonFormatter());
 }
 else
 {
     loggerConfig = loggerConfig.WriteTo.Console();
 }
 
-Log.Logger = loggerConfig.CreateBootstrapLogger();
+Log.Logger = loggerConfig.CreateLogger();
 builder.Host.UseSerilog(Log.Logger);
 
 var googleAppCredContent = builder.Configuration["GOOGLE_APPLICATION_CREDENTIALS_CONTENT"];
@@ -266,31 +281,9 @@ builder.Services
         .AddType<UploadType>()
 ;
 
-Action<Sentry.SentryOptions> configureSentry = o =>
-{
-    var sentryDsn = builder.Configuration["SENTRY_DSN"];
-    o.Dsn = sentryDsn;
-    // o.Debug = builder.Environment.IsDevelopment();
-    o.Environment = builder.Environment.EnvironmentName.ToLower();
-    // When configuring for the first time, to see what the SDK is doing:
-    // Set TracesSampleRate to 1.0 to capture 100% of transactions for performance monitoring.
-    // We recommend adjusting this value in production.
-    o.TracesSampleRate = 1.0;
-    o.UseOpenTelemetry();
-};
-
-// Hack to make it not crash on startup
-var sentrySdk = Sentry.SentrySdk.Init(o =>
-{
-    configureSentry(o);
-});
 
 builder.WebHost
-    .UseKestrel(serverOptions => serverOptions.ListenAnyIP(port))
-    .UseSentry((SentryAspNetCoreOptions o) =>
-    {
-        configureSentry(o);
-    });
+    .UseKestrel(serverOptions => serverOptions.ListenAnyIP(port));
 
 builder.Services.AddOpenTelemetry()
     .WithTracing(tracingProviderBuilder =>
@@ -308,18 +301,6 @@ builder.Services.AddOpenTelemetry()
 
 
 var app = builder.Build();
-
-try
-{
-    Log.Information("LocalData: {connStr}", app.Configuration.GetConnectionString("LocalData"));
-    using var scope = app.Services.CreateScope();
-    var context = scope.ServiceProvider.GetRequiredService<SqliteDataContext>();
-    await context.Init();
-}
-catch (Exception ex)
-{
-    Log.Error(ex, "failed to initialise sqlite");
-}
 
 app.UseCors(o => o
     .AllowAnyHeader()
@@ -349,6 +330,19 @@ app
         endpoint.MapHangfireDashboard(new DashboardOptions { Authorization = new List<IDashboardAuthorizationFilter> { new HangfireDashboardAuthorizationFilter() } });
     });
 
+
+try
+{
+    Log.Information("LocalData: {connStr}", app.Configuration.GetConnectionString("LocalData"));
+    using var scope = app.Services.CreateScope();
+    var context = scope.ServiceProvider.GetRequiredService<SqliteDataContext>();
+    await context.Init();
+}
+catch (Exception ex)
+{
+    Log.Error(ex, "failed to initialise sqlite");
+}
+
 try
 {
     Log.Information("Starting API");
@@ -362,7 +356,6 @@ catch (Exception ex)
 }
 finally
 {
-    sentrySdk?.Dispose();
     Log.Information("Shutdown complete");
     Log.CloseAndFlush();
 }
