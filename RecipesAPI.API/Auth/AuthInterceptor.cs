@@ -34,7 +34,8 @@ public class AuthInterceptor : DefaultHttpRequestInterceptor
                 context.User.AddIdentity(identity);
             }
         }
-        requestBuilder.SetProperty(UserAttribute.DictKey, user ?? new User());
+        // requestBuilder.SetProperty(UserAttribute.DictKey, user ?? new User());
+        requestBuilder.SetGlobalState(UserAttribute.DictKey, user ?? new User());
         var idToken = "";
         if (!string.IsNullOrEmpty(context.Request.Headers.Authorization.ToString()))
         {
@@ -44,7 +45,8 @@ public class AuthInterceptor : DefaultHttpRequestInterceptor
                 idToken = parts[1].Trim();
             }
         }
-        requestBuilder.SetProperty(IdTokenAttribute.DictKey, idToken);
+        // requestBuilder.SetProperty(IdTokenAttribute.DictKey, idToken);
+        requestBuilder.SetGlobalState(IdTokenAttribute.DictKey, idToken);
         await base.OnCreateAsync(context, requestExecutor, requestBuilder, cancellationToken);
     }
 

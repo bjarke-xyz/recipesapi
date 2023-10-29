@@ -37,11 +37,8 @@ using RecipesAPI.API.Features.Ratings.BLL;
 using RecipesAPI.API.Features.Admin.DAL;
 using OpenTelemetry.Trace;
 using Sentry.OpenTelemetry;
-using Sentry;
-using HotChocolate.AspNetCore.Authorization;
 using OpenTelemetry.Resources;
-
-const string loadedFromEnvVar = "LOADED FROM ENVIRONMENT VARIABLE";
+using Sentry.AspNetCore;
 
 CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
 
@@ -74,71 +71,10 @@ if (!string.IsNullOrEmpty(googleAppCredContent))
 var port = 5001;
 if (int.TryParse(builder.Configuration["PORT"], out var _port)) port = _port;
 
-builder.WebHost.UseKestrel(serverOptions =>
-{
-    serverOptions.ListenAnyIP(port);
-});
-
-
-var sentryDsn = builder.Configuration["SENTRY_DSN"];
-var useSentry = !string.IsNullOrEmpty(sentryDsn) && sentryDsn != loadedFromEnvVar;
-builder.Services.AddOpenTelemetry()
-    .WithTracing(tracingProviderBuilder =>
-    {
-        tracingProviderBuilder
-            // .AddSource(Telemetry.ActivitySource.Name)
-            .ConfigureResource(resource => resource.AddService(serviceName: builder.Environment.ApplicationName))
-            .AddAspNetCoreInstrumentation()
-            .AddGrpcClientInstrumentation()
-            .AddSqlClientInstrumentation()
-            .AddRedisInstrumentation()
-            .AddHotChocolateInstrumentation()
-            .AddHttpClientInstrumentation();
-        if (useSentry)
-        {
-            // tracingProviderBuilder.AddSentry();
-        }
-        else
-        {
-            tracingProviderBuilder.AddConsoleExporter();
-        }
-    });
-
-if (useSentry)
-{
-    builder.WebHost.UseSentry(o =>
-    {
-        o.Dsn = sentryDsn;
-        // When configuring for the first time, to see what the SDK is doing:
-        o.Debug = true;
-        // Set TracesSampleRate to 1.0 to capture 100% of transactions for performance monitoring.
-        // We recommend adjusting this value in production.
-        o.TracesSampleRate = 1.0;
-        // o.UseOpenTelemetry();
-    });
-}
-
 
 var storageBucket = "recipes-5000.appspot.com";
 
 FirebaseApp.Create();
-
-StackExchange.Redis.ConfigurationOptions GetRedisConfigurationOptions(WebApplicationBuilder b)
-{
-    var configuration = new StackExchange.Redis.ConfigurationOptions
-    {
-        User = b.Configuration["REDIS_USER"],
-        Password = b.Configuration["REDIS_PASSWORD"],
-        ClientName = "RecipesApi",
-    };
-    var redisHost = b.Configuration["REDIS_HOST"];
-    if (string.IsNullOrEmpty(redisHost))
-    {
-        throw new ArgumentNullException("REDIS_HOST must not be null");
-    }
-    configuration.EndPoints.Add(redisHost);
-    return configuration;
-}
 
 var jwtUtil = new JwtUtil(builder.Configuration["FirebaseAppId"]!, null);
 
@@ -266,18 +202,17 @@ builder.Services
         return new AdtractionService(logger, url, key, httpClient, adtractionRepository, defaultMarket, defaultChannelId);
     })
     .AddSingleton<AffiliateService>()
-    .AddSingleton<RequestInfoService>()
     .AddSingleton<SqliteDataContext>()
     .AddHostedService<CacheRefreshBackgroundService>()
     .AddHostedService<HangfireRecurringJobs>()
     .AddHttpContextAccessor()
     .AddSingleton<IConnectionMultiplexer>(sp =>
     {
-        return ConnectionMultiplexer.Connect(GetRedisConfigurationOptions(builder));
+        return RedisConnectionHelper.GetConnection(builder.Configuration);
     })
     .AddStackExchangeRedisCache(options =>
     {
-        options.ConfigurationOptions = GetRedisConfigurationOptions(builder);
+        options.ConnectionMultiplexerFactory = () => Task.FromResult(RedisConnectionHelper.GetConnection(builder.Configuration));
     })
     .AddDistributedMemoryCache()
     .AddCors()
@@ -331,29 +266,60 @@ builder.Services
         .AddType<UploadType>()
 ;
 
+Action<Sentry.SentryOptions> configureSentry = o =>
+{
+    var sentryDsn = builder.Configuration["SENTRY_DSN"];
+    o.Dsn = sentryDsn;
+    // o.Debug = builder.Environment.IsDevelopment();
+    o.Environment = builder.Environment.EnvironmentName.ToLower();
+    // When configuring for the first time, to see what the SDK is doing:
+    // Set TracesSampleRate to 1.0 to capture 100% of transactions for performance monitoring.
+    // We recommend adjusting this value in production.
+    o.TracesSampleRate = 1.0;
+    o.UseOpenTelemetry();
+};
+
+// Hack to make it not crash on startup
+var sentrySdk = Sentry.SentrySdk.Init(o =>
+{
+    configureSentry(o);
+});
+
+builder.WebHost
+    .UseKestrel(serverOptions => serverOptions.ListenAnyIP(port))
+    .UseSentry((SentryAspNetCoreOptions o) =>
+    {
+        configureSentry(o);
+    });
+
+builder.Services.AddOpenTelemetry()
+    .WithTracing(tracingProviderBuilder =>
+        tracingProviderBuilder
+            .AddSource(Telemetry.ActivitySource.Name)
+            .ConfigureResource(resource => resource.AddService(Telemetry.ServiceName))
+            .AddAspNetCoreInstrumentation()
+            .AddHttpClientInstrumentation()
+            .AddGrpcClientInstrumentation()
+            .AddSqlClientInstrumentation()
+            .AddRedisInstrumentation()
+            .AddHotChocolateInstrumentation()
+            .AddSentry()
+    );
+
+
 var app = builder.Build();
 
+try
 {
-    try
-    {
-        Log.Information("LocalData: {connStr}", app.Configuration.GetConnectionString("LocalData"));
-        using var scope = app.Services.CreateScope();
-        var context = scope.ServiceProvider.GetRequiredService<SqliteDataContext>();
-        await context.Init();
-    }
-    catch (Exception ex)
-    {
-        Log.Error(ex, "failed to initialise sqlite");
-    }
+    Log.Information("LocalData: {connStr}", app.Configuration.GetConnectionString("LocalData"));
+    using var scope = app.Services.CreateScope();
+    var context = scope.ServiceProvider.GetRequiredService<SqliteDataContext>();
+    await context.Init();
 }
-
-app.Use((ctx, next) =>
+catch (Exception ex)
 {
-    HttpRequestRewindExtensions.EnableBuffering(ctx.Request);
-    var requestInfoService = ctx.RequestServices.GetRequiredService<RequestInfoService>();
-    requestInfoService.OnNewRequestReceived(ctx.Request);
-    return next(ctx);
-});
+    Log.Error(ex, "failed to initialise sqlite");
+}
 
 app.UseCors(o => o
     .AllowAnyHeader()
@@ -367,15 +333,10 @@ app
         options.ReduceStatusCodeCardinality();
     })
     .UseSerilogRequestLogging()
-    .UseRouting();
-if (useSentry)
-{
-    app.UseSentryTracing();
-}
-app
+    .UseRouting()
     .UseAuthentication()
     .UseAuthorization()
-    .UseWhen((ctx => ctx.Request.Path.StartsWithSegments("/hangfire")), hangfireApp => hangfireApp.UseHangfireAuthorizationMiddleware())
+    .UseWhen(ctx => ctx.Request.Path.StartsWithSegments("/hangfire"), hangfireApp => hangfireApp.UseHangfireAuthorizationMiddleware())
     .UseEndpoints(endpoint =>
     {
         endpoint.MapGet("/", (ctx) =>
@@ -401,6 +362,7 @@ catch (Exception ex)
 }
 finally
 {
+    sentrySdk?.Dispose();
     Log.Information("Shutdown complete");
     Log.CloseAndFlush();
 }
