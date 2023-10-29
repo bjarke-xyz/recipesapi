@@ -35,8 +35,11 @@ using Serilog.Formatting.Compact;
 using RecipesAPI.API.Features.Ratings.DAL;
 using RecipesAPI.API.Features.Ratings.BLL;
 using RecipesAPI.API.Features.Admin.DAL;
+using OpenTelemetry.Trace;
+using Sentry.OpenTelemetry;
 using Sentry;
 using HotChocolate.AspNetCore.Authorization;
+using OpenTelemetry.Resources;
 
 const string loadedFromEnvVar = "LOADED FROM ENVIRONMENT VARIABLE";
 
@@ -59,8 +62,7 @@ else
 }
 
 Log.Logger = loggerConfig.CreateBootstrapLogger();
-
-
+builder.Host.UseSerilog(Log.Logger);
 
 var googleAppCredContent = builder.Configuration["GOOGLE_APPLICATION_CREDENTIALS_CONTENT"];
 if (!string.IsNullOrEmpty(googleAppCredContent))
@@ -76,8 +78,32 @@ builder.WebHost.UseKestrel(serverOptions =>
 {
     serverOptions.ListenAnyIP(port);
 });
+
+
 var sentryDsn = builder.Configuration["SENTRY_DSN"];
 var useSentry = !string.IsNullOrEmpty(sentryDsn) && sentryDsn != loadedFromEnvVar;
+builder.Services.AddOpenTelemetry()
+    .WithTracing(tracingProviderBuilder =>
+    {
+        tracingProviderBuilder
+            // .AddSource(Telemetry.ActivitySource.Name)
+            .ConfigureResource(resource => resource.AddService(serviceName: builder.Environment.ApplicationName))
+            .AddAspNetCoreInstrumentation()
+            .AddGrpcClientInstrumentation()
+            .AddSqlClientInstrumentation()
+            .AddRedisInstrumentation()
+            .AddHotChocolateInstrumentation()
+            .AddHttpClientInstrumentation();
+        if (useSentry)
+        {
+            tracingProviderBuilder.AddSentry();
+        }
+        else
+        {
+            tracingProviderBuilder.AddConsoleExporter();
+        }
+    });
+
 if (useSentry)
 {
     builder.WebHost.UseSentry(o =>
@@ -88,10 +114,10 @@ if (useSentry)
         // Set TracesSampleRate to 1.0 to capture 100% of transactions for performance monitoring.
         // We recommend adjusting this value in production.
         o.TracesSampleRate = 1.0;
+        o.UseOpenTelemetry();
     });
 }
 
-builder.Host.UseSerilog(Log.Logger);
 
 var storageBucket = "recipes-5000.appspot.com";
 

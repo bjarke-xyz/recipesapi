@@ -1,5 +1,5 @@
 using System.Security.Claims;
-using HotChocolate.AspNetCore.Authorization;
+using HotChocolate.Authorization;
 using RecipesAPI.API.Auth;
 using RecipesAPI.API.Exceptions;
 using RecipesAPI.API.Features.Recipes.BLL;
