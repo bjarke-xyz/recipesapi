@@ -126,7 +126,6 @@ public class AdminQueries
         }
     }
 
-    [RoleAuthorize(RoleEnums = new[] { Role.MODERATOR })]
     public async Task<List<AffiliateItem>> SearchAffiliateItems(SearchProductFeedInput input, [Service] AffiliateService affiliateService)
     {
         try

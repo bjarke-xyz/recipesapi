@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using HotChocolate.Language;
 using RecipesAPI.API.Features.Admin.Common;
 using RecipesAPI.API.Infrastructure;
@@ -48,19 +49,26 @@ public class AffiliateService(AdtractionService adtractionService, PartnerAdsSer
         _ => null,
     };
 
-    public async Task<Dictionary<string, List<AffiliateItem>>> SearchAffiliateItems(List<string> searchQueries, int count)
+    public async Task<IReadOnlyDictionary<string, List<AffiliateItem>>> SearchAffiliateItems(List<string> searchQueries, int count)
     {
-        var result = new Dictionary<string, List<AffiliateItem>>();
-        foreach (var searchQuery in searchQueries)
+        var result = new ConcurrentDictionary<string, List<AffiliateItem>>();
+        await Parallel.ForEachAsync(searchQueries, async (searchQuery, cancellationToken) =>
         {
             var affiliateItems = await SearchAffiliateItems(searchQuery, count);
             result[searchQuery] = affiliateItems;
-        }
+        });
         return result;
     }
 
     public async Task<List<AffiliateItem>> SearchAffiliateItems(string? searchQuery, int count = 100)
     {
+        // TODO: OPSÆTNING AF NEGATIV/POSITIV TAGS
+        var positiveTags = new List<string>();
+        var negativeTags = new List<string>();
+        if (string.Equals(searchQuery, "Mikroovn"))
+        {
+            negativeTags.Add("æg");
+        }
         const int cacheCount = 15;
         var originalCount = count;
         if (count <= cacheCount)
@@ -81,7 +89,7 @@ public class AffiliateService(AdtractionService adtractionService, PartnerAdsSer
             allItems.AddRange(providerItems);
         }
 
-        var rankedItems = RankItems(allItems, searchQuery, count);
+        var rankedItems = RankItems(allItems, searchQuery, count, negativeTags, positiveTags);
         if (count == cacheCount)
         {
             await cache.Put(cacheKey, rankedItems, expiration: TimeSpan.FromHours(1));
@@ -89,7 +97,7 @@ public class AffiliateService(AdtractionService adtractionService, PartnerAdsSer
         return rankedItems.Take(originalCount).ToList();
     }
 
-    private List<AffiliateItem> RankItems(List<AffiliateItem> allItems, string? searchQuery, int count)
+    private List<AffiliateItem> RankItems(List<AffiliateItem> allItems, string? searchQuery, int count, List<string> negativeTags, List<string> positiveTags)
     {
         if (count > 1000) count = 1000;
         if (string.IsNullOrEmpty(searchQuery)) return allItems.Take(count).ToList();
@@ -97,11 +105,84 @@ public class AffiliateService(AdtractionService adtractionService, PartnerAdsSer
 
         foreach (var item in allItems)
         {
-            var score = CalculateScore(item, searchQuery);
+            var score = CalculateInitialScore(item, searchQuery);
+            score = AdjustScore(score, item, negativeTags, positiveTags);
             rankedItems.Add((score, item));
         }
+
         var orderedRankedItems = rankedItems.OrderBy(x => x.score).Take(count).ToList();
+
+        AdjustScore(orderedRankedItems);
+
+        orderedRankedItems = orderedRankedItems.OrderBy(x => x.score).ToList();
         return orderedRankedItems.Select(x => x.item).ToList();
+    }
+
+    private static void AdjustScore(List<(long, AffiliateItem)> rankedItems)
+    {
+        var seenBrandsCount = new Dictionary<string, int>();
+        for (var i = 0; i < rankedItems.Count; i++)
+        {
+            var (score, item) = rankedItems[i];
+            if (item.ItemInfo == null) continue;
+            var newScore = score;
+            if (!string.IsNullOrEmpty(item.ItemInfo.Brand))
+            {
+                if (seenBrandsCount.TryGetValue(item.ItemInfo.Brand, out var seenCount) && seenCount >= 2)
+                {
+                    newScore += 500 * seenCount; // TODO: possibly not a good value
+                }
+                seenBrandsCount[item.ItemInfo.Brand] = seenBrandsCount.GetValueOrDefault(item.ItemInfo.Brand, 0) + 1;
+            }
+            rankedItems[i] = (newScore, item);
+        }
+
+    }
+
+    private static int AdjustScore(int score, AffiliateItem item, List<string> negativeTags, List<string> positiveTags)
+    {
+        var newScore = score;
+        if (item.ItemInfo == null) return newScore;
+        var hasDiscount = item.ItemInfo.NewPrice < item.ItemInfo.OldPrice;
+        if (hasDiscount)
+        {
+            newScore -= 100;
+        }
+        if (item.ItemInfo.InStock == true)
+        {
+            newScore -= 100;
+        }
+        foreach (var positiveTag in positiveTags)
+        {
+            if (item.ItemInfo.Title.Contains(positiveTag, StringComparison.OrdinalIgnoreCase)
+            || item.ItemInfo.Category?.Contains(positiveTag, StringComparison.OrdinalIgnoreCase) == true
+            )
+            {
+                newScore -= 1000;
+            }
+        }
+        foreach (var negativeTag in negativeTags)
+        {
+            if (item.ItemInfo.Title.Contains(negativeTag, StringComparison.OrdinalIgnoreCase)
+            || item.ItemInfo.Category?.Contains(negativeTag, StringComparison.OrdinalIgnoreCase) == true
+            )
+            {
+                newScore += 1000;
+            }
+        }
+        if (string.IsNullOrWhiteSpace(item.ItemInfo.Brand))
+        {
+            newScore += 1000;
+        }
+        if (string.IsNullOrWhiteSpace(item.ItemInfo.Category))
+        {
+            newScore += 1000;
+        }
+        if (string.IsNullOrWhiteSpace(item.ItemInfo.Description))
+        {
+            newScore += 1000;
+        }
+        return newScore;
     }
 
     /// <summary>
@@ -110,7 +191,7 @@ public class AffiliateService(AdtractionService adtractionService, PartnerAdsSer
     /// <param name="item"></param>
     /// <param name="searchQuery"></param>
     /// <returns></returns>
-    private int CalculateScore(AffiliateItem item, string searchQuery)
+    private int CalculateInitialScore(AffiliateItem item, string searchQuery)
     {
         if (item.ItemInfo == null) return int.MaxValue;
 
@@ -120,24 +201,53 @@ public class AffiliateService(AdtractionService adtractionService, PartnerAdsSer
             return 0;
         }
 
+        var pluralSearchQueries = Plural(searchQuery);
+
         // Full category name equals search query
         if (string.Equals(item.ItemInfo.Category, searchQuery, StringComparison.OrdinalIgnoreCase))
         {
             return 1;
         }
+        foreach (var pluralSearchQuery in pluralSearchQueries)
+        {
+            if (string.Equals(item.ItemInfo.Category, pluralSearchQuery, StringComparison.OrdinalIgnoreCase))
+            {
+                return 1;
+            }
+
+        }
 
         // Mega sej kniv -> matches searchquery 'kniv'
+        // earlier match -> lower score
         var nameParts = item.ItemInfo.ProductName.Split(" ");
-        if (nameParts.Contains(searchQuery, StringComparer.OrdinalIgnoreCase))
+        for (var i = 0; i < nameParts.Length; i++)
         {
-            return 1000;
+            var namePart = nameParts[i];
+            if (string.Equals(namePart, searchQuery, StringComparison.OrdinalIgnoreCase))
+            {
+                // return 1000 + ((nameParts.Length - i - 1) * 100);
+                return 1000 + (i * 100);
+            }
         }
 
         // Full word of category matches searchquery
         var categoryParts = item.ItemInfo.Category?.Split(" ") ?? [];
-        if (categoryParts.Contains(searchQuery, StringComparer.OrdinalIgnoreCase))
+        for (var i = 0; i < categoryParts.Length; i++)
         {
-            return 1001;
+            var categoryPart = categoryParts[i];
+            if (string.Equals(categoryPart, searchQuery, StringComparison.OrdinalIgnoreCase))
+            {
+                // return 1001 + ((categoryParts.Length - i - 1) * 100);
+                return 1001 + (i * 100);
+            }
+            foreach (var pluralSearchQuery in pluralSearchQueries)
+            {
+                if (string.Equals(categoryPart, pluralSearchQuery, StringComparison.OrdinalIgnoreCase))
+                {
+                    // return 1001 + ((categoryParts.Length - i - 1) * 100);
+                    return 1002 + (i * 100);
+                }
+            }
         }
 
         // Mega sej køkkenkniv -> matches endwith first
@@ -146,11 +256,23 @@ public class AffiliateService(AdtractionService adtractionService, PartnerAdsSer
         {
             if (namePart.EndsWith(searchQuery, StringComparison.OrdinalIgnoreCase))
             {
-                return 2000;
+                return 1100;
             }
             if (namePart.StartsWith(searchQuery, StringComparison.OrdinalIgnoreCase))
             {
-                return 2100;
+                return 1200;
+            }
+
+            foreach (var pluralSearchQuery in pluralSearchQueries)
+            {
+                if (namePart.EndsWith(pluralSearchQuery, StringComparison.OrdinalIgnoreCase))
+                {
+                    return 1101;
+                }
+                if (namePart.StartsWith(pluralSearchQuery, StringComparison.OrdinalIgnoreCase))
+                {
+                    return 1201;
+                }
             }
         }
 
@@ -158,11 +280,22 @@ public class AffiliateService(AdtractionService adtractionService, PartnerAdsSer
         {
             if (categoryPart.EndsWith(searchQuery, StringComparison.OrdinalIgnoreCase))
             {
-                return 2001;
+                return 2502;
             }
             if (categoryPart.StartsWith(searchQuery, StringComparison.OrdinalIgnoreCase))
             {
-                return 2101;
+                return 2602;
+            }
+            foreach (var pluralSearchQuery in pluralSearchQueries)
+            {
+                if (categoryPart.EndsWith(pluralSearchQuery, StringComparison.OrdinalIgnoreCase))
+                {
+                    return 2503;
+                }
+                if (categoryPart.StartsWith(pluralSearchQuery, StringComparison.OrdinalIgnoreCase))
+                {
+                    return 2603;
+                }
             }
         }
 
@@ -171,13 +304,33 @@ public class AffiliateService(AdtractionService adtractionService, PartnerAdsSer
         {
             return 3000;
         }
+        foreach (var pluralSearchQuery in pluralSearchQueries)
+        {
+            if (item.ItemInfo.ProductName.Contains(pluralSearchQuery, StringComparison.OrdinalIgnoreCase))
+            {
+                return 3001;
+            }
+        }
 
         if (item.ItemInfo.Category?.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) == true)
         {
-            return 3001;
+            return 3002;
+        }
+        foreach (var pluralSearchQuery in pluralSearchQueries)
+        {
+            if (item.ItemInfo.Category?.Contains(pluralSearchQuery, StringComparison.OrdinalIgnoreCase) == true)
+            {
+                return 3003;
+            }
+
         }
 
         return int.MaxValue - 1; // minus one, to weight higher than null itemInfo
+    }
+
+    private static IReadOnlyList<string> Plural(string searchQuery)
+    {
+        return [searchQuery + "er", searchQuery + "e"];
     }
 
     private async Task<List<AffiliateItem>> InternalSearchAffiliateItems(AffiliateProvider provider, string? searchQuery, string? programId, int skip, int limit) => provider switch
