@@ -202,7 +202,7 @@ builder.Services
         var httpClient = httpClientFactory.CreateClient(nameof(PartnerAdsService));
         var logger = sp.GetRequiredService<ILogger<PartnerAdsService>>();
         var partnerAdsRepository = sp.GetRequiredService<PartnerAdsRepository>();
-        return new PartnerAdsService(url, key, httpClient, logger, partnerAdsRepository);
+        return new PartnerAdsService(url, key, httpClient, logger, partnerAdsRepository, sp.GetRequiredService<ICacheProvider>());
     })
     .AddSingleton<AdtractionRepository>()
     .AddSingleton<AdtractionService>(sp =>
@@ -215,7 +215,8 @@ builder.Services
         var adtractionRepository = sp.GetRequiredService<AdtractionRepository>();
         var defaultMarket = "DK";
         var defaultChannelId = builder.Configuration.GetValue<int>("AdtractionChannelId");
-        return new AdtractionService(logger, url, key, httpClient, adtractionRepository, defaultMarket, defaultChannelId);
+        var cache = sp.GetRequiredService<ICacheProvider>();
+        return new AdtractionService(logger, url, key, httpClient, adtractionRepository, defaultMarket, defaultChannelId, cache);
     })
     .AddSingleton<AffiliateService>()
     .AddSingleton<SqliteDataContext>()

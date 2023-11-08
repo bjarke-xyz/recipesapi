@@ -57,6 +57,18 @@ public class Feed
     public int? ProgramId { get; set; }
 }
 
+public class PublicAdtractionProgram
+{
+    [JsonProperty("programId")]
+    public int ProgramId { get; set; }
+
+    [JsonProperty("programName")]
+    public string? ProgramName { get; set; }
+
+    [JsonProperty("feeds")]
+    public List<Feed>? Feeds { get; set; }
+}
+
 public class AdtractionProgram
 {
     [JsonProperty("programId")]

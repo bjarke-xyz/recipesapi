@@ -21,7 +21,27 @@ public class AdminQueries
     {
         try
         {
-            var partnerPrograms = await partnerAdsService.GetPrograms();
+            var partnerPrograms = await partnerAdsService.GetPrograms(publicView: false);
+            return partnerPrograms;
+        }
+        catch (Exception ex)
+        {
+            throw new GraphQLErrorException(ex.Message, ex);
+        }
+    }
+
+    /// <summary>
+    /// The following properties have values: programId, programName, feedLink
+    /// </summary>
+    /// <param name="partnerAdsService"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    /// <exception cref="GraphQLErrorException"></exception>
+    public async Task<List<PartnerAdsProgram>> GetPublicPartnerAdsPrograms([Service] PartnerAdsService partnerAdsService, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var partnerPrograms = await partnerAdsService.GetPrograms(publicView: true);
             return partnerPrograms;
         }
         catch (Exception ex)
@@ -118,7 +138,21 @@ public class AdminQueries
     {
         try
         {
-            return await adtractionService.GetPrograms(input.Market, input.ProgramId, input.ChannelId, input.ApprovalStatus, input.Status);
+            return await adtractionService.GetPrograms(input.Market, input.ProgramId, input.ChannelId, input.ApprovalStatus ?? 1, input.Status ?? 0);
+        }
+        catch (Exception ex)
+        {
+            throw new GraphQLErrorException(ex.Message, ex);
+        }
+    }
+
+    public async Task<List<PublicAdtractionProgram>> GetPublicAdtractionPrograms([Service] AdtractionService adtractionService, AdtractionProgramsInput input)
+    {
+        try
+        {
+            var adtractionPrograms = await adtractionService.GetPrograms(input.Market, input.ProgramId, input.ChannelId, input.ApprovalStatus ?? 1, input.Status ?? 0);
+            var publicAdtractionPrograms = AdminMapper.Map(adtractionPrograms);
+            return publicAdtractionPrograms;
         }
         catch (Exception ex)
         {
@@ -142,7 +176,7 @@ public class AdminQueries
 [ExtendObjectType(typeof(Feed))]
 public class AdtractionFeedQueries
 {
-    [RoleAuthorize(RoleEnums = new[] { Role.ADMIN })]
+    [Obsolete("Use AffiliateItems")]
     public async Task<List<AdtractionFeedProduct>> GetProductFeed([Parent] Feed feed, [Service] AdtractionService adtractionService, GetProductFeedInput? input = null)
     {
         try
@@ -159,12 +193,30 @@ public class AdtractionFeedQueries
             throw new GraphQLErrorException(ex.Message, ex);
         }
     }
+
+    public async Task<List<AffiliateItem>> GetAffiliateItems([Parent] Feed feed, [Service] AdtractionService adtractionService, GetProductFeedInput? input = null)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(feed.FeedUrl))
+            {
+                return new();
+            }
+            var feedProducts = await adtractionService.GetFeedProducts(feed.ProgramId, feed.FeedId, input?.Skip ?? 0, input?.Limit ?? 1000, input?.SearchQuery);
+            var affiliateItems = feedProducts.Select(x => new AffiliateItem(x)).Where(x => x.ItemInfo != null).ToList();
+            return affiliateItems;
+        }
+        catch (Exception ex)
+        {
+            throw new GraphQLErrorException(ex.Message, ex);
+        }
+    }
 }
 
 [ExtendObjectType(typeof(PartnerAdsProgram))]
 public class PartnerAdsProgramQueries
 {
-    [RoleAuthorize(RoleEnums = new[] { Role.ADMIN })]
+    [Obsolete("Use AffiliateItems")]
     public async Task<List<PartnerAdsFeedProduct>> GetProductFeed([Parent] PartnerAdsProgram program, [Service] PartnerAdsService partnerAdsService, GetProductFeedInput? input = null)
     {
         try
@@ -175,6 +227,24 @@ public class PartnerAdsProgramQueries
             }
             var feedProducts = await partnerAdsService.GetFeedProducts(program.ProgramId, program.FeedLink, input?.Skip ?? 0, input?.Limit ?? 1000, input?.SearchQuery);
             return feedProducts;
+        }
+        catch (Exception ex)
+        {
+            throw new GraphQLErrorException(ex.Message, ex);
+        }
+    }
+
+    public async Task<List<AffiliateItem>> GetAffiliateItems([Parent] PartnerAdsProgram program, [Service] PartnerAdsService partnerAdsService, GetProductFeedInput? input = null)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(program.FeedLink))
+            {
+                return new();
+            }
+            var feedProducts = await partnerAdsService.GetFeedProducts(program.ProgramId, program.FeedLink, input?.Skip ?? 0, input?.Limit ?? 1000, input?.SearchQuery);
+            var affiliateItems = feedProducts.Select(x => new AffiliateItem(x)).Where(x => x.ItemInfo != null).ToList();
+            return affiliateItems;
         }
         catch (Exception ex)
         {

@@ -4,10 +4,11 @@ using Newtonsoft.Json;
 using RecipesAPI.API.Features.Admin.Common;
 using RecipesAPI.API.Features.Admin.Common.Adtraction;
 using RecipesAPI.API.Features.Admin.DAL;
+using RecipesAPI.API.Infrastructure;
 
 namespace RecipesAPI.API.Features.Admin.BLL;
 
-public class AdtractionService(ILogger<AdtractionService> logger, string url, string apiKey, HttpClient httpClient, AdtractionRepository adtractionRepository, string defaultMarket, int defaultChannelId)
+public class AdtractionService(ILogger<AdtractionService> logger, string url, string apiKey, HttpClient httpClient, AdtractionRepository adtractionRepository, string defaultMarket, int defaultChannelId, ICacheProvider cache)
 {
     private readonly ILogger<AdtractionService> logger = logger;
     private readonly string url = url;
@@ -16,6 +17,7 @@ public class AdtractionService(ILogger<AdtractionService> logger, string url, st
     private readonly AdtractionRepository adtractionRepository = adtractionRepository;
     private readonly string defaultMarket = defaultMarket;
     private readonly int defaultChannelId = defaultChannelId;
+    private readonly ICacheProvider cache = cache;
 
     public async Task<AdtractionFeedProduct?> GetFeedProduct(AdtractionItemReference itemReference)
     {
@@ -129,6 +131,12 @@ public class AdtractionService(ILogger<AdtractionService> logger, string url, st
     {
         try
         {
+            var cacheKey = $"Adtraction:GetPrograms:{market}:{programId}:{channelId}:{approvalStatus}:{status}";
+            var cached = await cache.Get<List<AdtractionProgram>>(cacheKey);
+            if (cached != null)
+            {
+                return cached;
+            }
             var input = new
             {
                 market,
@@ -161,6 +169,7 @@ public class AdtractionService(ILogger<AdtractionService> logger, string url, st
                     feed.ProgramId = program.ProgramId;
                 }
             }
+            await cache.Put(cacheKey, parsedResp, expiration: TimeSpan.FromMinutes(10));
             return parsedResp;
         }
         catch (Exception ex)

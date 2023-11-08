@@ -2,16 +2,18 @@ using System.Xml.Serialization;
 using Amazon.S3.Model.Internal.MarshallTransformations;
 using RecipesAPI.API.Features.Admin.Common;
 using RecipesAPI.API.Features.Admin.DAL;
+using RecipesAPI.API.Infrastructure;
 
 namespace RecipesAPI.API.Features.Admin.BLL;
 
-public class PartnerAdsService(string url, string key, HttpClient httpClient, ILogger<PartnerAdsService> logger, PartnerAdsRepository partnerAdsRepository)
+public class PartnerAdsService(string url, string key, HttpClient httpClient, ILogger<PartnerAdsService> logger, PartnerAdsRepository partnerAdsRepository, ICacheProvider cache)
 {
     private readonly ILogger<PartnerAdsService> logger = logger;
     private readonly string url = url;
     private readonly string key = key;
     private readonly HttpClient httpClient = httpClient;
     private readonly PartnerAdsRepository partnerAdsRepository = partnerAdsRepository;
+    private readonly ICacheProvider cache = cache;
 
     private const string dateFormat = "yy-M-d";
 
@@ -36,14 +38,49 @@ public class PartnerAdsService(string url, string key, HttpClient httpClient, IL
         }
     }
 
-    public async Task<List<PartnerAdsProgram>> GetPrograms()
+    public async Task<List<PartnerAdsProgram>> GetPrograms(bool publicView)
     {
         try
         {
-            var resp = await httpClient.GetStreamAsync($"{url}/programoversigt_xml.php?key={key}&godkendte=1");
-            var serializer = new XmlSerializer(typeof(PartnerAdsPrograms));
-            var programs = serializer.Deserialize(resp) as PartnerAdsPrograms;
-            return programs?.Programs ?? new List<PartnerAdsProgram>();
+            var cacheKey = "PartnerAds:GetPrograms";
+            var cached = await cache.Get<List<PartnerAdsProgram>>(cacheKey);
+            if (cached == null)
+            {
+                var resp = await httpClient.GetStreamAsync($"{url}/programoversigt_xml.php?key={key}&godkendte=1");
+                var serializer = new XmlSerializer(typeof(PartnerAdsPrograms));
+                cached = (serializer.Deserialize(resp) as PartnerAdsPrograms)?.Programs ?? [];
+                await cache.Put(cacheKey, cached, expiration: TimeSpan.FromMinutes(10));
+            }
+            if (publicView)
+            {
+                foreach (var program in cached)
+                {
+                    program.ProgramUrl = "";
+                    program.ProgramDescription = "";
+                    program.CategoryId = "";
+                    program.CategoryName = "";
+                    program.SubCategory = "";
+                    program.ClickRate = 0;
+                    program.LeadRate = 0;
+                    program.Provision = 0;
+                    program.Epc = null;
+                    program.SemPpc = null;
+                    program.SemPpcRestriction = null;
+                    program.ShoppingAds = null;
+                    program.ShoppingAdsRestriction = null;
+                    program.SocialPpc = null;
+                    program.Cashback = null;
+                    program.Rabatsites = null;
+                    program.AffiliateLink = null;
+                    program.ContactPerson = null;
+                    program.Email = null;
+                    program.Status = null;
+                    program.Currency = "";
+                    program.Market = "";
+                    program.FeedUpdatedStr = null;
+                }
+            }
+            return cached;
         }
         catch (Exception ex)
         {
@@ -117,7 +154,7 @@ public class PartnerAdsService(string url, string key, HttpClient httpClient, IL
 
     public async Task RefreshProductFeeds(string? programId, string? feedLink)
     {
-        var programs = await GetPrograms();
+        var programs = await GetPrograms(publicView: false);
         if (!string.IsNullOrEmpty(programId) && !string.IsNullOrEmpty(feedLink))
         {
             programs = programs.Where(x => x.ProgramId == programId && x.FeedLink == feedLink).ToList();

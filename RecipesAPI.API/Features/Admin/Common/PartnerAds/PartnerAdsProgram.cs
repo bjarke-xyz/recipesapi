@@ -1,6 +1,5 @@
 using System.Globalization;
 using System.Xml.Serialization;
-using Amazon.S3.Model;
 
 namespace RecipesAPI.API.Features.Admin.Common;
 

@@ -1,11 +1,12 @@
 using AutoMapper;
+using RecipesAPI.API.Features.Admin.Common.Adtraction;
 using RecipesAPI.API.Features.Admin.DAL;
 
 namespace RecipesAPI.API.Features.Admin.Common;
 
 public static class AdminMapper
 {
-    private static IMapper mapper = new MapperConfiguration(cfg =>
+    private static readonly IMapper mapper = new MapperConfiguration(cfg =>
     {
         cfg.CreateMap<AffiliateItemReferenceDto, AffiliateItemReference>()
             .ForMember(dest => dest.Provider, opt => opt.MapFrom(src => Enum.Parse<AffiliateProvider>(src.Provider)));
@@ -17,7 +18,11 @@ public static class AdminMapper
 
         cfg.CreateMap<PartnerAdsItemReferenceDto, PartnerAdsItemReference>();
         cfg.CreateMap<PartnerAdsItemReference, PartnerAdsItemReferenceDto>();
+
+        cfg.CreateMap<AdtractionProgram, PublicAdtractionProgram>();
     }).CreateMapper();
+
+    public static List<PublicAdtractionProgram> Map(List<AdtractionProgram> adtractionPrograms) => mapper.Map<List<PublicAdtractionProgram>>(adtractionPrograms);
 
     public static AffiliateItemReference MapDto(AffiliateItemReferenceDto dto)
     {
