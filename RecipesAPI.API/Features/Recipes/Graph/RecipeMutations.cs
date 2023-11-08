@@ -338,6 +338,10 @@ public class RecipeMutations
                 UserId = loggedInUser.Id,
             };
         }
+        if (!string.IsNullOrEmpty(input.Comment) && !string.Equals(rating.Comment, input.Comment))
+        {
+            rating.Approved = false;
+        }
         rating.Score = input.Score;
         rating.Comment = input.Comment;
 
@@ -351,7 +355,19 @@ public class RecipeMutations
         {
             throw new GraphQLErrorException("Failed to update recipe rating", ex);
         }
-
         return true;
+    }
+
+    [RoleAuthorize(RoleEnums = new[] { Role.MODERATOR })]
+    public async Task<Rating> SetRatingApproved(string ratingId, bool approved, [User] User loggedInUser, [Service] RatingsService ratingsService, CancellationToken cancellationToken)
+    {
+        var rating = await ratingsService.GetRating(ratingId, cancellationToken);
+        if (rating == null)
+        {
+            throw new RatingNotFoundException(ratingId);
+        }
+        rating.Approved = approved;
+        await ratingsService.SaveRating(rating, cancellationToken);
+        return rating;
     }
 }

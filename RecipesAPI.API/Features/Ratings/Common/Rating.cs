@@ -8,6 +8,7 @@ public class Rating
     public string EntityId { get; set; } = "";
     public int Score { get; set; }
     public string? Comment { get; set; }
+    public bool? Approved { get; set; }
 }
 
 public enum RatingType

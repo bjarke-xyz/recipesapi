@@ -153,6 +153,21 @@ public class ExtendedRecipeRating
             UserRating = Ratings.FirstOrDefault(x => x.UserId == loggedInUser.Id);
         }
 
+        if (loggedInUser == null || !loggedInUser.HasRole(Role.MODERATOR))
+        {
+            foreach (var rating in Ratings)
+            {
+                if (loggedInUser != null && loggedInUser.Id == rating.UserId)
+                {
+                    continue;
+                }
+                if (rating.Approved == false)
+                {
+                    rating.Comment = null;
+                }
+            }
+        }
+
     }
     public List<RecipeRating> RatingGroups { get; set; } = [];
     public List<Rating> Ratings { get; set; } = [];

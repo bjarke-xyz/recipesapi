@@ -117,6 +117,9 @@ public class RatingDto
     public int Score { get; set; }
     [FirestoreProperty("comment")]
     public string? Comment { get; set; }
+    [FirestoreProperty("approved")]
+    public bool? Approved { get; set; } = true;
+
 
     [FirestoreDocumentCreateTimestamp]
     public DateTimeOffset CreatedAt { get; set; }

@@ -5,7 +5,6 @@ using RecipesAPI.API.Infrastructure;
 
 namespace RecipesAPI.API.Features.Ratings.BLL;
 
-// TODO: Caching?
 public class RatingsService
 {
     private readonly ILogger<RatingsService> logger;
@@ -65,6 +64,11 @@ public class RatingsService
     {
         var rating = await ratingsRepository.GetRating(type, id, userId, cancellationToken);
         return rating;
+    }
+
+    public async Task<Rating?> GetRating(string id, CancellationToken cancellationToken)
+    {
+        return await ratingsRepository.GetRating(id, cancellationToken);
     }
 
     public async Task<Rating> SaveRating(Rating rating, CancellationToken cancellationToken)
