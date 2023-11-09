@@ -12,6 +12,7 @@
 .env
 
 LocalData.db
+SqliteCache.db
 
 .vscode
 

@@ -19,12 +19,20 @@ public class SqliteDataContext
         return new SqliteConnection(configuration.GetConnectionString("LocalData"));
     }
 
+    public IDbConnection CreateCacheConnection()
+    {
+        return new SqliteConnection(configuration.GetConnectionString("SqliteCache"));
+    }
+
     public async Task Init()
     {
         using var connection = CreateConnection();
-        await _initProductFeed();
+        await _initProductFeed(connection);
 
-        async Task _initProductFeed()
+        using var cacheConnection = CreateCacheConnection();
+        await _initCache(cacheConnection);
+
+        async static Task _initProductFeed(IDbConnection conn)
         {
             var sql = """
                 CREATE TABLE IF NOT EXISTS
@@ -92,7 +100,21 @@ public class SqliteDataContext
                 );
                 CREATE INDEX IF NOT EXISTS partnerads_product_feed_items_product_feed_id ON PartnerAdsProductFeedItems(PartnerAdsProductFeedId);
             """;
-            await connection.ExecuteAsync(sql);
+            await conn.ExecuteAsync(sql);
+        }
+
+        async static Task _initCache(IDbConnection conn)
+        {
+            var sql = """
+                CREATE TABLE IF NOT EXISTS kv (
+                    Key TEXT PRIMARY KEY,
+                    Val BLOB,
+                    CreatedAt INTEGER,
+                    ExpireAt INTEGER
+                );
+                CREATE INDEX IF NOT EXISTS index_expire_kv ON kv(ExpireAt);
+            """;
+            await conn.ExecuteAsync(sql);
         }
 
     }

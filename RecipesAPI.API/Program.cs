@@ -114,13 +114,15 @@ builder.Services
     .AddHangfireServer()
     .AddHangfireAuthorizationMiddleware()
     .AddSingleton<JwtUtil>(sp => new JwtUtil(builder.Configuration["FirebaseAppId"]!, sp.GetRequiredService<ICacheProvider>()))
-    .AddSingleton<ICacheProvider, CacheProvider>(sp =>
-    {
-        var distributedCache = sp.GetRequiredService<IDistributedCache>();
-        var keyPrefix = builder.Configuration["REDIS_PREFIX"]!;
-        var redis = sp.GetRequiredService<IConnectionMultiplexer>();
-        return new CacheProvider(distributedCache, keyPrefix, redis);
-    })
+    // .AddSingleton<ICacheProvider, RedisCacheProvider>(sp =>
+    // {
+    //     var distributedCache = sp.GetRequiredService<IDistributedCache>();
+    //     var keyPrefix = builder.Configuration["REDIS_PREFIX"]!;
+    //     var redis = sp.GetRequiredService<IConnectionMultiplexer>();
+    //     return new RedisCacheProvider(distributedCache, keyPrefix, redis);
+    // })
+    .AddSingleton<ICacheProvider, SqliteCacheProvider>()
+    .AddSingleton<SqliteCacheProvider>()
     .AddSingleton<S3StorageClient>(sp =>
     {
         var r2AccountId = builder.Configuration["R2_ACCOUNTID"]!;

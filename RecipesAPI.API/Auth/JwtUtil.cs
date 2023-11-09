@@ -81,7 +81,7 @@ public class JwtUtil
 
 }
 
-class GoogleSigningKeys
+public class GoogleSigningKeys
 {
     public Dictionary<string, string> SigningKeys { get; set; } = default!;
 }
