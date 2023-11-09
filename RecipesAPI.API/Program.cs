@@ -310,6 +310,12 @@ builder.Services.AddOpenTelemetry()
 
 var app = builder.Build();
 
+app.Use(async (context, next) =>
+{
+    context.Request.EnableBuffering();
+    await next();
+});
+
 app.UseCors(o => o
     .AllowAnyHeader()
     .AllowAnyMethod()
