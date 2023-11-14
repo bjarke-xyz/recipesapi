@@ -52,9 +52,27 @@ public class FoodDto
     [Name("ResVal")]
     public double? ResVal { get; set; }
 
-    [Name("Source")]
-    public string? Source { get; set; } = default!;
+    [Name("Min")]
+    public string? Min { get; set; }
 
-    [Name("SourceFood")]
+    [Name("Max")]
+    public string? Max { get; set; }
+
+    [Name("Median")]
+    public string? Median { get; set; }
+
+    [Name("NumberOfDeterminations")]
+    public string? NumberOfDeterminations { get; set; }
+
+    [Name("Sources")]
+    public string? Source { get; set; }
+
+    [Name("SourceFoodID")]
     public int? SourceFood { get; set; }
+
+    [Name("o")]
+    public string? O { get; set; }
+
+    [Name("p")]
+    public string? P { get; set; }
 }
