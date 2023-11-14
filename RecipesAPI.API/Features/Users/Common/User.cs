@@ -8,6 +8,7 @@ public class User
     public bool EmailVerified { get; set; }
     public Role? Role { get; set; } = default!;
     public List<Role> Roles => new List<Role> { this.Role ?? Common.Role.USER };
+    public List<string> BookmarkedRecipes { get; set; } = [];
 
     public bool HasRole(Role role)
     {
@@ -55,6 +56,7 @@ public class UserInfo
     public string UserId { get; set; } = default!;
     public Role Role { get; set; }
     public string? Name { get; set; } = null;
+    public List<string> BookmarkedRecipes { get; set; } = [];
 }
 
 public class TokenPayload

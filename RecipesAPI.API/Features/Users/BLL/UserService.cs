@@ -132,6 +132,7 @@ public class UserService : ICacheKeyGetter
             {
                 cached.DisplayName = cached.DisplayName ?? userInfo.Name;
                 cached.Role = userInfo.Role;
+                cached.BookmarkedRecipes = userInfo.BookmarkedRecipes ?? [];
             }
         }
         return cached;
@@ -237,6 +238,13 @@ public class UserService : ICacheKeyGetter
     {
         return userRepository.RefreshToken(refreshToken, cancellationToken);
     }
+
+    public async Task SetBookmarkedRecipes(string userId, List<string> recipeIds, CancellationToken cancellationToken)
+    {
+        await userRepository.SetBookmarkedRecipes(userId, recipeIds, cancellationToken);
+        await ClearCache(userId);
+    }
+
 
     private async Task ClearCache(string? userId = null)
     {

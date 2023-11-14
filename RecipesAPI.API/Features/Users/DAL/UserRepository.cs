@@ -43,6 +43,7 @@ public class UserRepository
         {
             UserId = dto.UserId,
             Name = dto.Name,
+            BookmarkedRecipes = dto.BookmarkedRecipes ?? [],
         };
         if (Enum.TryParse<Role>(dto.Role.ToUpper(), out var role))
         {
@@ -58,7 +59,8 @@ public class UserRepository
         {
             Name = userInfo.Name,
             Role = userInfo.Role.ToString().ToUpper(),
-            UserId = userInfo.UserId
+            UserId = userInfo.UserId,
+            BookmarkedRecipes = userInfo.BookmarkedRecipes ?? [],
         };
         return dto;
     }
@@ -154,6 +156,22 @@ public class UserRepository
         return MapDto(dto);
     }
 
+    public async Task<UserInfo> GetUserInfoOrDefault(string userId, CancellationToken cancellationToken)
+    {
+        var userInfo = await GetUserInfo(userId, cancellationToken);
+        if (userInfo == null)
+        {
+            userInfo = new UserInfo
+            {
+                BookmarkedRecipes = [],
+                Name = "",
+                Role = Role.USER,
+                UserId = userId,
+            };
+        }
+        return userInfo;
+    }
+
     public async Task<List<UserInfo>> GetUserInfos(List<string> userIds, CancellationToken cancellationToken)
     {
         if (userIds == null || userIds.Count == 0)
@@ -223,6 +241,14 @@ public class UserRepository
         }
         var dto = MapDto(userInfo);
         await db.Collection(usersCollection).Document(userId).SetAsync(dto, null, cancellationToken);
+    }
+
+    public async Task SetBookmarkedRecipes(string userId, List<string> recipeIds, CancellationToken cancellationToken)
+    {
+        var existingUser = await GetUserInfoOrDefault(userId, cancellationToken);
+        existingUser.BookmarkedRecipes = recipeIds;
+        var dto = MapDto(existingUser);
+        await db.Collection(usersCollection).Document(userId).SetAsync(dto, cancellationToken: cancellationToken);
     }
 
     public async Task<VerifyPasswordResponse> SignIn(string email, string password, CancellationToken cancellationToken)
@@ -310,4 +336,7 @@ public class UserInfoDto
 
     [FirestoreProperty("name")]
     public string? Name { get; set; } = null;
+
+    [FirestoreProperty("bookmarkedRecipes")]
+    public List<string> BookmarkedRecipes { get; set; } = [];
 }

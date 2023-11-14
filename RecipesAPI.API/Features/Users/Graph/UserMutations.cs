@@ -3,6 +3,7 @@ using System.Security.Claims;
 using HotChocolate.AspNetCore.Authorization;
 using RecipesAPI.API.Auth;
 using RecipesAPI.API.Exceptions;
+using RecipesAPI.API.Features.Recipes.BLL;
 using RecipesAPI.API.Features.Users.BLL;
 using RecipesAPI.API.Features.Users.Common;
 
@@ -122,6 +123,34 @@ public class UserMutations
             throw new GraphQLErrorException("updated user was null");
         }
         return updatedUser;
+    }
+
+    [RoleAuthorize(RoleEnums = new[] { Role.USER })]
+    public async Task<List<string>> BookmarkRecipe(string recipeId, [User] User loggedInUser, [Service] RecipeService recipeService, [Service] UserService userService, CancellationToken cancellationToken)
+    {
+        var recipe = await recipeService.GetRecipe(recipeId, cancellationToken, loggedInUser) ?? throw new RecipeNotFoundException(recipeId);
+        var bookmarkedRecipes = loggedInUser.BookmarkedRecipes ?? [];
+        if (bookmarkedRecipes.Contains(recipe.Id))
+        {
+            return bookmarkedRecipes;
+        }
+        bookmarkedRecipes.Add(recipe.Id);
+        await userService.SetBookmarkedRecipes(loggedInUser.Id, bookmarkedRecipes, cancellationToken);
+        return bookmarkedRecipes;
+    }
+
+    [RoleAuthorize(RoleEnums = new[] { Role.USER })]
+    public async Task<List<string>> UnbookmarkRecipe(string recipeId, [User] User loggedInUser, [Service] RecipeService recipeService, [Service] UserService userService, CancellationToken cancellationToken)
+    {
+        var recipe = await recipeService.GetRecipe(recipeId, cancellationToken, loggedInUser) ?? throw new RecipeNotFoundException(recipeId);
+        var bookmarkedRecipes = loggedInUser.BookmarkedRecipes ?? [];
+        if (!bookmarkedRecipes.Contains(recipe.Id))
+        {
+            return bookmarkedRecipes;
+        }
+        bookmarkedRecipes.Remove(recipeId);
+        await userService.SetBookmarkedRecipes(loggedInUser.Id, bookmarkedRecipes, cancellationToken);
+        return bookmarkedRecipes;
     }
 
     private bool IsEmailValid(string email)

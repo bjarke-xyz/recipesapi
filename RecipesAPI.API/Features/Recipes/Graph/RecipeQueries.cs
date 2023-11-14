@@ -42,6 +42,7 @@ public class RecipeQueries
 
         return recipes;
     }
+
     public async Task<Recipe?> GetRecipe(string? id, string? slugOrId, [User] User loggedInUser, [Service] RecipeService recipeService, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(id) && string.IsNullOrEmpty(slugOrId))
@@ -62,6 +63,24 @@ public class RecipeQueries
             recipe = await recipeService.GetRecipe(slugOrId, cancellationToken, loggedInUser);
         }
         return recipe;
+    }
+
+    public async Task<List<Recipe>> GetRecipesByIds(List<string> slugsOrIds, [User] User loggedInUser, [Service] RecipeService recipeService, CancellationToken cancellationToken)
+    {
+        var recipes = new List<Recipe>();
+        foreach (var slugOrId in slugsOrIds)
+        {
+            var recipe = await recipeService.GetRecipeBySlug(slugOrId, cancellationToken, loggedInUser);
+            if (recipe == null)
+            {
+                recipe = await recipeService.GetRecipe(slugOrId, cancellationToken, loggedInUser);
+            }
+            if (recipe != null)
+            {
+                recipes.Add(recipe);
+            }
+        }
+        return recipes;
     }
 
     public RecipeIngredient? ParseIngredient(string ingredient, [Service] ParserService parserService)
