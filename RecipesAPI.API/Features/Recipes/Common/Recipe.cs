@@ -126,6 +126,23 @@ public class RecipeRating
     public int Raters { get; set; }
 }
 
+public class RecipeReactions
+{
+    public RecipeReactions()
+    {
+    }
+
+    public RecipeReactions(List<Reaction> reactions, User? loggedInUser)
+    {
+        var favoritesReactions = reactions.Where(x => x.ReactionType == ReactionType.Favorite).ToList();
+        FavoritesCount = favoritesReactions.Count;
+        UserHasFavorited = favoritesReactions.Any(x => x.UserId == loggedInUser?.Id);
+    }
+
+    public int FavoritesCount { get; set; }
+    public bool? UserHasFavorited { get; set; }
+}
+
 public class ExtendedRecipeRating
 {
 

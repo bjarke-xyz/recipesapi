@@ -139,6 +139,7 @@ public class ExtendedRecipeRatingQueries
 public class ExtendedRecipeQueries
 {
 
+    [Obsolete]
     public async Task<ExtendedRecipeRating?> GetExtendedRating([Parent] Recipe recipe, [User] User? loggedInUser, RecipeRatingsDataLoader recipeRatingsDataLoader, CancellationToken cancellationToken)
     {
         var recipeRatings = await recipeRatingsDataLoader.LoadAsync(recipe.Id, cancellationToken);
@@ -147,6 +148,13 @@ public class ExtendedRecipeQueries
             return null;
         }
         return new ExtendedRecipeRating(recipeRatings, loggedInUser);
+    }
+
+    public async Task<RecipeReactions> GetRecipeReactions([Parent] Recipe recipe, [User] User? loggedInUser, RecipeReactionsDataLoader recipeReactionsDataLoader, CancellationToken cancellationToken)
+    {
+        var recipeReactionsList = (await recipeReactionsDataLoader.LoadAsync(recipe.Id, cancellationToken)) ?? [];
+        var recipeReactions = new RecipeReactions(recipeReactionsList, loggedInUser);
+        return recipeReactions;
     }
 
     public async Task<Image?> GetImage([Parent] Recipe recipe, [Service] IFileService fileService, FileDataLoader fileDataLoader, [Service] ImageProcessingService imageProcessingService, [Service] SettingsService settingsService, CancellationToken cancellationToken)

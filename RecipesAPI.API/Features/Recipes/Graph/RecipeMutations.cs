@@ -320,6 +320,52 @@ public class RecipeMutations
     }
 
     [RoleAuthorize(RoleEnums = new[] { Role.USER })]
+    public async Task<RecipeReactions> AddReaction(string recipeId, ReactionType reactionType, [User] User loggedInUser, [Service] RecipeService recipeService, [Service] RatingsService ratingsService, CancellationToken cancellationToken)
+    {
+        var recipe = await recipeService.GetRecipe(recipeId, cancellationToken, loggedInUser);
+        if (recipe == null)
+        {
+            throw new RecipeNotFoundException(recipeId);
+        }
+
+        var reaction = await ratingsService.GetReaction(reactionType, RatingType.Recipe, recipe.Id, loggedInUser.Id, cancellationToken);
+        if (reaction == null)
+        {
+            reaction = new Reaction
+            {
+                ReactionType = reactionType,
+                EntityType = RatingType.Recipe,
+                EntityId = recipe.Id,
+                UserId = loggedInUser.Id,
+            };
+        }
+        await ratingsService.SaveReaction(reaction, cancellationToken);
+        var recipeReactionsList = (await ratingsService.GetReactions(RatingType.Recipe, recipeId, cancellationToken)).ToList();
+        var recipeReactions = new RecipeReactions(recipeReactionsList, loggedInUser);
+        return recipeReactions;
+    }
+
+    [RoleAuthorize(RoleEnums = new[] { Role.USER })]
+    public async Task<RecipeReactions?> DeleteReaction(string recipeId, ReactionType reactionType, [User] User loggedInUser, [Service] RecipeService recipeService, [Service] RatingsService ratingsService, CancellationToken cancellationToken)
+    {
+        var recipe = await recipeService.GetRecipe(recipeId, cancellationToken, loggedInUser);
+        if (recipe == null)
+        {
+            throw new RecipeNotFoundException(recipeId);
+        }
+        var reaction = await ratingsService.GetReaction(reactionType, RatingType.Recipe, recipe.Id, loggedInUser.Id, cancellationToken);
+        if (reaction == null)
+        {
+            return null;
+        }
+        await ratingsService.DeleteReaction(reaction, cancellationToken);
+        var recipeReactionsList = (await ratingsService.GetReactions(RatingType.Recipe, recipeId, cancellationToken)).ToList();
+        var recipeReactions = new RecipeReactions(recipeReactionsList, loggedInUser);
+        return recipeReactions;
+    }
+
+    [Obsolete]
+    [RoleAuthorize(RoleEnums = new[] { Role.USER })]
     public async Task<bool> AddRating(string id, RateRecipeInput input, [User] User loggedInUser, [Service] RecipeService recipeService, [Service] RatingsService ratingsService, CancellationToken cancellationToken)
     {
         var recipe = await recipeService.GetRecipe(id, cancellationToken, loggedInUser);
