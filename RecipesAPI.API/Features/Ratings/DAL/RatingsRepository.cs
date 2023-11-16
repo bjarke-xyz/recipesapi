@@ -9,7 +9,72 @@ public class RatingsRepository(ILogger<RatingsRepository> logger, FirestoreDb db
     private readonly FirestoreDb db = db;
     private const string ratingCollection = "ratings";
     private const string reactionsCollection = "reactions";
+    private const string commentsCollection = "comments";
 
+    #region comments
+
+    public async Task<List<Comment>> GetComments(RatingType type, string id, CancellationToken cancellationToken)
+    {
+        var snapshot = await db.Collection(commentsCollection)
+            .WhereEqualTo("entityType", type)
+            .WhereEqualTo("entityId", id)
+            .GetSnapshotAsync(cancellationToken);
+        var comments = new List<Comment>();
+        foreach (var doc in snapshot.Documents)
+        {
+            var dto = doc.ConvertTo<CommentDto>();
+            var comment = RatingMapper.MapDto(dto);
+            comments.Add(comment);
+        }
+        return comments;
+    }
+
+    public async Task<Dictionary<string, List<Comment>>> GetComments(RatingType type, List<string> ids, CancellationToken cancellationToken)
+    {
+        if (ids == null || ids.Count == 0)
+        {
+            return [];
+        }
+        var snapshot = await db.Collection(commentsCollection)
+            .WhereEqualTo("entityType", type)
+            .WhereIn("entityId", ids)
+            .GetSnapshotAsync(cancellationToken);
+        var comments = new List<Comment>();
+        foreach (var doc in snapshot.Documents)
+        {
+            var dto = doc.ConvertTo<CommentDto>();
+            var comment = RatingMapper.MapDto(dto);
+            comments.Add(comment);
+        }
+        var dict = comments.GroupBy(x => x.EntityId).ToDictionary(x => x.Key, x => x.ToList());
+        return dict;
+    }
+
+    public async Task<Comment?> GetComment(string id, CancellationToken cancellationToken)
+    {
+        var snapshot = await db.Collection(commentsCollection).Document(id).GetSnapshotAsync(cancellationToken);
+        if (!snapshot.Exists) return null;
+        var dto = snapshot.ConvertTo<CommentDto>();
+        var comment = RatingMapper.MapDto(dto);
+        return comment;
+    }
+
+    public async Task SaveComment(Comment comment, CancellationToken cancellationToken)
+    {
+        var dto = RatingMapper.Map(comment);
+        await db.Collection(commentsCollection).Document(dto.Id).SetAsync(dto, null, cancellationToken);
+    }
+
+    public async Task DeleteComment(Comment comment, CancellationToken cancellationToken)
+    {
+        var dbComment = await GetComment(comment.Id, cancellationToken);
+        if (dbComment == null) return;
+        dbComment.DeletedAt = DateTimeOffset.UtcNow;
+        dbComment.Message = "";
+        await SaveComment(dbComment, cancellationToken);
+    }
+
+    #endregion
 
     #region reactions
     public async Task<List<Reaction>> GetReactions(RatingType type, string id, CancellationToken cancellationToken)
@@ -96,6 +161,19 @@ public class RatingsRepository(ILogger<RatingsRepository> logger, FirestoreDb db
 
     #region ratings
 
+    internal async Task<List<Rating>> GetAllRatings(CancellationToken cancellationToken)
+    {
+        var snapshot = await db.Collection(ratingCollection).GetSnapshotAsync(cancellationToken);
+        var ratings = new List<Rating>();
+        foreach (var doc in snapshot.Documents)
+        {
+            var dto = doc.ConvertTo<RatingDto>();
+            var rating = RatingMapper.MapDto(dto);
+            ratings.Add(rating);
+        }
+        return ratings;
+    }
+
     public async Task<List<Rating>> GetRatings(RatingType type, string id, CancellationToken cancellationToken)
     {
         var snapshot = await db.Collection(ratingCollection).WhereEqualTo("entityType", type).WhereEqualTo("entityId", id).GetSnapshotAsync(cancellationToken);
@@ -165,6 +243,7 @@ public class RatingsRepository(ILogger<RatingsRepository> logger, FirestoreDb db
         }
     }
 
+
     #endregion
 
 }
@@ -224,4 +303,44 @@ public class ReactionDto
 
     [FirestoreProperty("reactionType")]
     public ReactionTypeDto ReactionType { get; set; }
+
+    [FirestoreDocumentCreateTimestamp]
+    public DateTimeOffset CreatedAt { get; set; }
+}
+
+[FirestoreData]
+public class CommentDto
+{
+    [FirestoreDocumentId]
+    public string Id { get; set; } = "";
+
+    [FirestoreProperty("userId")]
+    public string UserId { get; set; } = "";
+
+    [FirestoreProperty("entityType")]
+    public RatingType EntityType { get; set; }
+
+    [FirestoreProperty("entityId")]
+    public string EntityId { get; set; } = "";
+
+    [FirestoreProperty("message")]
+    public string Message { get; set; } = "";
+
+    [FirestoreProperty("editedAt")]
+    public DateTimeOffset? EditedAt { get; set; }
+
+    [FirestoreDocumentCreateTimestamp]
+    public DateTimeOffset CreatedAt { get; set; }
+
+    [FirestoreDocumentUpdateTimestamp]
+    public DateTimeOffset? UpdatedAt { get; set; }
+
+    [FirestoreProperty("deleted")]
+    public DateTimeOffset? DeletedAt { get; set; }
+
+    [FirestoreProperty("hidden")]
+    public bool Hidden { get; set; }
+
+    [FirestoreProperty("parentCommentId")]
+    public string? ParentCommentId { get; set; }
 }

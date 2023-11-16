@@ -97,6 +97,7 @@ var jwtUtil = new JwtUtil(builder.Configuration["FirebaseAppId"]!, null);
 builder.Services
     .AddHttpClient()
     .AddControllers().AddControllersAsServices().Services
+    .AddSwaggerGen()
     .AddRouting()
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(options =>
@@ -225,18 +226,18 @@ builder.Services
     .AddHostedService<CacheRefreshBackgroundService>()
     .AddHostedService<HangfireRecurringJobs>()
     .AddHttpContextAccessor()
-    .AddSingleton<IConnectionMultiplexer>(sp =>
-    {
-        return RedisConnectionHelper.GetConnection(builder.Configuration);
-    })
+    // .AddSingleton<IConnectionMultiplexer>(sp =>
+    // {
+    //     return RedisConnectionHelper.GetConnection(builder.Configuration);
+    // })
     .AddSingleton<ISentryUserFactory>(sp =>
     {
         return new MySentryUserFactory(sp.GetRequiredService<IHttpContextAccessor>());
     })
-    .AddStackExchangeRedisCache(options =>
-    {
-        options.ConnectionMultiplexerFactory = () => Task.FromResult(RedisConnectionHelper.GetConnection(builder.Configuration));
-    })
+    // .AddStackExchangeRedisCache(options =>
+    // {
+    //     options.ConnectionMultiplexerFactory = () => Task.FromResult(RedisConnectionHelper.GetConnection(builder.Configuration));
+    // })
     .AddDistributedMemoryCache()
     .AddCors()
     .AddGraphQLServer()
@@ -274,6 +275,8 @@ builder.Services
             .AddTypeExtension<RecipeIngredientQueries>()
             .AddTypeExtension<ExtendedRecipeQueries>()
             .AddTypeExtension<ExtendedRecipeRatingQueries>()
+            .AddTypeExtension<ExtendedRecipeReactionQueries>()
+            .AddTypeExtension<ExtendedRecipeCommentQueries>()
             // Food
             .AddTypeExtension<FoodQueries>()
             // Admin
@@ -320,6 +323,12 @@ app.UseCors(o => o
     .AllowAnyHeader()
     .AllowAnyMethod()
     .AllowAnyOrigin());
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 app
     .UseWebSockets()

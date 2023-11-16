@@ -18,6 +18,9 @@ public static class RatingMapper
 
         cfg.CreateMap<ReactionDto, Reaction>();
         cfg.CreateMap<Reaction, ReactionDto>();
+
+        cfg.CreateMap<CommentDto, Comment>();
+        cfg.CreateMap<Comment, CommentDto>();
     }).CreateMapper();
 
     public static Rating MapDto(RatingDto dto)
@@ -42,5 +45,15 @@ public static class RatingMapper
     {
         var dto = mapper.Map<Reaction, ReactionDto>(reaction);
         return dto;
+    }
+
+    public static Comment MapDto(CommentDto dto)
+    {
+        return mapper.Map<CommentDto, Comment>(dto);
+    }
+
+    public static CommentDto Map(Comment comment)
+    {
+        return mapper.Map<Comment, CommentDto>(comment);
     }
 }

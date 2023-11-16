@@ -63,6 +63,24 @@ public class ExtendedUserQueries
         var recipes = await recipeService.GetRecipesByUserId(user.Id, cancellationToken, loggedInUser.HasRole(Role.MODERATOR) || user.Id == loggedInUser.Id);
         return recipes;
     }
+
+    public async Task<List<Recipe>> GetRecipeBookmarks([Parent] User user, [User] User loggedInUser, [Service] RecipeService recipeService, CancellationToken cancellationToken)
+    {
+        var recipes = new List<Recipe>();
+        if (user.BookmarkedRecipes == null || user.BookmarkedRecipes.Count == 0)
+        {
+            return recipes;
+        }
+        foreach (var recipeId in user.BookmarkedRecipes)
+        {
+            var recipe = await recipeService.GetRecipe(recipeId, cancellationToken, loggedInUser);
+            if (recipe != null)
+            {
+                recipes.Add(recipe);
+            }
+        }
+        return recipes;
+    }
 }
 
 [ExtendObjectType(typeof(SimpleUser))]

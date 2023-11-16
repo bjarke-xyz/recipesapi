@@ -134,6 +134,26 @@ public class ExtendedRecipeRatingQueries
         return new RecipeAuthor { UserId = user.Id, DisplayName = user.DisplayName ?? "" };
     }
 }
+[ExtendObjectType(typeof(Reaction))]
+public class ExtendedRecipeReactionQueries
+{
+    public async Task<RecipeAuthor?> GetUser([Parent] Reaction reaction, UserDataLoader userDataLoader, CancellationToken cancellationToken)
+    {
+        var user = await userDataLoader.LoadAsync(reaction.UserId, cancellationToken);
+        if (user == null) return null;
+        return new RecipeAuthor { UserId = user.Id, DisplayName = user.DisplayName ?? "" };
+    }
+}
+[ExtendObjectType(typeof(Comment))]
+public class ExtendedRecipeCommentQueries
+{
+    public async Task<RecipeAuthor?> GetUser([Parent] Comment comment, UserDataLoader userDataLoader, CancellationToken cancellationToken)
+    {
+        var user = await userDataLoader.LoadAsync(comment.UserId, cancellationToken);
+        if (user == null) return null;
+        return new RecipeAuthor { UserId = user.Id, DisplayName = user.DisplayName ?? "" };
+    }
+}
 
 [ExtendObjectType(typeof(Recipe))]
 public class ExtendedRecipeQueries
@@ -148,6 +168,12 @@ public class ExtendedRecipeQueries
             return null;
         }
         return new ExtendedRecipeRating(recipeRatings, loggedInUser);
+    }
+
+    public async Task<List<Comment>> GetComments([Parent] Recipe recipe, [User] User? loggedInUser, RecipeCommentsDataLoader recipeCommentsDataLoader, CancellationToken cancellationToken)
+    {
+        var comments = await recipeCommentsDataLoader.LoadAsync(recipe.Id, cancellationToken) ?? [];
+        return comments;
     }
 
     public async Task<RecipeReactions> GetRecipeReactions([Parent] Recipe recipe, [User] User? loggedInUser, RecipeReactionsDataLoader recipeReactionsDataLoader, CancellationToken cancellationToken)

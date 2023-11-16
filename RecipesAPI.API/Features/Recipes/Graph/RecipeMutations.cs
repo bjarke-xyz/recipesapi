@@ -1,5 +1,6 @@
 using System.Dynamic;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Security.Claims;
 using System.Text;
 using Hangfire;
@@ -362,6 +363,95 @@ public class RecipeMutations
         var recipeReactionsList = (await ratingsService.GetReactions(RatingType.Recipe, recipeId, cancellationToken)).ToList();
         var recipeReactions = new RecipeReactions(recipeReactionsList, loggedInUser);
         return recipeReactions;
+    }
+
+    [RoleAuthorize(RoleEnums = new[] { Role.USER })]
+    public async Task<Comment> AddComment(string recipeId, CommentInput input, [User] User loggedInUser, [Service] RecipeService recipeService, [Service] RatingsService ratingsService, CancellationToken cancellationToken)
+    {
+        var recipe = await recipeService.GetRecipe(recipeId, cancellationToken, loggedInUser);
+        if (recipe == null)
+        {
+            throw new RecipeNotFoundException(recipeId);
+        }
+
+        var comment = new Comment
+        {
+            UserId = loggedInUser.Id,
+            EntityType = RatingType.Recipe,
+            EntityId = recipe.Id,
+            Message = input.Message,
+            ParentCommentId = input.ParentCommentId,
+        };
+        var savedComment = await ratingsService.SaveComment(comment, cancellationToken);
+        return savedComment;
+    }
+
+    [RoleAuthorize(RoleEnums = new[] { Role.USER })]
+    public async Task<Comment> UpdateComment(string commentId, CommentInput input, [User] User loggedInUser, [Service] RatingsService ratingsService, CancellationToken cancellationToken)
+    {
+        var comment = await ratingsService.GetComment(commentId, cancellationToken);
+        if (comment == null)
+        {
+            throw new GraphQLErrorException("comment not found");
+        }
+        if (comment.UserId != loggedInUser.Id)
+        {
+            if (!loggedInUser.HasRole(Role.ADMIN))
+            {
+                throw new GraphQLErrorException("cannot edit other users' comments");
+            }
+        }
+
+        if (string.Equals(comment.Message, input.Message))
+        {
+            return comment;
+        }
+
+        comment.Message = input.Message;
+        comment.EditedAt = DateTimeOffset.UtcNow;
+        var updatedComment = await ratingsService.SaveComment(comment, cancellationToken);
+        return updatedComment;
+    }
+
+    [RoleAuthorize(RoleEnums = new[] { Role.USER })]
+    public async Task<Comment> DeleteComment(string commentId, [User] User loggedInUser, [Service] RatingsService ratingsService, CancellationToken cancellationToken)
+    {
+        var comment = await ratingsService.GetComment(commentId, cancellationToken);
+        if (comment == null)
+        {
+            throw new GraphQLErrorException("comment not found");
+        }
+        if (comment.DeletedAt.HasValue)
+        {
+            return comment;
+        }
+        if (comment.UserId != loggedInUser.Id)
+        {
+            if (!loggedInUser.HasRole(Role.ADMIN))
+            {
+                throw new GraphQLErrorException("cannot delete other users' comments");
+            }
+        }
+
+        var softDeletedComment = await ratingsService.DeleteComment(comment, cancellationToken);
+        return softDeletedComment;
+    }
+
+    [RoleAuthorize(RoleEnums = new[] { Role.MODERATOR })]
+    public async Task<Comment> HideComment(string commentId, bool hide, [User] User loggedInUser, [Service] RatingsService ratingsService, CancellationToken cancellationToken)
+    {
+        var comment = await ratingsService.GetComment(commentId, cancellationToken);
+        if (comment == null)
+        {
+            throw new GraphQLErrorException("comment not found");
+        }
+        if (comment.Hidden == hide)
+        {
+            return comment;
+        }
+        comment.Hidden = hide;
+        var updatedComment = await ratingsService.SaveComment(comment, cancellationToken);
+        return updatedComment;
     }
 
     [Obsolete]

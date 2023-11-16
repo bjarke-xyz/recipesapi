@@ -14,6 +14,67 @@ public class RatingsService(RatingsRepository ratingsRepository, ILogger<Ratings
     private string RatingCacheKey(RatingType type, string entityId) => $"GetRating:{type}:{entityId}";
     private string ReactionsCacheKey(RatingType type, string entityId) => $"GetReactions:{type}:{entityId}";
 
+    #region comments
+    // TODO: caching
+    public async Task<List<Comment>> GetComments(RatingType type, string id, CancellationToken cancellationToken)
+    {
+        var comments = await ratingsRepository.GetComments(type, id, cancellationToken);
+        var commentsTree = CommentsUtil.BuildTree(comments);
+        return commentsTree;
+    }
+
+    public async Task<Dictionary<string, List<Comment>>> GetComments(RatingType type, List<string> ids, CancellationToken cancellationToken)
+    {
+        var commentsDict = await ratingsRepository.GetComments(type, ids, cancellationToken);
+        var keys = commentsDict.Keys.ToList();
+        foreach (var key in keys)
+        {
+            var comments = commentsDict[key];
+            commentsDict[key] = CommentsUtil.BuildTree(comments);
+        }
+        return commentsDict;
+    }
+
+    public async Task<Comment?> GetComment(string id, CancellationToken cancellationToken)
+    {
+        return await ratingsRepository.GetComment(id, cancellationToken);
+    }
+
+    public async Task<Comment> SaveComment(Comment comment, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(comment.Message))
+        {
+            throw new GraphQLErrorException("invalid message");
+        }
+
+        if (!string.IsNullOrWhiteSpace(comment.ParentCommentId))
+        {
+            var parentComment = await GetComment(comment.ParentCommentId, cancellationToken);
+            if (parentComment == null)
+            {
+                throw new GraphQLErrorException("parent comment not found");
+            }
+            if (parentComment.DeletedAt.HasValue == true)
+            {
+                throw new GraphQLErrorException("cannot reply to deleted comment");
+            }
+        }
+        if (string.IsNullOrEmpty(comment.Id))
+        {
+            comment.Id = Guid.NewGuid().ToString();
+        }
+        await ratingsRepository.SaveComment(comment, cancellationToken);
+        return await GetComment(comment.Id, cancellationToken) ?? throw new GraphQLErrorException("failed to get saved comment");
+    }
+
+    public async Task<Comment> DeleteComment(Comment comment, CancellationToken cancellationToken)
+    {
+        await ratingsRepository.DeleteComment(comment, cancellationToken);
+        return await GetComment(comment.Id, cancellationToken) ?? throw new GraphQLErrorException("failed to get soft deleted comment");
+    }
+
+    #endregion
+
     #region reactions
     public async Task<List<Reaction>> GetReactions(RatingType type, string id, CancellationToken cancellationToken)
     {
@@ -110,6 +171,10 @@ public class RatingsService(RatingsRepository ratingsRepository, ILogger<Ratings
     #endregion
 
     #region ratings
+    public async Task<List<Rating>> GetAllRatings(CancellationToken cancellationToken)
+    {
+        return await ratingsRepository.GetAllRatings(cancellationToken);
+    }
     public async Task<List<Rating>> GetRatings(RatingType type, string id, CancellationToken cancellationToken)
     {
         var ratings = await ratingsRepository.GetRatings(type, id, cancellationToken);

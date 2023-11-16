@@ -63,3 +63,9 @@ public class RateRecipeInput
     public int Score { get; set; }
     public string? Comment { get; set; }
 }
+
+public class CommentInput
+{
+    public string Message { get; set; } = "";
+    public string? ParentCommentId { get; set; }
+}
