@@ -14,6 +14,8 @@ using RecipesAPI.API.Features.Files.DAL;
 using RecipesAPI.API.Infrastructure;
 using RecipesAPI.API.Features.Ratings.BLL;
 using RecipesAPI.API.Features.Ratings.Common;
+using RecipesAPI.API.Features.Admin.Common;
+using RecipesAPI.API.Features.Admin.BLL;
 
 namespace RecipesAPI.API.Features.Recipes.Graph;
 
@@ -116,10 +118,17 @@ public class RecipeIngredientQueries
 
     public async Task<List<FoodItem>> GetFoods([Parent] RecipeIngredient recipeIngredient, FoodDataLoader foodDataLoader, CancellationToken cancellationToken, int skip = 0, int limit = 10)
     {
-        if (string.IsNullOrEmpty(recipeIngredient.Title)) return new List<FoodItem>();
+        if (string.IsNullOrEmpty(recipeIngredient.Title)) return [];
 
         var foodData = await foodDataLoader.LoadAsync(getSearchQuery(recipeIngredient), cancellationToken);
         return foodData.Skip(skip).Take(limit).ToList();
+    }
+
+    public async Task<List<AffiliateItem>> GetAffiliateItems([Parent] RecipeIngredient recipeIngredient, AffiliateSearchDataLoader affiliateSearchDataLoader, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(recipeIngredient.Title)) return [];
+        var affiliateItems = await affiliateSearchDataLoader.LoadAsync(recipeIngredient.Title, cancellationToken);
+        return affiliateItems;
     }
 
 }
