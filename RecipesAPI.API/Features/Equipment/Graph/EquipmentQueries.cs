@@ -24,9 +24,9 @@ public class EquipmentQueries
 [ExtendObjectType(typeof(EquipmentItem))]
 public class ExtendedEquipmentQueries
 {
-    public async Task<List<AffiliateItem>> GetAffiliateItems([Parent] EquipmentItem equipmentItem, AffiliateSearchDataLoader affiliateSearchDataLoader)
+    public async Task<List<AffiliateItem>> GetAffiliateItems([Parent] EquipmentItem equipmentItem, AffiliateSearchDataLoader affiliateSearchDataLoader, CancellationToken cancellationToken)
     {
-        var affiliateItems = await affiliateSearchDataLoader.LoadAsync(equipmentItem.Title);
+        var affiliateItems = await affiliateSearchDataLoader.LoadAsync(equipmentItem.Title, cancellationToken);
         return affiliateItems;
     }
 }
