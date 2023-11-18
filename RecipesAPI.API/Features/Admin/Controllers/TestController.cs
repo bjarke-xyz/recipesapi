@@ -26,26 +26,26 @@ public class TestController(ILogger<TestController> logger, RatingsService ratin
         }
     }
 
-    private async Task MigrateRatingsToComments(CancellationToken cancellationToken)
-    {
-        var ratings = await ratingsService.GetAllRatings(cancellationToken);
-        var ratingsWithComments = ratings.Where(x => !string.IsNullOrEmpty(x.Comment));
+    // private async Task MigrateRatingsToComments(CancellationToken cancellationToken)
+    // {
+    //     var ratings = await ratingsService.GetAllRatings(cancellationToken);
+    //     var ratingsWithComments = ratings.Where(x => !string.IsNullOrEmpty(x.Comment));
 
-        var comments = ratingsWithComments.Select(rating => new Comment
-        {
-            UserId = rating.UserId,
-            EntityType = rating.EntityType,
-            EntityId = rating.EntityId,
-            Message = rating.Comment ?? "",
-            CreatedAt = rating.CreatedAt,
-            UpdatedAt = rating.UpdatedAt,
-            Hidden = rating.Approved == false,
-        }).ToList();
+    //     var comments = ratingsWithComments.Select(rating => new Comment
+    //     {
+    //         UserId = rating.UserId,
+    //         EntityType = rating.EntityType,
+    //         EntityId = rating.EntityId,
+    //         Message = rating.Comment ?? "",
+    //         CreatedAt = rating.CreatedAt,
+    //         UpdatedAt = rating.UpdatedAt,
+    //         Hidden = rating.Approved == false,
+    //     }).ToList();
 
-        foreach (var comment in comments)
-        {
-            await ratingsService.SaveComment(comment, cancellationToken);
-        }
+    //     foreach (var comment in comments)
+    //     {
+    //         await ratingsService.SaveComment(comment, cancellationToken);
+    //     }
 
-    }
+    // }
 }

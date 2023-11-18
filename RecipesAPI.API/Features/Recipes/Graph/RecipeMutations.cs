@@ -382,7 +382,7 @@ public class RecipeMutations
             Message = input.Message,
             ParentCommentId = input.ParentCommentId,
         };
-        var savedComment = await ratingsService.SaveComment(comment, cancellationToken);
+        var savedComment = await ratingsService.SaveComment(comment, cancellationToken, create: true);
         return savedComment;
     }
 
@@ -393,6 +393,10 @@ public class RecipeMutations
         if (comment == null)
         {
             throw new GraphQLErrorException("comment not found");
+        }
+        if (comment.DeletedAt.HasValue)
+        {
+            throw new GraphQLErrorException("cannot edit deleted comment");
         }
         if (comment.UserId != loggedInUser.Id)
         {
@@ -409,7 +413,7 @@ public class RecipeMutations
 
         comment.Message = input.Message;
         comment.EditedAt = DateTimeOffset.UtcNow;
-        var updatedComment = await ratingsService.SaveComment(comment, cancellationToken);
+        var updatedComment = await ratingsService.SaveComment(comment, cancellationToken, create: false);
         return updatedComment;
     }
 
@@ -450,7 +454,7 @@ public class RecipeMutations
             return comment;
         }
         comment.Hidden = hide;
-        var updatedComment = await ratingsService.SaveComment(comment, cancellationToken);
+        var updatedComment = await ratingsService.SaveComment(comment, cancellationToken, create: false);
         return updatedComment;
     }
 

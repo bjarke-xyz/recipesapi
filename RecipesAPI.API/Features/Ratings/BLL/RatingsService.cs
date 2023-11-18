@@ -16,21 +16,24 @@ public class RatingsService(RatingsRepository ratingsRepository, ILogger<Ratings
 
     #region comments
     // TODO: caching
-    public async Task<List<Comment>> GetComments(RatingType type, string id, CancellationToken cancellationToken)
+    public async Task<List<Comment>> GetComments(RatingType type, string id, CancellationToken cancellationToken, bool buildTree = false)
     {
         var comments = await ratingsRepository.GetComments(type, id, cancellationToken);
-        var commentsTree = CommentsUtil.BuildTree(comments);
-        return commentsTree;
+        if (buildTree)
+        {
+            comments = CommentsUtil.BuildTree(comments);
+        }
+        return comments;
     }
 
-    public async Task<Dictionary<string, List<Comment>>> GetComments(RatingType type, List<string> ids, CancellationToken cancellationToken)
+    public async Task<Dictionary<string, List<Comment>>> GetComments(RatingType type, List<string> ids, CancellationToken cancellationToken, bool buildTree = false)
     {
         var commentsDict = await ratingsRepository.GetComments(type, ids, cancellationToken);
         var keys = commentsDict.Keys.ToList();
         foreach (var key in keys)
         {
             var comments = commentsDict[key];
-            commentsDict[key] = CommentsUtil.BuildTree(comments);
+            commentsDict[key] = buildTree ? CommentsUtil.BuildTree(comments) : comments;
         }
         return commentsDict;
     }
@@ -40,14 +43,14 @@ public class RatingsService(RatingsRepository ratingsRepository, ILogger<Ratings
         return await ratingsRepository.GetComment(id, cancellationToken);
     }
 
-    public async Task<Comment> SaveComment(Comment comment, CancellationToken cancellationToken)
+    public async Task<Comment> SaveComment(Comment comment, CancellationToken cancellationToken, bool create)
     {
         if (string.IsNullOrWhiteSpace(comment.Message))
         {
             throw new GraphQLErrorException("invalid message");
         }
 
-        if (!string.IsNullOrWhiteSpace(comment.ParentCommentId))
+        if (!string.IsNullOrWhiteSpace(comment.ParentCommentId) && create)
         {
             var parentComment = await GetComment(comment.ParentCommentId, cancellationToken);
             if (parentComment == null)
