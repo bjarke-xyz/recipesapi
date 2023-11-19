@@ -26,7 +26,9 @@ public class RatingsRepository(ILogger<RatingsRepository> logger, FirestoreDb db
             var comment = RatingMapper.MapDto(dto);
             comments.Add(comment);
         }
-        return comments;
+        // https://firebase.google.com/docs/firestore/manage-data/add-data#add_a_document
+        // "If you want to be able to order your documents by creation date, you should store a timestamp as a field in the documents."
+        return [.. comments.OrderBy(x => x.CreatedAt)];
     }
 
     public async Task<Dictionary<string, List<Comment>>> GetComments(RatingType type, List<string> ids, CancellationToken cancellationToken)
@@ -47,6 +49,12 @@ public class RatingsRepository(ILogger<RatingsRepository> logger, FirestoreDb db
             comments.Add(comment);
         }
         var dict = comments.GroupBy(x => x.EntityId).ToDictionary(x => x.Key, x => x.ToList());
+        // https://firebase.google.com/docs/firestore/manage-data/add-data#add_a_document
+        // "If you want to be able to order your documents by creation date, you should store a timestamp as a field in the documents."
+        foreach (var key in dict.Keys.ToList())
+        {
+            dict[key] = [.. dict[key].OrderBy(x => x.CreatedAt)];
+        }
         return dict;
     }
 
