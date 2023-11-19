@@ -103,7 +103,7 @@ public class EquipmentService(EquipmentRepository equipmentRepository, ICachePro
         var equipmentList = await GetEquipment(cancellationToken);
         foreach (var equipment in equipmentList)
         {
-            _ = await affiliateService.SearchAffiliateItems(equipment.Title);
+            _ = await affiliateService.SearchAffiliateItems(equipment.Title, count: 5);
         }
     }
 
