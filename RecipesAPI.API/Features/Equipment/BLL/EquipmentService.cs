@@ -1,4 +1,5 @@
 using RecipesAPI.API.Exceptions;
+using RecipesAPI.API.Features.Admin.BLL;
 using RecipesAPI.API.Features.Admin.Common;
 using RecipesAPI.API.Features.Equipment.Common;
 using RecipesAPI.API.Features.Equipment.DAL;
@@ -6,21 +7,15 @@ using RecipesAPI.API.Infrastructure;
 
 namespace RecipesAPI.API.Features.Equipment.BLL;
 
-public class EquipmentService : ICacheKeyGetter
+public class EquipmentService(EquipmentRepository equipmentRepository, ICacheProvider cacheProvider, AffiliateService affiliateService) : ICacheKeyGetter
 {
-    private readonly EquipmentRepository equipmentRepository;
+    private readonly EquipmentRepository equipmentRepository = equipmentRepository;
+    private readonly AffiliateService affiliateService = affiliateService;
 
-    private readonly ICacheProvider cache;
+    private readonly ICacheProvider cache = cacheProvider;
 
     private readonly string GetEquipmentCacheKey = "GetEquipment";
-    private string GetEquipmentByIdCacheKey(string id) => $"GetEquipment:{id}";
-
-    public EquipmentService(EquipmentRepository equipmentRepository, ICacheProvider cacheProvider)
-    {
-        this.equipmentRepository = equipmentRepository;
-        this.cache = cacheProvider;
-    }
-
+    private static string GetEquipmentByIdCacheKey(string id) => $"GetEquipment:{id}";
 
     public async Task<List<EquipmentItem>> GetEquipment(CancellationToken cancellationToken)
     {
@@ -101,6 +96,15 @@ public class EquipmentService : ICacheKeyGetter
             },
             ResourceType = CachedResourceTypeHelper.EQUIPMENT
         };
+    }
+
+    public async Task RunCacheJob(CancellationToken cancellationToken)
+    {
+        var equipmentList = await GetEquipment(cancellationToken);
+        foreach (var equipment in equipmentList)
+        {
+            _ = await affiliateService.SearchAffiliateItems(equipment.Title);
+        }
     }
 
     private async Task ClearCache(string? equipmentId = null)
