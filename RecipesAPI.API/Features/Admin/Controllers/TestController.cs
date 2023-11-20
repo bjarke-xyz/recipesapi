@@ -10,21 +10,21 @@ public class TestController(ILogger<TestController> logger, RatingsService ratin
     private readonly ILogger<TestController> logger = logger;
     private readonly RatingsService ratingsService = ratingsService;
 
-    [HttpGet]
-    public async Task<ActionResult> Test()
-    {
-        try
-        {
-            // await MigrateRatingsToReactions(HttpContext.RequestAborted);
-            // await MigrateRatingsToComments(HttpContext.RequestAborted);
-            return NoContent();
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "error");
-            return StatusCode(500, ex.Message);
-        }
-    }
+    // [HttpGet]
+    // public async Task<ActionResult> Test()
+    // {
+    //     try
+    //     {
+    //         // await MigrateRatingsToReactions(HttpContext.RequestAborted);
+    //         // await MigrateRatingsToComments(HttpContext.RequestAborted);
+    //         return NoContent();
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         logger.LogError(ex, "error");
+    //         return StatusCode(500, ex.Message);
+    //     }
+    // }
 
     // private async Task MigrateRatingsToComments(CancellationToken cancellationToken)
     // {
