@@ -65,6 +65,12 @@ public class PublicAdtractionProgram
     [JsonProperty("programName")]
     public string? ProgramName { get; set; }
 
+    [JsonProperty("programUrl")]
+    public string? ProgramUrl { get; set; }
+
+    [JsonProperty("trackingUrl")]
+    public string? TrackingUrl { get; set; }
+
     [JsonProperty("feeds")]
     public List<Feed>? Feeds { get; set; }
 }

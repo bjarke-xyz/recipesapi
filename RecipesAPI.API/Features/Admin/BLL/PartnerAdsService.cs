@@ -55,7 +55,6 @@ public class PartnerAdsService(string url, string key, HttpClient httpClient, IL
             {
                 foreach (var program in cached)
                 {
-                    program.ProgramUrl = "";
                     program.ProgramDescription = "";
                     program.CategoryId = "";
                     program.CategoryName = "";
@@ -71,7 +70,6 @@ public class PartnerAdsService(string url, string key, HttpClient httpClient, IL
                     program.SocialPpc = null;
                     program.Cashback = null;
                     program.Rabatsites = null;
-                    program.AffiliateLink = null;
                     program.ContactPerson = null;
                     program.Email = null;
                     program.Status = null;
