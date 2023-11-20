@@ -115,13 +115,14 @@ public class FileService : IFileService
         var file = await GetFile(fileId, cancellationToken);
         if (file == null) return null;
 
-        var stream = await storageClient.GetStream(file.Bucket, file.Key, cancellationToken);
+        var (stream, _) = await storageClient.GetStream(file.Bucket, file.Key, cancellationToken);
         return stream;
     }
 
     public async Task<Stream?> GetFileContent(string bucket, string key, CancellationToken cancellationToken)
     {
-        return await storageClient.GetStream(bucket, key, cancellationToken);
+        var (fileContentStream, _) = await storageClient.GetStream(bucket, key, cancellationToken);
+        return fileContentStream;
     }
 
     public string GetPublicUrl(FileDto file)

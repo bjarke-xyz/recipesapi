@@ -32,21 +32,21 @@ public class S3StorageClient : IStorageClient
         var response = await client.PutObjectAsync(request, cancellationToken);
     }
 
-    public async Task<byte[]?> Get(string bucket, string key, CancellationToken cancellationToken)
+    public async Task<(byte[]?, string? contentType)> Get(string bucket, string key, CancellationToken cancellationToken)
     {
         var response = await client.GetObjectAsync(bucket, key, cancellationToken);
-        if (response == null) return null;
+        if (response == null) return (null, null);
         using var stream = response.ResponseStream;
         var bytes = new byte[stream.Length];
         await stream.ReadAsync(bytes, 0, (int)stream.Length, cancellationToken);
-        return bytes;
+        return (bytes, response.Headers.ContentType);
     }
 
-    public async Task<Stream?> GetStream(string bucket, string key, CancellationToken cancellationToken)
+    public async Task<(Stream?, string? contentType)> GetStream(string bucket, string key, CancellationToken cancellationToken)
     {
         var response = await client.GetObjectAsync(bucket, key, cancellationToken);
-        if (response == null) return null;
-        return response.ResponseStream;
+        if (response == null) return (null, null);
+        return (response.ResponseStream, response.Headers.ContentType);
     }
 
     public async Task Delete(string bucket, string key, CancellationToken cancellationToken)
@@ -95,33 +95,33 @@ public class GoogleStorageClient : IStorageClient
         await client.UploadObjectAsync(bucket, key, contentType, data, null, cancellationToken);
     }
 
-    public async Task<byte[]?> Get(string bucket, string key, CancellationToken cancellationToken)
+    public async Task<(byte[]?, string? contentType)> Get(string bucket, string key, CancellationToken cancellationToken)
     {
         try
         {
             var ms = new MemoryStream();
             var resp = await client.DownloadObjectAsync(bucket, key, ms, null, cancellationToken);
-            return ms.ToArray();
+            return (ms.ToArray(), resp.ContentType);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "failed to download from {bucket} {key}", bucket, key);
-            return null;
+            return (null, null);
         }
     }
 
-    public async Task<Stream?> GetStream(string bucket, string key, CancellationToken cancellationToken)
+    public async Task<(Stream?, string? contentType)> GetStream(string bucket, string key, CancellationToken cancellationToken)
     {
         try
         {
             var ms = new MemoryStream();
             var resp = await client.DownloadObjectAsync(bucket, key, ms, null, cancellationToken);
-            return ms;
+            return (ms, resp.ContentType);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "failed to download from {bucket} {key}", bucket, key);
-            return null;
+            return (null, null);
         }
     }
 
@@ -144,6 +144,6 @@ public interface IStorageClient
     Task Delete(string bucket, string key, CancellationToken cancellationToken);
     Task<string> GetSignedUploadUrl(string bucket, string key, string contentType, ulong contentLength, CancellationToken cancellationToken);
     Task PutStream(string bucket, string key, Stream data, string contentType, CancellationToken cancellationToken);
-    Task<byte[]?> Get(string bucket, string key, CancellationToken cancellationToken);
-    Task<Stream?> GetStream(string bucket, string key, CancellationToken cancellationToken);
+    Task<(byte[]?, string? contentType)> Get(string bucket, string key, CancellationToken cancellationToken);
+    Task<(Stream?, string? contentType)> GetStream(string bucket, string key, CancellationToken cancellationToken);
 }
