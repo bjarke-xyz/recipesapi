@@ -181,7 +181,7 @@ builder.Services
         var cacheProvider = sp.GetRequiredService<ICacheProvider>();
         var storageClient = sp.GetRequiredService<IStorageClient>();
         var logger = sp.GetRequiredService<ILogger<FileService>>();
-        return new FileService(fileRepository, cacheProvider, storageClient, logger, storageBucket);
+        return new FileService(fileRepository, cacheProvider, storageClient, logger, storageBucket, builder.Configuration["ApiUrl"]);
     })
     .AddSingleton<AdminService>()
     .AddSingleton<ImageProcessingService>(sp =>

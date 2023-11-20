@@ -1,3 +1,4 @@
+using System.Net;
 using RecipesAPI.API.Features.Admin.Common;
 using RecipesAPI.API.Features.Files.DAL;
 using RecipesAPI.API.Infrastructure;
@@ -25,19 +26,21 @@ public class FileService : IFileService
     private readonly ICacheProvider cache;
     private readonly IStorageClient storageClient;
     private readonly string bucket;
+    private readonly string apiUrl;
 
     private readonly ILogger<FileService> logger;
 
     private string FileCacheKey(string id) => $"GetFile:{id}";
     private string UploadTicketKey(string code) => $"UploadTicket:{code}";
 
-    public FileService(FileRepository fileRepository, ICacheProvider cache, IStorageClient storageClient, ILogger<FileService> logger, string bucket)
+    public FileService(FileRepository fileRepository, ICacheProvider cache, IStorageClient storageClient, ILogger<FileService> logger, string bucket, string apiUrl)
     {
         this.fileRepository = fileRepository;
         this.cache = cache;
         this.storageClient = storageClient;
         this.logger = logger;
         this.bucket = bucket;
+        this.apiUrl = apiUrl;
     }
 
     public CacheKeyInfo GetCacheKeyInfo()
@@ -133,7 +136,8 @@ public class FileService : IFileService
     public string GetPublicUrl(string bucket, string key)
     {
         // return $"https://pub-fc8159a8900d44e2b3f022917f202fc1.r2.dev/{file.Key}";
-        return $"https://storage.googleapis.com/{bucket}/{key}";
+        // return $"https://storage.googleapis.com/{bucket}/{key}";
+        return $"{apiUrl}/api/files/file/file.jpeg?bucket={WebUtility.UrlEncode(bucket)}&key={WebUtility.UrlEncode(key)}";
     }
 
     public async Task<FileDto?> SaveFile(FileDto file, CancellationToken cancellationToken)
