@@ -229,36 +229,8 @@ builder.Services
             o.RenameRootActivity = true;
             o.IncludeDocument = true;
         })
-        .AddAuthorization()
         .AddHttpRequestInterceptor<AuthInterceptor>()
-        .AddQueryType()
-        .AddMutationType()
-            // Users
-            .AddTypeExtension<UserQueries>()
-            .AddTypeExtension<ExtendedUserQueries>()
-            .AddTypeExtension<ExtendedSimpleUserQueries>()
-            .AddTypeExtension<UserMutations>()
-            // Recipes
-            .AddTypeExtension<RecipeQueries>()
-            .AddTypeExtension<RecipeMutations>()
-            .AddTypeExtension<RecipeIngredientQueries>()
-            .AddTypeExtension<ExtendedRecipeQueries>()
-            .AddTypeExtension<ExtendedRecipeRatingQueries>()
-            .AddTypeExtension<ExtendedRecipeReactionQueries>()
-            .AddTypeExtension<ExtendedRecipeCommentQueries>()
-            // Food
-            .AddTypeExtension<FoodQueries>()
-            // Admin
-            .AddTypeExtension<AdminQueries>()
-            .AddTypeExtension<AdtractionFeedQueries>()
-            .AddTypeExtension<PartnerAdsProgramQueries>()
-            .AddTypeExtension<AffiliateItemReferenceQueries>()
-            .AddTypeExtension<AdminMutations>()
-            // Equipment
-            .AddTypeExtension<EquipmentQueries>()
-            .AddTypeExtension<ExtendedEquipmentQueries>()
-            .AddTypeExtension<EquipmentMutations>()
-        .AddType<UploadType>()
+        .AddRecipesAPITypes()
 ;
 
 
