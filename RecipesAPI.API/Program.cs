@@ -181,7 +181,7 @@ builder.Services
         var cacheProvider = sp.GetRequiredService<ICacheProvider>();
         var storageClient = sp.GetRequiredService<IStorageClient>();
         var logger = sp.GetRequiredService<ILogger<FileService>>();
-        return new FileService(fileRepository, cacheProvider, storageClient, logger, storageBucket, builder.Configuration["ApiUrl"]);
+        return new FileService(fileRepository, cacheProvider, storageClient, logger, storageBucket, builder.Configuration["ApiUrl"] ?? throw new Exception("missing ApiUrl"));
     })
     .AddSingleton<AdminService>()
     .AddSingleton<ImageProcessingService>(sp =>
@@ -223,6 +223,8 @@ builder.Services
     })
     .AddSingleton<AffiliateService>()
     .AddSingleton<SqliteDataContext>()
+    .AddSingleton<SettingsRepository>()
+    .AddSingleton<SettingsService>()
     .AddHostedService<CacheRefreshBackgroundService>()
     .AddHostedService<HangfireRecurringJobs>()
     .AddHttpContextAccessor()

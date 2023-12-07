@@ -192,7 +192,7 @@ public class ExtendedRecipeQueries
         return recipeReactions;
     }
 
-    public async Task<Image?> GetImage([Parent] Recipe recipe, [Service] IFileService fileService, FileDataLoader fileDataLoader, [Service] ImageProcessingService imageProcessingService, [Service] SettingsService settingsService, CancellationToken cancellationToken)
+    public async Task<Image?> GetImage([Parent] Recipe recipe, [Service] IFileService fileService, FileDataLoader fileDataLoader, [Service] ImageProcessingService imageProcessingService, [Service] IConfiguration config, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(recipe.ImageId)) return null;
         var file = await fileDataLoader.LoadAsync(recipe.ImageId, cancellationToken);
@@ -206,7 +206,7 @@ public class ExtendedRecipeQueries
             var thumbnailDto = file.GetImageThumbnail(thumbnailSize);
             if (thumbnailDto == null && originalDimensions != null)
             {
-                var baseUrl = settingsService.Configuration["ApiUrl"];
+                var baseUrl = config["ApiUrl"];
                 var generateThumbnailApiUrl = $"{baseUrl}/api/recipes/thumbnail/{recipe.Id}?thumbnailSize={thumbnailSize}";
                 var (width, height, _) = imageProcessingService.GetImageThumbnailDimensions(originalDimensions.Width, originalDimensions.Height, thumbnailSize);
                 var thumbnail = new ImageThumbnail
