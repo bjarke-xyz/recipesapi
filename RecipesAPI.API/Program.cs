@@ -33,10 +33,8 @@ using RecipesAPI.API.Features.Ratings.DAL;
 using RecipesAPI.API.Features.Ratings.BLL;
 using RecipesAPI.API.Features.Admin.DAL;
 using OpenTelemetry.Trace;
-using Sentry.OpenTelemetry;
 using OpenTelemetry.Resources;
 using Serilog;
-using Sentry;
 
 CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
 
@@ -44,27 +42,10 @@ DotNetEnv.Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
-
-Action<Sentry.SentryOptions> configureSentry = o =>
-{
-    var sentryDsn = builder.Configuration["SENTRY_DSN"];
-    o.Dsn = sentryDsn;
-    o.Environment = builder.Environment.EnvironmentName.ToLower();
-    // When configuring for the first time, to see what the SDK is doing:
-    // Set TracesSampleRate to 1.0 to capture 100% of transactions for performance monitoring.
-    // We recommend adjusting this value in production.
-    o.TracesSampleRate = 1.0;
-    o.UseOpenTelemetry();
-};
-
 var loggerConfig = new LoggerConfiguration()
     .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Information)
     .MinimumLevel.Override("Microsoft.AspNetCore", Serilog.Events.LogEventLevel.Warning)
-    .Enrich.FromLogContext()
-    .WriteTo.Sentry(o =>
-    {
-        configureSentry(o);
-    });
+    .Enrich.FromLogContext();
 if (!builder.Environment.IsDevelopment())
 {
     loggerConfig = loggerConfig.WriteTo.Console(new Serilog.Formatting.Compact.RenderedCompactJsonFormatter());
@@ -181,7 +162,7 @@ builder.Services
         var cacheProvider = sp.GetRequiredService<ICacheProvider>();
         var storageClient = sp.GetRequiredService<IStorageClient>();
         var logger = sp.GetRequiredService<ILogger<FileService>>();
-        return new FileService(fileRepository, cacheProvider, storageClient, logger, storageBucket, builder.Configuration["ApiUrl"]);
+        return new FileService(fileRepository, cacheProvider, storageClient, logger, storageBucket, builder.Configuration["ApiUrl"] ?? throw new Exception("Missing ApiUrl"));
     })
     .AddSingleton<AdminService>()
     .AddSingleton<ImageProcessingService>(sp =>
@@ -226,18 +207,6 @@ builder.Services
     .AddHostedService<CacheRefreshBackgroundService>()
     .AddHostedService<HangfireRecurringJobs>()
     .AddHttpContextAccessor()
-    // .AddSingleton<IConnectionMultiplexer>(sp =>
-    // {
-    //     return RedisConnectionHelper.GetConnection(builder.Configuration);
-    // })
-    .AddSingleton<ISentryUserFactory>(sp =>
-    {
-        return new MySentryUserFactory(sp.GetRequiredService<IHttpContextAccessor>());
-    })
-    // .AddStackExchangeRedisCache(options =>
-    // {
-    //     options.ConnectionMultiplexerFactory = () => Task.FromResult(RedisConnectionHelper.GetConnection(builder.Configuration));
-    // })
     .AddDistributedMemoryCache()
     .AddCors()
     .AddGraphQLServer()
@@ -307,7 +276,6 @@ builder.Services.AddOpenTelemetry()
             .AddSqlClientInstrumentation()
             .AddRedisInstrumentation()
             .AddHotChocolateInstrumentation()
-            .AddSentry()
     );
 
 

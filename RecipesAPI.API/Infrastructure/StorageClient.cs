@@ -85,7 +85,7 @@ public class GoogleStorageClient : IStorageClient
             });
 
         var options = UrlSigner.Options.FromDuration(TimeSpan.FromMinutes(5));
-        var urlSigner = UrlSigner.FromServiceAccountCredential(credential);
+        var urlSigner = UrlSigner.FromCredential(credential);
         var url = urlSigner.Sign(requestTemplate, options);
         return url;
     }
