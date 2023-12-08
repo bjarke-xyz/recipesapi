@@ -35,6 +35,7 @@ using RecipesAPI.API.Features.Admin.DAL;
 using OpenTelemetry.Trace;
 using OpenTelemetry.Resources;
 using Serilog;
+using System.Text;
 
 CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
 
@@ -237,17 +238,43 @@ builder.Services
 builder.WebHost
     .UseKestrel(serverOptions => serverOptions.ListenAnyIP(port));
 
+var otlpExporterHttpClient = new HttpClient(new HttpClientInterceptor());
+otlpExporterHttpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic",
+    Convert.ToBase64String(Encoding.ASCII.GetBytes($"{builder.Configuration["GRAFANA_CLOUD_OTEL_INSTANCE_ID"]}:{builder.Configuration["GRAFANA_CLOUD_OTEL_KEY"]}")));
+var httpClientFactory = () =>
+{
+    return otlpExporterHttpClient;
+};
 builder.Services.AddOpenTelemetry()
     .WithTracing(tracingProviderBuilder =>
         tracingProviderBuilder
             .AddSource(Telemetry.ActivitySource.Name)
             .ConfigureResource(resource => resource.AddService(Telemetry.ServiceName))
-            .AddAspNetCoreInstrumentation()
-            .AddHttpClientInstrumentation()
+            .AddAspNetCoreInstrumentation(options =>
+            {
+                options.RecordException = true;
+            })
+            .AddHttpClientInstrumentation(options =>
+            {
+                options.RecordException = true;
+            })
             .AddGrpcClientInstrumentation()
-            .AddSqlClientInstrumentation()
+            .AddSqlClientInstrumentation(options =>
+            {
+                options.RecordException = true;
+                options.EnableConnectionLevelAttributes = true;
+                options.SetDbStatementForText = true;
+                options.SetDbStatementForStoredProcedure = true;
+            })
             .AddRedisInstrumentation()
             .AddHotChocolateInstrumentation()
+    //         .AddOtlpExporter(options =>
+    //         {
+    //             options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
+    //             options.Endpoint = new Uri(builder.Configuration["GRAFANA_CLOUD_OTEL_ENDPOINT"] ?? throw new Exception("missing config value"));
+    //             options.HttpClientFactory = httpClientFactory;
+    //         })
+    // .AddConsoleExporter()
     );
 
 
