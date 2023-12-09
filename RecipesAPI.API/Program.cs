@@ -36,6 +36,8 @@ using OpenTelemetry.Trace;
 using OpenTelemetry.Resources;
 using Serilog;
 using System.Text;
+using Serilog.Sinks.Slack;
+using Serilog.Sinks.Slack.Models;
 
 CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
 
@@ -53,11 +55,20 @@ if (!builder.Environment.IsDevelopment())
 }
 else
 {
-    loggerConfig = loggerConfig.WriteTo.Console();
-}
+    loggerConfig = loggerConfig
+    .WriteTo.Console()
+    .WriteTo.Slack(new SlackSinkOptions
+    {
+        WebHookUrl = builder.Configuration["SLACK_WEBHOOK_URL"],
+        MinimumLogEventLevel = Serilog.Events.LogEventLevel.Error,
+        CustomUserName = "Slack Logger",
+        ShowExceptionAttachments = true,
+    });
 
+}
 Log.Logger = loggerConfig.CreateLogger();
 builder.Host.UseSerilog(Log.Logger);
+
 
 var googleAppCredContent = builder.Configuration["GOOGLE_APPLICATION_CREDENTIALS_CONTENT"];
 if (!string.IsNullOrEmpty(googleAppCredContent))
