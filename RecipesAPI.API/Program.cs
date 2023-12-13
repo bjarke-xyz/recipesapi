@@ -48,6 +48,7 @@ var builder = WebApplication.CreateBuilder(args);
 var loggerConfig = new LoggerConfiguration()
     .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Information)
     .MinimumLevel.Override("Microsoft.AspNetCore", Serilog.Events.LogEventLevel.Warning)
+    .MinimumLevel.Debug()
     .Enrich.FromLogContext();
 if (!builder.Environment.IsDevelopment())
 {
@@ -279,13 +280,12 @@ builder.Services.AddOpenTelemetry()
             })
             .AddRedisInstrumentation()
             .AddHotChocolateInstrumentation()
-    //         .AddOtlpExporter(options =>
-    //         {
-    //             options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
-    //             options.Endpoint = new Uri(builder.Configuration["GRAFANA_CLOUD_OTEL_ENDPOINT"] ?? throw new Exception("missing config value"));
-    //             options.HttpClientFactory = httpClientFactory;
-    //         })
-    // .AddConsoleExporter()
+            .AddOtlpExporter(options =>
+            {
+                options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.Grpc;
+                options.Endpoint = new Uri(builder.Configuration["GRAFANA_CLOUD_OTEL_ENDPOINT"] ?? throw new Exception("missing GRAFANA_CLOUD_OTEL_ENDPOINT"));
+            })
+            .SetSampler(new AlwaysOnSampler())
     );
 
 
