@@ -52,12 +52,8 @@ var loggerConfig = new LoggerConfiguration()
     .Enrich.FromLogContext();
 if (!builder.Environment.IsDevelopment())
 {
-    loggerConfig = loggerConfig.WriteTo.Console(new Serilog.Formatting.Compact.RenderedCompactJsonFormatter());
-}
-else
-{
     loggerConfig = loggerConfig
-    .WriteTo.Console()
+    .WriteTo.Console(new Serilog.Formatting.Compact.RenderedCompactJsonFormatter())
     .WriteTo.Slack(new SlackSinkOptions
     {
         WebHookUrl = builder.Configuration["SLACK_WEBHOOK_URL"],
@@ -65,6 +61,11 @@ else
         CustomUserName = "Slack Logger",
         ShowExceptionAttachments = true,
     });
+}
+else
+{
+    loggerConfig = loggerConfig
+    .WriteTo.Console();
 
 }
 Log.Logger = loggerConfig.CreateLogger();
