@@ -1,5 +1,4 @@
 using System.Xml.Serialization;
-using Amazon.S3.Model.Internal.MarshallTransformations;
 using RecipesAPI.API.Features.Admin.Common;
 using RecipesAPI.API.Features.Admin.DAL;
 using RecipesAPI.API.Infrastructure;
@@ -16,6 +15,11 @@ public class PartnerAdsService(string url, string key, HttpClient httpClient, IL
     private readonly ICacheProvider cache = cache;
 
     private const string dateFormat = "yy-M-d";
+
+    public async Task<List<(string programId, string categoryName)>> GetCategories()
+    {
+        return await partnerAdsRepository.GetCategories();
+    }
 
     public async Task<PartnerAdsFeedProduct?> GetFeedProduct(PartnerAdsItemReference itemReference)
     {

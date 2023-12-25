@@ -13,14 +13,9 @@ FridaCsvPath = "/static-data/frida.csv"
 source = "recipesapi_data"
 destination = "/data"
 
-
 [http_service]
 internal_port = 8080
 force_https = true
-[http_service.concurrency]
-soft_limit = 200
-hard_limit = 250
-type = "requests"
 
 [checks]
 [checks.http_healthcheck]

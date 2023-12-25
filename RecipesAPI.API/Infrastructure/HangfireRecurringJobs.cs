@@ -18,11 +18,13 @@ public class HangfireRecurringJobs : BackgroundService
         Hangfire.RecurringJob.AddOrUpdate<RecipeService>(nameof(RecipeService.GetRecipe), s => s.GetRecipes(CancellationToken.None, null), "0 * * * *");
         Hangfire.RecurringJob.AddOrUpdate<AdtractionService>("adtraction_" + nameof(AdtractionService.RefreshProductFeeds), s => s.RefreshProductFeeds("DK", config.GetValue<int>("AdtractionChannelId"), null, null), "0 * * * *");
         Hangfire.RecurringJob.AddOrUpdate<PartnerAdsService>("partnerads_" + nameof(PartnerAdsService.RefreshProductFeeds), s => s.RefreshProductFeeds(null, null), "0 * * * *");
+        Hangfire.RecurringJob.AddOrUpdate<PartnerAdsService>("partnerads_" + nameof(PartnerAdsService.GetPrograms), s => s.GetPrograms(true), "0 * * * *");
         Hangfire.RecurringJob.AddOrUpdate<SqliteCacheProvider>(nameof(SqliteCacheProvider.RemoveExpired), s => s.RemoveExpired(), "* * * * *");
         Hangfire.RecurringJob.AddOrUpdate<EquipmentService>(nameof(EquipmentService.RunCacheJob), s => s.RunCacheJob(CancellationToken.None), "0 * * * *");
 
         Hangfire.RecurringJob.TriggerJob("adtraction_" + nameof(AdtractionService.RefreshProductFeeds));
         Hangfire.RecurringJob.TriggerJob("partnerads_" + nameof(PartnerAdsService.RefreshProductFeeds));
+        Hangfire.RecurringJob.TriggerJob("partnerads_" + nameof(PartnerAdsService.GetPrograms));
 
         return Task.CompletedTask;
     }

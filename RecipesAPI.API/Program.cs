@@ -33,10 +33,11 @@ using RecipesAPI.API.Features.Ratings.DAL;
 using RecipesAPI.API.Features.Ratings.BLL;
 using RecipesAPI.API.Features.Admin.DAL;
 using OpenTelemetry.Trace;
-using Sentry.OpenTelemetry;
 using OpenTelemetry.Resources;
 using Serilog;
-using Sentry;
+using System.Text;
+using Serilog.Sinks.Slack;
+using Serilog.Sinks.Slack.Models;
 
 CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
 
@@ -44,38 +45,32 @@ DotNetEnv.Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
-
-Action<Sentry.SentryOptions> configureSentry = o =>
-{
-    var sentryDsn = builder.Configuration["SENTRY_DSN"];
-    o.Dsn = sentryDsn;
-    o.Environment = builder.Environment.EnvironmentName.ToLower();
-    // When configuring for the first time, to see what the SDK is doing:
-    // Set TracesSampleRate to 1.0 to capture 100% of transactions for performance monitoring.
-    // We recommend adjusting this value in production.
-    o.TracesSampleRate = 1.0;
-    o.UseOpenTelemetry();
-};
-
 var loggerConfig = new LoggerConfiguration()
     .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Information)
     .MinimumLevel.Override("Microsoft.AspNetCore", Serilog.Events.LogEventLevel.Warning)
-    .Enrich.FromLogContext()
-    .WriteTo.Sentry(o =>
-    {
-        configureSentry(o);
-    });
+    .MinimumLevel.Debug()
+    .Enrich.FromLogContext();
 if (!builder.Environment.IsDevelopment())
 {
-    loggerConfig = loggerConfig.WriteTo.Console(new Serilog.Formatting.Compact.RenderedCompactJsonFormatter());
+    loggerConfig = loggerConfig
+    .WriteTo.Console(new Serilog.Formatting.Compact.RenderedCompactJsonFormatter())
+    .WriteTo.Slack(new SlackSinkOptions
+    {
+        WebHookUrl = builder.Configuration["SLACK_WEBHOOK_URL"],
+        MinimumLogEventLevel = Serilog.Events.LogEventLevel.Error,
+        CustomUserName = "Slack Logger",
+        ShowExceptionAttachments = true,
+    });
 }
 else
 {
-    loggerConfig = loggerConfig.WriteTo.Console();
-}
+    loggerConfig = loggerConfig
+    .WriteTo.Console();
 
+}
 Log.Logger = loggerConfig.CreateLogger();
 builder.Host.UseSerilog(Log.Logger);
+
 
 var googleAppCredContent = builder.Configuration["GOOGLE_APPLICATION_CREDENTIALS_CONTENT"];
 if (!string.IsNullOrEmpty(googleAppCredContent))
@@ -181,7 +176,7 @@ builder.Services
         var cacheProvider = sp.GetRequiredService<ICacheProvider>();
         var storageClient = sp.GetRequiredService<IStorageClient>();
         var logger = sp.GetRequiredService<ILogger<FileService>>();
-        return new FileService(fileRepository, cacheProvider, storageClient, logger, storageBucket, builder.Configuration["ApiUrl"] ?? throw new Exception("missing ApiUrl"));
+        return new FileService(fileRepository, cacheProvider, storageClient, logger, storageBucket, builder.Configuration["ApiUrl"] ?? throw new Exception("Missing ApiUrl"));
     })
     .AddSingleton<AdminService>()
     .AddSingleton<ImageProcessingService>(sp =>
@@ -228,18 +223,6 @@ builder.Services
     .AddHostedService<CacheRefreshBackgroundService>()
     .AddHostedService<HangfireRecurringJobs>()
     .AddHttpContextAccessor()
-    // .AddSingleton<IConnectionMultiplexer>(sp =>
-    // {
-    //     return RedisConnectionHelper.GetConnection(builder.Configuration);
-    // })
-    .AddSingleton<ISentryUserFactory>(sp =>
-    {
-        return new MySentryUserFactory(sp.GetRequiredService<IHttpContextAccessor>());
-    })
-    // .AddStackExchangeRedisCache(options =>
-    // {
-    //     options.ConnectionMultiplexerFactory = () => Task.FromResult(RedisConnectionHelper.GetConnection(builder.Configuration));
-    // })
     .AddDistributedMemoryCache()
     .AddCors()
     .AddGraphQLServer()
@@ -262,54 +245,50 @@ builder.Services
             o.RenameRootActivity = true;
             o.IncludeDocument = true;
         })
-        .AddAuthorization()
         .AddHttpRequestInterceptor<AuthInterceptor>()
-        .AddQueryType()
-        .AddMutationType()
-            // Users
-            .AddTypeExtension<UserQueries>()
-            .AddTypeExtension<ExtendedUserQueries>()
-            .AddTypeExtension<ExtendedSimpleUserQueries>()
-            .AddTypeExtension<UserMutations>()
-            // Recipes
-            .AddTypeExtension<RecipeQueries>()
-            .AddTypeExtension<RecipeMutations>()
-            .AddTypeExtension<RecipeIngredientQueries>()
-            .AddTypeExtension<ExtendedRecipeQueries>()
-            .AddTypeExtension<ExtendedRecipeRatingQueries>()
-            .AddTypeExtension<ExtendedRecipeReactionQueries>()
-            .AddTypeExtension<ExtendedRecipeCommentQueries>()
-            // Food
-            .AddTypeExtension<FoodQueries>()
-            // Admin
-            .AddTypeExtension<AdminQueries>()
-            .AddTypeExtension<AdtractionFeedQueries>()
-            .AddTypeExtension<PartnerAdsProgramQueries>()
-            .AddTypeExtension<AffiliateItemReferenceQueries>()
-            .AddTypeExtension<AdminMutations>()
-            // Equipment
-            .AddTypeExtension<EquipmentQueries>()
-            .AddTypeExtension<ExtendedEquipmentQueries>()
-            .AddTypeExtension<EquipmentMutations>()
-        .AddType<UploadType>()
+        .AddRecipesAPITypes()
 ;
 
 
 builder.WebHost
     .UseKestrel(serverOptions => serverOptions.ListenAnyIP(port));
 
+var otlpExporterHttpClient = new HttpClient(new HttpClientInterceptor());
+otlpExporterHttpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic",
+    Convert.ToBase64String(Encoding.ASCII.GetBytes($"{builder.Configuration["GRAFANA_CLOUD_OTEL_INSTANCE_ID"]}:{builder.Configuration["GRAFANA_CLOUD_OTEL_KEY"]}")));
+var httpClientFactory = () =>
+{
+    return otlpExporterHttpClient;
+};
 builder.Services.AddOpenTelemetry()
     .WithTracing(tracingProviderBuilder =>
         tracingProviderBuilder
             .AddSource(Telemetry.ActivitySource.Name)
             .ConfigureResource(resource => resource.AddService(Telemetry.ServiceName))
-            .AddAspNetCoreInstrumentation()
-            .AddHttpClientInstrumentation()
+            .AddAspNetCoreInstrumentation(options =>
+            {
+                options.RecordException = true;
+            })
+            .AddHttpClientInstrumentation(options =>
+            {
+                options.RecordException = true;
+            })
             .AddGrpcClientInstrumentation()
-            .AddSqlClientInstrumentation()
+            .AddSqlClientInstrumentation(options =>
+            {
+                options.RecordException = true;
+                options.EnableConnectionLevelAttributes = true;
+                options.SetDbStatementForText = true;
+                options.SetDbStatementForStoredProcedure = true;
+            })
             .AddRedisInstrumentation()
             .AddHotChocolateInstrumentation()
-            .AddSentry()
+            .AddOtlpExporter(options =>
+            {
+                options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.Grpc;
+                options.Endpoint = new Uri(builder.Configuration["GRAFANA_CLOUD_OTEL_ENDPOINT"] ?? throw new Exception("missing GRAFANA_CLOUD_OTEL_ENDPOINT"));
+            })
+            .SetSampler(new AlwaysOnSampler())
     );
 
 

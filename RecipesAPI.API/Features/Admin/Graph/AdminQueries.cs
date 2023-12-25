@@ -11,6 +11,35 @@ namespace RecipesAPI.API.Features.Admin.Graph;
 [ExtendObjectType(OperationTypeNames.Query)]
 public class AdminQueries
 {
+    public async Task<List<PartnerCategories>> GetPartnerCategories([Service] AdtractionService adtractionService, [Service] PartnerAdsService partnerAdsService)
+    {
+        var adtractionCategoriesList = await adtractionService.GetCategories();
+        var adtractionCategories = adtractionCategoriesList.GroupBy(x => x.programId).ToDictionary(x => x.Key, x => x.ToList());
+        var partnerAdsCategoriesList = await partnerAdsService.GetCategories();
+        var partnerAdsCategories = partnerAdsCategoriesList.GroupBy(x => x.programId).ToDictionary(x => x.Key, x => x.ToList());
+
+        var partnerCategories = new List<PartnerCategories>();
+        foreach (var (programId, categories) in adtractionCategories)
+        {
+            partnerCategories.Add(new PartnerCategories
+            {
+                Provider = AffiliateProvider.Adtraction,
+                ProgramId = programId,
+                Categories = categories.Select(x => x.category).ToList(),
+            });
+        }
+        foreach (var (programId, categories) in partnerAdsCategories)
+        {
+            partnerCategories.Add(new PartnerCategories
+            {
+                Provider = AffiliateProvider.PartnerAds,
+                ProgramId = programId,
+                Categories = categories.Select(x => x.categoryName).ToList(),
+            });
+        }
+        return partnerCategories;
+    }
+
     [RoleAuthorize(RoleEnums = new[] { Role.ADMIN })]
     public async Task<SettingsDto> GetSettings([Service] SettingsService settingsService)
     {
@@ -323,4 +352,11 @@ public class AdtractionProgramsInput
     /// The status of the partner program on the Adtraction platform, where Live = 0 and Closing = 3
     /// </summary>
     public int? Status { get; set; }
+}
+
+public class PartnerCategories
+{
+    public AffiliateProvider Provider { get; set; }
+    public string ProgramId { get; set; } = "";
+    public List<string> Categories { get; set; } = [];
 }

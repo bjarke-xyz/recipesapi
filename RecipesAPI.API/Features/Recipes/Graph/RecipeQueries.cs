@@ -124,7 +124,7 @@ public class RecipeIngredientQueries
         return foodData.Skip(skip).Take(limit).ToList();
     }
 
-    public async Task<List<AffiliateItem>> GetAffiliateItems([Parent] RecipeIngredient recipeIngredient, AffiliateSearchDataLoader affiliateSearchDataLoader, CancellationToken cancellationToken)
+    public async Task<List<AffiliateItem>> GetAffiliateItems([Parent] RecipeIngredient recipeIngredient, AffiliateIngredientSearchDataLoader affiliateSearchDataLoader, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(recipeIngredient.Title)) return [];
         var affiliateItems = await affiliateSearchDataLoader.LoadAsync(recipeIngredient.Title, cancellationToken);

@@ -21,6 +21,17 @@ public class AdtractionRepository(SqliteDataContext context, ILogger<AdtractionR
         return await conn.QuerySingleOrDefaultAsync<AdtractionProductFeedDto>(sql, new { programId, feedId });
     }
 
+    public async Task<List<(string programId, string category)>> GetCategories()
+    {
+        using var conn = context.CreateConnection();
+        var sql =
+        """
+        select distinct programid, category from AdtractionProductFeedItems fi 
+        join AdtractionProductFeed f on fi.AdtractionProductFeedId = f.id
+        """;
+        return (await conn.QueryAsync<(string programId, string category)>(sql)).ToList();
+    }
+
     public async Task<AdtractionFeedProduct?> GetFeedProduct(int programId, int feedId, string sku)
     {
         using var conn = context.CreateConnection();

@@ -6,10 +6,12 @@ namespace RecipesAPI.API.Features.Healthcheck.Controllers;
 
 public class HealthcheckController : BaseController
 {
+    private readonly ILogger<HealthcheckController> logger;
     private readonly HealthcheckService healthcheckService;
 
-    public HealthcheckController(HealthcheckService healthcheckService)
+    public HealthcheckController(ILogger<HealthcheckController> logger, HealthcheckService healthcheckService)
     {
+        this.logger = logger;
         this.healthcheckService = healthcheckService;
     }
 
@@ -30,5 +32,12 @@ public class HealthcheckController : BaseController
         {
             return StatusCode(500);
         }
+    }
+
+    [HttpGet("test")]
+    public ActionResult Test()
+    {
+        throw new Exception("test!");
+
     }
 }

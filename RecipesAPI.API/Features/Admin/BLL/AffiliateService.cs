@@ -1,12 +1,13 @@
 using System.Collections.Concurrent;
 using HotChocolate.Language;
 using RecipesAPI.API.Features.Admin.Common;
+using RecipesAPI.API.Features.Admin.DAL;
 using RecipesAPI.API.Infrastructure;
 using SQLitePCL;
 
 namespace RecipesAPI.API.Features.Admin.BLL;
 
-public class AffiliateService(AdtractionService adtractionService, PartnerAdsService partnerAdsService, ICacheProvider cache)
+public class AffiliateService(AdtractionService adtractionService, PartnerAdsService partnerAdsService, ICacheProvider cache, SettingsService settingsService)
 {
     private readonly AdtractionService adtractionService = adtractionService;
     private readonly PartnerAdsService partnerAdsService = partnerAdsService;
@@ -49,26 +50,34 @@ public class AffiliateService(AdtractionService adtractionService, PartnerAdsSer
         _ => null,
     };
 
-    public async Task<IReadOnlyDictionary<string, List<AffiliateItem>>> SearchAffiliateItems(List<string> searchQueries, int count)
+    public async Task<IReadOnlyDictionary<string, List<AffiliateItem>>> SearchAffiliateItems(List<string> searchQueries, int count, PartnerSettingsArea area)
     {
         var result = new ConcurrentDictionary<string, List<AffiliateItem>>();
+        var settings = await settingsService.GetSettings();
+        var partnerSettings = settings.PartnerSettings.Where(x => x.Area == area).ToList();
         await Parallel.ForEachAsync(searchQueries, async (searchQuery, cancellationToken) =>
         {
-            var affiliateItems = await SearchAffiliateItems(searchQuery, count);
+            var affiliateItems = await SearchAffiliateItems(searchQuery, count, partnerSettings);
             result[searchQuery] = affiliateItems;
         });
         return result;
     }
 
-    public async Task<List<AffiliateItem>> SearchAffiliateItems(string? searchQuery, int count = 100)
+    public async Task<List<AffiliateItem>> SearchAffiliateItems(string? searchQuery, int count = 100, List<PartnerSettingsDto>? settings = null)
     {
-        // TODO: OPSÆTNING AF NEGATIV/POSITIV TAGS
         var positiveTags = new List<string>();
         var negativeTags = new List<string>();
-        if (string.Equals(searchQuery, "Mikroovn"))
+        var categories = new List<string>();
+        if (settings?.Count > 0)
         {
-            negativeTags.Add("æg");
+            positiveTags = settings.SelectMany(x => x.PositiveTags).ToList();
+            negativeTags = settings.SelectMany(x => x.NegativeTags).ToList();
+            categories = settings.SelectMany(x => x.Categories).ToList();
         }
+        // if (string.Equals(searchQuery, "Mikroovn"))
+        // {
+        //     negativeTags.Add("æg");
+        // }
         const int cacheCount = 15;
         var originalCount = count;
         if (count <= cacheCount)
@@ -89,7 +98,7 @@ public class AffiliateService(AdtractionService adtractionService, PartnerAdsSer
             allItems.AddRange(providerItems);
         }
 
-        var rankedItems = RankItems(allItems, searchQuery, count, negativeTags, positiveTags);
+        var rankedItems = RankItems(allItems, searchQuery, count, negativeTags, positiveTags, categories);
         if (count == cacheCount)
         {
             await cache.Put(cacheKey, rankedItems, expiration: TimeSpan.FromHours(1));
@@ -97,7 +106,7 @@ public class AffiliateService(AdtractionService adtractionService, PartnerAdsSer
         return rankedItems.Take(originalCount).ToList();
     }
 
-    private List<AffiliateItem> RankItems(List<AffiliateItem> allItems, string? searchQuery, int count, List<string> negativeTags, List<string> positiveTags)
+    private List<AffiliateItem> RankItems(List<AffiliateItem> allItems, string? searchQuery, int count, List<string> negativeTags, List<string> positiveTags, List<string> categories)
     {
         if (count > 1000) count = 1000;
         if (string.IsNullOrEmpty(searchQuery)) return allItems.Take(count).ToList();
@@ -106,7 +115,7 @@ public class AffiliateService(AdtractionService adtractionService, PartnerAdsSer
         foreach (var item in allItems)
         {
             var score = CalculateInitialScore(item, searchQuery);
-            score = AdjustScore(score, item, negativeTags, positiveTags);
+            score = AdjustScore(score, item, negativeTags, positiveTags, categories);
             rankedItems.Add((score, item));
         }
 
@@ -139,7 +148,7 @@ public class AffiliateService(AdtractionService adtractionService, PartnerAdsSer
 
     }
 
-    private static int AdjustScore(int score, AffiliateItem item, List<string> negativeTags, List<string> positiveTags)
+    private static int AdjustScore(int score, AffiliateItem item, List<string> negativeTags, List<string> positiveTags, List<string> categories)
     {
         var newScore = score;
         if (item.ItemInfo == null) return newScore;
@@ -151,6 +160,13 @@ public class AffiliateService(AdtractionService adtractionService, PartnerAdsSer
         if (item.ItemInfo.InStock == true)
         {
             newScore -= 100;
+        }
+        foreach (var category in categories)
+        {
+            if (item.ItemInfo.Category?.Contains(category, StringComparison.OrdinalIgnoreCase) == true)
+            {
+                newScore -= 1000;
+            }
         }
         foreach (var positiveTag in positiveTags)
         {

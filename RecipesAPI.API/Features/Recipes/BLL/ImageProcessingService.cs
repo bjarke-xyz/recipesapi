@@ -22,7 +22,8 @@ public class ImageProcessingService
 
     public async Task<(SixLabors.ImageSharp.Image, SixLabors.ImageSharp.Formats.IImageFormat?)> LoadImage(Stream fileContent, CancellationToken cancellationToken)
     {
-        var (image, format) = await SixLabors.ImageSharp.Image.LoadWithFormatAsync(fileContent, cancellationToken);
+        var format = await SixLabors.ImageSharp.Image.DetectFormatAsync(fileContent, cancellationToken);
+        var image = await SixLabors.ImageSharp.Image.LoadAsync(fileContent, cancellationToken);
         return (image, format);
     }
 
@@ -100,11 +101,7 @@ public class ImageProcessingService
             originalHeight = image.Height;
             ResizeImage(image, thumbnailSize);
             var thumbnailKey = $"recipes/{recipeId}/thumbnails/{thumbnailSize}";
-            var encoder = SixLabors.ImageSharp.Configuration.Default.ImageFormatsManager.FindEncoder(format);
-            if (encoder == null)
-            {
-                throw new Exception($"Unable to find encoder for image format '{format.Name}'");
-            }
+            var encoder = SixLabors.ImageSharp.Configuration.Default.ImageFormatsManager.GetEncoder(format);
             using var imageMs = new MemoryStream();
             image.Save(imageMs, encoder);
             await storageClient.PutStream(storageBucket, thumbnailKey, imageMs, format.DefaultMimeType, cancellationToken);

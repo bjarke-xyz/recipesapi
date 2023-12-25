@@ -1,6 +1,6 @@
 using RecipesAPI.API.Utils;
 
-namespace RecipesAPI.API.Tests;
+namespace RecipesAPI.Tests;
 
 public class SlugTests
 {

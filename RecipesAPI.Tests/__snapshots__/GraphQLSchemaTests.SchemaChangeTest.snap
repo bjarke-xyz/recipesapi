@@ -1,0 +1,700 @@
+﻿schema {
+  query: Query
+  mutation: Mutation
+}
+
+type AdtractionAccountBalance {
+  pendingBalance: Float!
+  confirmedBalance: Float!
+  invoicedBalance: Float!
+  payableBalance: Float!
+  totalBalance: Float!
+}
+
+type AdtractionApplication {
+  channelId: Int!
+  channelName: String!
+  status: Int!
+  programId: Int!
+  programName: String!
+}
+
+type AdtractionFeedProduct {
+  sku: String
+  name: String
+  description: String
+  category: String
+  price: Decimal
+  shipping: String
+  currency: String
+  inStock: Boolean!
+  productUrl: String
+  imageUrl: String
+  trackingUrl: String
+  brand: String
+  originalPrice: Decimal
+  ean: String
+  manufacturerArticleNumber: String
+  extras: [AdtractionFeedProductExtra!]!
+  programId: Int!
+  feedId: Int!
+}
+
+type AdtractionFeedProductExtra {
+  name: String
+  value: String
+}
+
+type AdtractionItemReference {
+  programId: Int!
+  feedId: Int!
+  sku: String!
+}
+
+type AdtractionProgram {
+  programId: Int!
+  market: String
+  currency: String
+  approvalStatus: Int
+  ppcMarketing: Int
+  socialMarketing: Int
+  emailMarketing: Int
+  cashbackMarketing: Int
+  couponMarketing: Int
+  programName: String
+  programUrl: String
+  currentSegment: String
+  pendingActive: Boolean
+  cookieDuration: Int
+  adId: Int
+  commissions: [Commission!]
+  feeds: [Feed!]
+  logoURL: String
+  trackingURL: String
+  categoryName: String
+  categoryId: Int
+  trackingType: Int
+  status: Int
+}
+
+type AffiliateItem {
+  provider: AffiliateProvider!
+  itemInfo: AffiliateItemInfo
+}
+
+type AffiliateItemInfo {
+  title: String!
+  url: String!
+  imageUrl: String
+  description: String
+  category: String
+  newPrice: Decimal
+  oldPrice: Decimal
+  inStock: Boolean
+  brand: String
+  productName: String!
+}
+
+type AffiliateItemReference {
+  provider: AffiliateProvider!
+  adtraction: AdtractionItemReference
+  partnerAds: PartnerAdsItemReference
+  affiliateItem: AffiliateItem
+}
+
+type CachedResourceType {
+  name: String!
+}
+
+type Comment {
+  id: String!
+  userId: String!
+  entityType: RatingType!
+  entityId: String!
+  message: String!
+  editedAt: DateTime
+  createdAt: DateTime!
+  updatedAt: DateTime
+  deletedAt: DateTime
+  hidden: Boolean!
+  parentCommentId: String
+  children: [Comment!]!
+  user: RecipeAuthor
+}
+
+type Commission {
+  id: Long
+  type: String
+  name: String
+  value: Float
+  transactionType: Int
+  categories: [ProgramCategory!]
+}
+
+type EquipmentItem {
+  id: String!
+  title: String!
+  description: String
+  icon: String
+  links: [EquipmentLink!]!
+  affiliateItems: [AffiliateItem!]!
+}
+
+type EquipmentLink {
+  url: String!
+  title: String!
+}
+
+type ExtendedRecipeRating {
+  ratingGroups: [RecipeRating!]!
+  ratings: [Rating!]!
+  userRating: Rating
+}
+
+type Feed {
+  feedUrl: String
+  lastUpdated: DateTime
+  numberOfProducts: Int
+  feedId: Int
+  name: String
+  programId: Int
+  productFeed(input: GetProductFeedInput): [AdtractionFeedProduct!]! @deprecated(reason: "Use AffiliateItems")
+  affiliateItems(input: GetProductFeedInput): [AffiliateItem!]!
+}
+
+type FoodItem {
+  foodId: Int!
+  foodName: FoodText!
+  parameters: [FoodParameter!]!
+}
+
+type FoodParameter {
+  parameterId: Int!
+  parameterName: FoodText!
+  value: Float
+}
+
+type FoodText {
+  da: String!
+  en: String!
+}
+
+type Image {
+  imageId: String!
+  src: String!
+  type: String!
+  size: Long!
+  name: String!
+  dimensions: ImageDimensions
+  thumbnails: ImageThumbnails
+}
+
+type ImageDimension {
+  width: Int!
+  height: Int!
+}
+
+type ImageDimensions {
+  original: ImageDimension
+}
+
+type ImageThumbnail {
+  thumbnailSize: ThumbnailSize!
+  dimensions: ImageDimension
+  src: String!
+  type: String!
+  size: Long!
+}
+
+type ImageThumbnails {
+  small: ImageThumbnail
+  medium: ImageThumbnail
+  large: ImageThumbnail
+}
+
+type Mutation {
+  signUp(input: SignUpInput!): TokenPayload!
+  signIn(input: SignInInput!): TokenPayload!
+  refreshToken(refreshToken: String!): TokenPayload!
+  resetPassword(email: String!): Boolean!
+  updateMe(input: UpdateMeInput!): User! @authorize(roles: [ "USER" ])
+  updateUser(userId: String! input: UpdateUserInput!): User! @authorize(roles: [ "ADMIN" ])
+  bookmarkRecipe(recipeId: String!): [String!]! @authorize(roles: [ "USER" ])
+  unbookmarkRecipe(recipeId: String!): [String!]! @authorize(roles: [ "USER" ])
+  "Upload flow:\n1. User submits form\n2. Call CreateUploadUrl with details from user's file\/image\n3. PUT file to UploadUrl (ContentType and ContentLength must match what was provided in CreateUploadUrl)\n4. Call CreateRecipe\/UpdateRecipe with the FileId returned by CreateUploadUrl"
+  createUploadUrl(input: CreateUploadUrlInput!): UploadUrlPayload! @authorize(roles: [ "USER" ])
+  createRecipe(input: RecipeInput!): Recipe! @authorize(roles: [ "USER" ])
+  updateRecipe(id: String! unpublish: Boolean input: RecipeInput!): Recipe! @authorize(roles: [ "USER" ])
+  deleteRecipe(id: String!): Boolean! @authorize(roles: [ "USER" ])
+  addReaction(recipeId: String! reactionType: ReactionType!): RecipeReactions! @authorize(roles: [ "USER" ])
+  deleteReaction(recipeId: String! reactionType: ReactionType!): RecipeReactions @authorize(roles: [ "USER" ])
+  addComment(recipeId: String! input: CommentInput!): Comment! @authorize(roles: [ "USER" ])
+  updateComment(commentId: String! input: CommentInput!): Comment! @authorize(roles: [ "USER" ])
+  deleteComment(commentId: String!): Comment! @authorize(roles: [ "USER" ])
+  hideComment(commentId: String! hide: Boolean!): Comment! @authorize(roles: [ "MODERATOR" ])
+  addRating(id: String! input: RateRecipeInput!): Boolean! @authorize(roles: [ "USER" ]) @deprecated
+  setRatingApproved(ratingId: String! approved: Boolean!): Rating! @authorize(roles: [ "MODERATOR" ])
+  clearCache(cachedResourceTypes: [CachedResourceTypeInput!]!): Boolean! @authorize(roles: [ "ADMIN" ])
+  createEquipment(input: EquipmentInput!): EquipmentItem! @authorize(roles: [ "MODERATOR" ])
+  updateEquipment(id: String! input: EquipmentInput!): EquipmentItem! @authorize(roles: [ "MODERATOR" ])
+  deleteEquipment(id: String!): Boolean! @authorize(roles: [ "MODERATOR" ])
+}
+
+type PartnerAdsBalance {
+  items: [PartnerAdsBalanceItem!]!
+}
+
+type PartnerAdsBalanceItem {
+  type: String!
+  amountStr: String!
+  amount: Float!
+}
+
+type PartnerAdsClick {
+  programId: String!
+  programName: String!
+  dateStr: String!
+  timeStr: String!
+  timestamp: DateTime
+  url: String
+  saleStr: String!
+  sale: Boolean!
+}
+
+type PartnerAdsClickSummary {
+  clicks: [PartnerAdsClick!]!
+}
+
+type PartnerAdsEarning {
+  sumStr: String!
+  sum: Float!
+}
+
+type PartnerAdsFeedProduct {
+  retailer: String
+  categoryName: String
+  brand: String
+  productName: String
+  productId: String
+  description: String
+  newPrice: Decimal
+  oldPrice: Decimal
+  deliveryCost: String
+  inStock: Boolean!
+  deliveryTime: String
+  size: String
+  imageUrl: String
+  productUrl: String
+  programId: Int!
+}
+
+type PartnerAdsItemReference {
+  programId: String!
+  productId: String!
+}
+
+type PartnerAdsProgram {
+  programId: String!
+  programName: String!
+  programUrl: String!
+  programDescription: String!
+  categoryId: String!
+  categoryName: String!
+  subCategory: String!
+  feed: Boolean!
+  clickRate: Float!
+  leadRate: Float!
+  provision: Float!
+  epc: String
+  semPpc: String
+  semPpcRestriction: String
+  shoppingAds: String
+  shoppingAdsRestriction: String
+  socialPpc: String
+  cashback: String
+  rabatsites: String
+  affiliateLink: String
+  contactPerson: String
+  email: String
+  feedLink: String
+  status: String
+  currency: String!
+  market: String!
+  feedUpdated: DateTime
+  productFeed(input: GetProductFeedInput): [PartnerAdsFeedProduct!]! @deprecated(reason: "Use AffiliateItems")
+  affiliateItems(input: GetProductFeedInput): [AffiliateItem!]!
+}
+
+type PartnerAdsProgramStat {
+  programId: String!
+  programName: String!
+  clicks: Int!
+  leads: Int!
+  leadAmount: Float!
+  sales: Int!
+  orderRevenue: Float!
+  salesAmount: Float!
+  programTotal: Float!
+}
+
+type PartnerAdsProgramStats {
+  programs: [PartnerAdsProgramStat!]!
+}
+
+type ProgramCategory {
+  category: String
+  type: String
+  value: Float
+}
+
+type PublicAdtractionProgram {
+  programId: Int!
+  programName: String
+  programUrl: String
+  trackingUrl: String
+  feeds: [Feed!]
+}
+
+type Query {
+  me: User! @authorize
+  users: [User!]! @authorize(roles: [ "ADMIN" ])
+  simpleUser(userId: String!): SimpleUser
+  stats(showUnpublished: Boolean! = false showModerated: Boolean! = true): Stats!
+  recipes(filter: RecipeFilterInput): [Recipe!]!
+  recipe(id: String slugOrId: String): Recipe
+  recipesByIds(slugsOrIds: [String!]!): [Recipe!]!
+  parseIngredient(ingredient: String!): RecipeIngredient
+  food(id: Int!): FoodItem
+  foods(limit: Int skip: Int): [FoodItem!]!
+  cachedResourceTypes: [CachedResourceType!]! @authorize(roles: [ "ADMIN" ])
+  partnerAdsPrograms: [PartnerAdsProgram!]! @authorize(roles: [ "ADMIN" ])
+  "The following properties have values: programId, programName, feedLink"
+  publicPartnerAdsPrograms: [PartnerAdsProgram!]!
+  partnerAdsBalance: PartnerAdsBalance! @authorize(roles: [ "ADMIN" ])
+  partnerAdsEarning(input: PartnerAdsEarningsInput!): PartnerAdsEarning! @authorize(roles: [ "ADMIN" ])
+  partnerAdsProgramStats(input: PartnerAdsProgramStatsInput!): PartnerAdsProgramStats! @authorize(roles: [ "ADMIN" ])
+  partnerAdsClickSummary: PartnerAdsClickSummary! @authorize(roles: [ "ADMIN" ])
+  adtractionAccountBalance(currency: String! = "DKK"): AdtractionAccountBalance! @authorize(roles: [ "ADMIN" ])
+  adtractionApplications: [AdtractionApplication!]! @authorize(roles: [ "ADMIN" ])
+  adtractionPrograms(input: AdtractionProgramsInput!): [AdtractionProgram!]! @authorize(roles: [ "ADMIN" ])
+  publicAdtractionPrograms(input: AdtractionProgramsInput!): [PublicAdtractionProgram!]!
+  searchAffiliateItems(input: SearchProductFeedInput!): [AffiliateItem!]!
+  equipments: [EquipmentItem!]!
+  equipment(id: String!): EquipmentItem
+}
+
+type Rating {
+  id: String!
+  userId: String!
+  entityType: RatingType!
+  entityId: String!
+  score: Int!
+  comment: String
+  approved: Boolean
+  createdAt: DateTime!
+  updatedAt: DateTime
+  user: RecipeAuthor
+}
+
+type Recipe {
+  id: String!
+  title: String!
+  description: String
+  imageId: String
+  userId: String!
+  createdAt: DateTime!
+  moderatedAt: DateTime
+  lastModifiedAt: DateTime!
+  published: Boolean!
+  tips: [String!]!
+  yield: String
+  parts: [RecipePart!]!
+  difficulty: Int
+  slugs: [String!]!
+  slug: String
+  draft: Recipe
+  equipmentIds: [String!]!
+  rating: RecipeRating
+  extendedRating: ExtendedRecipeRating @deprecated
+  comments: [Comment!]!
+  recipeReactions: RecipeReactions!
+  image: Image
+  user: RecipeAuthor!
+  equipment: [EquipmentItem!]!
+}
+
+type RecipeAuthor {
+  userId: String!
+  displayName: String!
+  name: String!
+}
+
+type RecipeIngredient {
+  original: String!
+  title: String
+  volume: Float
+  unit: String
+  meta: [String!]!
+  manuallyEntered: Boolean!
+  optional: Boolean!
+  affiliateItemReferences: [AffiliateItemReference!]!
+  food: FoodItem
+  foods(skip: Int! = 0 limit: Int! = 10): [FoodItem!]!
+  affiliateItems: [AffiliateItem!]!
+}
+
+type RecipePart {
+  title: String!
+  ingredients: [RecipeIngredient!]!
+  steps: [String!]!
+  timeEstimate: Float
+}
+
+type RecipeRating {
+  score: Float!
+  raters: Int!
+}
+
+type RecipeReactions {
+  favoritesCount: Int!
+  userHasFavorited: Boolean
+}
+
+type SimpleUser {
+  id: String!
+  displayName: String
+  recipes: [Recipe!]!
+}
+
+type Stats {
+  recipeCount: Int!
+  userCount: Int!
+  chefCount: Int!
+}
+
+type TokenPayload {
+  idToken: String!
+  refreshToken: String!
+}
+
+type UploadUrlPayload {
+  url: String!
+  fileCode: String!
+}
+
+type User {
+  hasRole(role: Role!): Boolean!
+  id: String!
+  displayName: String
+  email: String!
+  emailVerified: Boolean!
+  role: Role
+  roles: [Role!]!
+  bookmarkedRecipes: [String!]!
+  recipes: [Recipe!]!
+  recipeBookmarks: [Recipe!]!
+}
+
+input AdtractionItemReferenceInput {
+  programId: Int!
+  feedId: Int!
+  sku: String!
+}
+
+input AdtractionProgramsInput {
+  "Geographical market on which a partner program is available, defined by an ISO 3166-1 Alpha-2 country code"
+  market: String!
+  "Numerical ID of an partner program"
+  programId: Int
+  "Numerical ID of a channel"
+  channelId: Int
+  "Approval status for a partner program: 0 = rejected, 1 = approved, 2 = pending review"
+  approvalStatus: Int
+  "The status of the partner program on the Adtraction platform, where Live = 0 and Closing = 3"
+  status: Int
+}
+
+input AffiliateItemReferenceInput {
+  provider: AffiliateProvider!
+  adtraction: AdtractionItemReferenceInput
+  partnerAds: PartnerAdsItemReferenceInput
+}
+
+input CachedResourceTypeInput {
+  name: String!
+}
+
+input CommentInput {
+  message: String!
+  parentCommentId: String
+}
+
+input CreateUploadUrlInput {
+  contentType: String!
+  contentLength: Long!
+  fileName: String!
+}
+
+input EquipmentInput {
+  title: String!
+  description: String
+  icon: String
+  links: [EquipmentLinkInput!]
+}
+
+input EquipmentLinkInput {
+  url: String!
+  title: String!
+}
+
+input GetProductFeedInput {
+  skip: Int
+  limit: Int
+  searchQuery: String
+}
+
+input PartnerAdsEarningsInput {
+  from: Date!
+  to: Date!
+}
+
+input PartnerAdsItemReferenceInput {
+  programId: String!
+  productId: String!
+}
+
+input PartnerAdsProgramStatsInput {
+  from: Date!
+  to: Date!
+}
+
+input RateRecipeInput {
+  score: Int!
+  comment: String
+}
+
+input RecipeFilterInput {
+  userId: String
+  published: Boolean
+  isModerated: Boolean
+  orderByProperty: String
+  orderDesc: Boolean
+  skip: Int
+  limit: Int
+}
+
+input RecipeInput {
+  title: String!
+  description: String
+  fileCode: String
+  image: Upload @deprecated(reason: "Not used. Use FileCode instead")
+  published: Boolean!
+  tips: [String!]
+  yield: String
+  parts: [RecipePartInput!]
+  slug: String
+  equipmentIds: [String!]
+}
+
+input RecipePartIngredientInput {
+  original: String!
+  id: Int
+  title: String
+  volume: Float
+  unit: String
+  meta: [String!]
+  manuallyEntered: Boolean
+  optional: Boolean
+  affiliateItemReferences: [AffiliateItemReferenceInput!]
+}
+
+input RecipePartInput {
+  title: String!
+  ingredients: [RecipePartIngredientInput!]!
+  steps: [String!]!
+}
+
+input SearchProductFeedInput {
+  searchQuery: String
+  count: Int
+}
+
+input SignInInput {
+  email: String!
+  password: String!
+}
+
+input SignUpInput {
+  email: String!
+  password: String!
+  displayName: String!
+}
+
+input UpdateMeInput {
+  email: String
+  password: String
+  displayName: String
+}
+
+input UpdateUserInput {
+  email: String
+  displayName: String
+  role: Role
+}
+
+enum AffiliateProvider {
+  NO_VALUE
+  ADTRACTION
+  PARTNER_ADS
+}
+
+enum ApplyPolicy {
+  BEFORE_RESOLVER
+  AFTER_RESOLVER
+  VALIDATION
+}
+
+enum RatingType {
+  RECIPE
+}
+
+enum ReactionType {
+  FAVORITE
+}
+
+enum Role {
+  USER
+  ADMIN
+  MODERATOR
+  BANNED
+}
+
+enum ThumbnailSize {
+  SMALL
+  MEDIUM
+  LARGE
+}
+
+directive @allowAnonymous repeatable on FIELD_DEFINITION
+
+directive @authorize("The name of the authorization policy that determines access to the annotated resource." policy: String "Roles that are allowed to access the annotated resource." roles: [String!] "Defines when when the authorize directive shall be applied.By default the authorize directives are applied during the validation phase." apply: ApplyPolicy! = BEFORE_RESOLVER) repeatable on OBJECT | FIELD_DEFINITION
+
+"The `@specifiedBy` directive is used within the type system definition language to provide a URL for specifying the behavior of custom scalar definitions."
+directive @specifiedBy("The specifiedBy URL points to a human-readable specification. This field will only read a result for scalar types." url: String!) on SCALAR
+
+directive @tag(name: String!) repeatable on SCHEMA | SCALAR | OBJECT | FIELD_DEFINITION | ARGUMENT_DEFINITION | INTERFACE | UNION | ENUM | ENUM_VALUE | INPUT_OBJECT | INPUT_FIELD_DEFINITION
+
+"The `Date` scalar represents an ISO-8601 compliant date type."
+scalar Date
+
+"The `DateTime` scalar represents an ISO-8601 compliant date time type."
+scalar DateTime @specifiedBy(url: "https:\/\/www.graphql-scalars.com\/date-time")
+
+"The built-in `Decimal` scalar type."
+scalar Decimal
+
+"The `Long` scalar type represents non-fractional signed whole 64-bit numeric values. Long can represent values between -(2^63) and 2^63 - 1."
+scalar Long
+
+"The `Upload` scalar type represents a file upload."
+scalar Upload

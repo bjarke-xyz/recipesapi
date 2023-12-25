@@ -19,6 +19,10 @@ public class AdtractionService(ILogger<AdtractionService> logger, string url, st
     private readonly int defaultChannelId = defaultChannelId;
     private readonly ICacheProvider cache = cache;
 
+    public async Task<List<(string programId, string category)>> GetCategories()
+    {
+        return await adtractionRepository.GetCategories();
+    }
     public async Task<AdtractionFeedProduct?> GetFeedProduct(AdtractionItemReference itemReference)
     {
         return await adtractionRepository.GetFeedProduct(itemReference.ProgramId, itemReference.FeedId, itemReference.Sku);
@@ -78,7 +82,7 @@ public class AdtractionService(ILogger<AdtractionService> logger, string url, st
 
     public async Task RefreshProductFeeds(string market, int channelId, int? programId, int? feedId)
     {
-        var programs = await GetPrograms(market, programId, channelId, 1, null);
+        var programs = await GetPrograms(market, programId, channelId, 1, 0);
         foreach (var program in programs)
         {
             foreach (var feed in program.Feeds ?? new())

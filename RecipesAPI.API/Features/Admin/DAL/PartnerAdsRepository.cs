@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Data;
 using System.Text;
 using AutoMapper.Internal.Mappers;
@@ -7,15 +8,17 @@ using RecipesAPI.API.Infrastructure;
 
 namespace RecipesAPI.API.Features.Admin.DAL;
 
-public class PartnerAdsRepository
+public class PartnerAdsRepository(ILogger<PartnerAdsRepository> logger, SqliteDataContext context)
 {
-    private readonly ILogger<PartnerAdsRepository> logger;
-    private readonly SqliteDataContext context;
-
-    public PartnerAdsRepository(ILogger<PartnerAdsRepository> logger, SqliteDataContext context)
+    public async Task<List<(string programId, string categoryName)>> GetCategories()
     {
-        this.logger = logger;
-        this.context = context;
+        using var conn = context.CreateConnection();
+        var sql =
+        """
+        select distinct programid, categoryname from PartnerAdsProductFeedItems fi
+        join PartnerAdsProductFeed f on fi.PartnerAdsProductFeedId = f.id
+        """;
+        return (await conn.QueryAsync<(string programId, string categoryName)>(sql)).ToList();
     }
 
     public async Task<PartnerAdsProductFeedDto?> GetProductFeedInternal(IDbConnection conn, string programId, string feedLink)
