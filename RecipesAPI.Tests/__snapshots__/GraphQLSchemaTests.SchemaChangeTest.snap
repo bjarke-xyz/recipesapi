@@ -235,6 +235,8 @@ type Mutation {
   addRating(id: String! input: RateRecipeInput!): Boolean! @authorize(roles: [ "USER" ]) @deprecated
   setRatingApproved(ratingId: String! approved: Boolean!): Rating! @authorize(roles: [ "MODERATOR" ])
   clearCache(cachedResourceTypes: [CachedResourceTypeInput!]!): Boolean! @authorize(roles: [ "ADMIN" ])
+  clearCacheByKey(key: String!): Boolean! @authorize(roles: [ "ADMIN" ])
+  setSettings(settings: SettingsDtoInput!): Boolean! @authorize(roles: [ "ADMIN" ])
   createEquipment(input: EquipmentInput!): EquipmentItem! @authorize(roles: [ "MODERATOR" ])
   updateEquipment(id: String! input: EquipmentInput!): EquipmentItem! @authorize(roles: [ "MODERATOR" ])
   deleteEquipment(id: String!): Boolean! @authorize(roles: [ "MODERATOR" ])
@@ -341,6 +343,21 @@ type PartnerAdsProgramStats {
   programs: [PartnerAdsProgramStat!]!
 }
 
+type PartnerCategories {
+  provider: AffiliateProvider!
+  programId: String!
+  categories: [String!]!
+}
+
+type PartnerSettingsDto {
+  provider: AffiliateProvider!
+  providerId: String!
+  area: PartnerSettingsArea!
+  positiveTags: [String!]!
+  negativeTags: [String!]!
+  categories: [String!]!
+}
+
 type ProgramCategory {
   category: String
   type: String
@@ -366,6 +383,8 @@ type Query {
   parseIngredient(ingredient: String!): RecipeIngredient
   food(id: Int!): FoodItem
   foods(limit: Int skip: Int): [FoodItem!]!
+  partnerCategories: [PartnerCategories!]!
+  settings: SettingsDto! @authorize(roles: [ "ADMIN" ])
   cachedResourceTypes: [CachedResourceType!]! @authorize(roles: [ "ADMIN" ])
   partnerAdsPrograms: [PartnerAdsProgram!]! @authorize(roles: [ "ADMIN" ])
   "The following properties have values: programId, programName, feedLink"
@@ -458,6 +477,10 @@ type RecipeRating {
 type RecipeReactions {
   favoritesCount: Int!
   userHasFavorited: Boolean
+}
+
+type SettingsDto {
+  partnerSettings: [PartnerSettingsDto!]!
 }
 
 type SimpleUser {
@@ -568,6 +591,15 @@ input PartnerAdsProgramStatsInput {
   to: Date!
 }
 
+input PartnerSettingsDtoInput {
+  provider: AffiliateProvider!
+  providerId: String!
+  area: PartnerSettingsArea!
+  positiveTags: [String!]!
+  negativeTags: [String!]!
+  categories: [String!]!
+}
+
 input RateRecipeInput {
   score: Int!
   comment: String
@@ -619,6 +651,10 @@ input SearchProductFeedInput {
   count: Int
 }
 
+input SettingsDtoInput {
+  partnerSettings: [PartnerSettingsDtoInput!]!
+}
+
 input SignInInput {
   email: String!
   password: String!
@@ -652,6 +688,12 @@ enum ApplyPolicy {
   BEFORE_RESOLVER
   AFTER_RESOLVER
   VALIDATION
+}
+
+enum PartnerSettingsArea {
+  NO_VALUE
+  EQUIPMENT
+  INGREDIENTS
 }
 
 enum RatingType {
