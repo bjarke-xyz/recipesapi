@@ -220,6 +220,7 @@ builder.Services
     .AddSingleton<SqliteDataContext>()
     .AddSingleton<SettingsRepository>()
     .AddSingleton<SettingsService>()
+    .AddSingleton<SystemEventsRepository>()
     .AddHostedService<CacheRefreshBackgroundService>()
     .AddHostedService<HangfireRecurringJobs>()
     .AddHttpContextAccessor()
