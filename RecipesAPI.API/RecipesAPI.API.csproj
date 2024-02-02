@@ -23,6 +23,9 @@
     <PackageReference Include="HotChocolate.AspNetCore" Version="13.7.0" />
     <PackageReference Include="HotChocolate.AspNetCore.Authorization" Version="13.7.0" />
     <PackageReference Include="HotChocolate.Diagnostics" Version="13.7.0" />
+    <PackageReference Include="Lucene.Net" Version="4.8.0-beta00016" />
+    <PackageReference Include="Lucene.Net.Analysis.Common" Version="4.8.0-beta00016" />
+    <PackageReference Include="Lucene.Net.QueryParser" Version="4.8.0-beta00016" />
     <PackageReference Include="MessagePack" Version="2.5.140" />
     <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.7.0-rc.1" />
     <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.7.0-rc.1" />

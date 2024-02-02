@@ -14,6 +14,8 @@
 LocalData.db
 SqliteCache.db
 
+data
+
 .vscode
 
 # User-specific files

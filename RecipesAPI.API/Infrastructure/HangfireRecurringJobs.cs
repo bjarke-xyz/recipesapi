@@ -1,5 +1,6 @@
 using RecipesAPI.API.Features.Admin.BLL;
 using RecipesAPI.API.Features.Equipment.BLL;
+using RecipesAPI.API.Features.Food.BLL;
 using RecipesAPI.API.Features.Recipes.BLL;
 
 namespace RecipesAPI.API.Infrastructure;
@@ -25,6 +26,8 @@ public class HangfireRecurringJobs : BackgroundService
         Hangfire.RecurringJob.TriggerJob("adtraction_" + nameof(AdtractionService.RefreshProductFeeds));
         Hangfire.RecurringJob.TriggerJob("partnerads_" + nameof(PartnerAdsService.RefreshProductFeeds));
         Hangfire.RecurringJob.TriggerJob("partnerads_" + nameof(PartnerAdsService.GetPrograms));
+
+        Hangfire.BackgroundJob.Enqueue<FoodService>(s => s.BuildSearchIndex(CancellationToken.None));
 
         return Task.CompletedTask;
     }

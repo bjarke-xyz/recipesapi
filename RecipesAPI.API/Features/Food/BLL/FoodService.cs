@@ -8,6 +8,7 @@ namespace RecipesAPI.API.Features.Food.BLL;
 public class FoodService
 {
     private readonly FoodRepository foodRepository;
+    private readonly FoodSearchService foodSearchService;
     private readonly ICacheProvider cache;
 
     private IReadOnlyList<FoodItem>? localCache = null;
@@ -18,10 +19,20 @@ public class FoodService
         { "mel", "hvedemel"}
     };
 
-    public FoodService(FoodRepository foodRepository, ICacheProvider cache)
+    public FoodService(FoodRepository foodRepository, ICacheProvider cache, FoodSearchService foodSearchService)
     {
         this.foodRepository = foodRepository;
         this.cache = cache;
+        this.foodSearchService = foodSearchService;
+    }
+
+    public async Task BuildSearchIndex(CancellationToken cancellationToken)
+    {
+        var foodData = await GetFoodData(cancellationToken);
+        if (foodData != null)
+        {
+            foodSearchService.IndexData(foodData);
+        }
     }
 
     public async Task<IReadOnlyList<FoodItem>?> GetFoodData(CancellationToken cancellationToken)
@@ -76,30 +87,40 @@ public class FoodService
         }
         var foodData = await GetFoodData(cancellationToken);
         if (foodData == null) return new List<FoodItem>();
-        var queue = new PriorityQueue<FoodItem, int>();
-        foreach (var item in foodData)
+        var searchResults = foodSearchService.Search(query);
+        var foodItems = new List<FoodItem>();
+        foreach (var result in searchResults)
         {
-            var (matched, rank) = HasMatch(item.FoodName.Da, query);
-            if (matched)
+            if (localCacheDict?.TryGetValue(result.FoodId, out var foodItem) == true)
             {
-                queue.Enqueue(item, rank);
-            }
-            else
-            {
-                (matched, rank) = HasMatch(item.FoodName.En, query);
-                if (matched)
-                {
-                    queue.Enqueue(item, rank);
-                }
+                foodItems.Add(foodItem);
             }
         }
-        var result = new List<FoodItem>();
-        while (queue.Count > 0)
-        {
-            var potentialFood = queue.Dequeue();
-            result.Add(potentialFood);
-        }
-        return result;
+        return foodItems;
+        // var queue = new PriorityQueue<FoodItem, int>();
+        // foreach (var item in foodData)
+        // {
+        //     var (matched, rank) = HasMatch(item.FoodName.Da, query);
+        //     if (matched)
+        //     {
+        //         queue.Enqueue(item, rank);
+        //     }
+        //     else
+        //     {
+        //         (matched, rank) = HasMatch(item.FoodName.En, query);
+        //         if (matched)
+        //         {
+        //             queue.Enqueue(item, rank);
+        //         }
+        //     }
+        // }
+        // var result = new List<FoodItem>();
+        // while (queue.Count > 0)
+        // {
+        //     var potentialFood = queue.Dequeue();
+        //     result.Add(potentialFood);
+        // }
+        // return result;
     }
 
     private readonly Regex percentageRegex = new Regex(@"\w+(\d+\s*%)$");
