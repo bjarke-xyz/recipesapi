@@ -162,9 +162,13 @@ builder.Services
         return new FoodRepository(csvPath);
     })
     .AddSingleton<FoodService>()
-    .AddSingleton<FoodSearchService>(sp =>
+    .AddSingleton<FoodSearchServiceV2>(sp =>
     {
-        return new FoodSearchService(sp.GetRequiredService<ILogger<FoodSearchService>>(), builder.Configuration["SearchIndexPath"]!);
+        return new FoodSearchServiceV2(sp.GetRequiredService<ILogger<FoodSearchServiceV2>>(), builder.Configuration["SearchIndexPath"]!);
+    })
+    .AddSingleton<FoodSearchServiceV1>(sp =>
+    {
+        return new FoodSearchServiceV1();
     })
     .AddSingleton<UserService>()
     .AddSingleton<ICacheKeyGetter>(sp => sp.GetRequiredService<UserService>())
