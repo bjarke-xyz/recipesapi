@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using RecipesAPI.API.Features.Admin.Common.Adtraction;
+using SQLitePCL;
 
 namespace RecipesAPI.API.Features.Admin.Common;
 
@@ -9,6 +10,7 @@ public class AffiliateItem
     public AffiliateItem(AdtractionFeedProduct adtractionFeedProduct)
     {
         Provider = AffiliateProvider.Adtraction;
+        ItemReference = new AffiliateItemReference(adtractionFeedProduct);
         if (!string.IsNullOrEmpty(adtractionFeedProduct.Name) && !string.IsNullOrEmpty(adtractionFeedProduct.TrackingUrl))
         {
             ItemInfo = new AffiliateItemInfo
@@ -29,6 +31,7 @@ public class AffiliateItem
     public AffiliateItem(PartnerAdsFeedProduct partnerAdsFeedProduct)
     {
         Provider = AffiliateProvider.PartnerAds;
+        ItemReference = new AffiliateItemReference(partnerAdsFeedProduct);
         if (!string.IsNullOrEmpty(partnerAdsFeedProduct.ProductName) && !string.IsNullOrEmpty(partnerAdsFeedProduct.ProductUrl))
         {
             ItemInfo = new AffiliateItemInfo
@@ -47,6 +50,7 @@ public class AffiliateItem
         }
     }
     public AffiliateProvider Provider { get; set; }
+    public AffiliateItemReference ItemReference { get; set; }
     public AffiliateItemInfo? ItemInfo { get; set; } = new();
 }
 
@@ -69,6 +73,89 @@ public class AffiliateItemReference
     public AffiliateProvider Provider { get; set; }
     public AdtractionItemReference? Adtraction { get; set; }
     public PartnerAdsItemReference? PartnerAds { get; set; }
+
+    public AffiliateItemReference() { }
+
+    public AffiliateItemReference(AdtractionFeedProduct adtractionFeedProduct)
+    {
+        Provider = AffiliateProvider.Adtraction;
+        Adtraction = new AdtractionItemReference
+        {
+            ProgramId = adtractionFeedProduct.ProgramId,
+            FeedId = adtractionFeedProduct.FeedId,
+            Sku = adtractionFeedProduct.Sku!,
+        };
+    }
+    public AffiliateItemReference(PartnerAdsFeedProduct partnerAdsFeedProduct)
+    {
+        Provider = AffiliateProvider.PartnerAds;
+        PartnerAds = new PartnerAdsItemReference
+        {
+            ProgramId = partnerAdsFeedProduct.ProgramId.ToString(),
+            ProductId = partnerAdsFeedProduct.ProductId!,
+        };
+    }
+
+    public string ToIdentifier()
+    {
+        return Provider switch
+        {
+            AffiliateProvider.Adtraction => $"{Provider}:prog={Adtraction?.ProgramId}:feed={Adtraction?.FeedId}:sku={Adtraction?.Sku}",
+            AffiliateProvider.PartnerAds => $"{Provider}:prog={PartnerAds?.ProgramId}:prod={PartnerAds?.ProductId}",
+            _ => throw new NotImplementedException($"Provider {Provider} not implemented"),
+        };
+    }
+
+    public static AffiliateItemReference? FromIdentifier(string identifier)
+    {
+        if (string.IsNullOrEmpty(identifier)) return null;
+        var parts = identifier.Split(":");
+        var providerStr = parts[0];
+        if (!Enum.TryParse<AffiliateProvider>(providerStr, out var provider))
+        {
+            return null;
+        }
+        var itemRef = new AffiliateItemReference()
+        {
+            Provider = provider,
+        };
+        string? programIdStr = null;
+        string? feedStr = null;
+        string? skuStr = null;
+        string? productIdStr = null;
+        foreach (var part in parts.Skip(1))
+        {
+            var values = part.Split("=");
+            if (values.Length < 2) continue;
+            var key = values[0];
+            var value = values[1];
+            switch (key)
+            {
+                case "prog":
+                    programIdStr = value;
+                    break;
+                case "feed":
+                    feedStr = value;
+                    break;
+                case "sku":
+                    skuStr = value;
+                    break;
+                case "prod":
+                    productIdStr = value;
+                    break;
+            }
+        }
+        switch (provider)
+        {
+            case AffiliateProvider.Adtraction:
+                itemRef.Adtraction = new AdtractionItemReference { ProgramId = int.Parse(programIdStr!), FeedId = int.Parse(feedStr!), Sku = skuStr! };
+                break;
+            case AffiliateProvider.PartnerAds:
+                itemRef.PartnerAds = new PartnerAdsItemReference { ProgramId = programIdStr!, ProductId = productIdStr! };
+                break;
+        }
+        return itemRef;
+    }
 }
 
 public class AdtractionItemReference

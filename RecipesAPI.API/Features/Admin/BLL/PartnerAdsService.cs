@@ -26,6 +26,12 @@ public class PartnerAdsService(string url, string key, HttpClient httpClient, IL
         return await partnerAdsRepository.GetFeedProduct(itemReference.ProgramId, itemReference.ProductId);
     }
 
+    public async Task<List<PartnerAdsFeedProduct>> GetFeedProducts(List<PartnerAdsItemReference> itemReferences)
+    {
+        var itemRefsTuple = itemReferences.Select(itemref => (itemref.ProgramId, itemref.ProductId)).ToList();
+        return await partnerAdsRepository.GetFeedProducts(itemRefsTuple);
+    }
+
     public async Task<PartnerAdsBalance> GetBalance()
     {
         try

@@ -23,6 +23,11 @@ public class AdtractionService(ILogger<AdtractionService> logger, string url, st
     {
         return await adtractionRepository.GetCategories();
     }
+    public async Task<List<AdtractionFeedProduct>> GetFeedProducts(List<AdtractionItemReference> itemReferences)
+    {
+        var itemRefsTuple = itemReferences.Select(itemref => (itemref.ProgramId, itemref.FeedId, itemref.Sku)).ToList();
+        return await adtractionRepository.GetFeedProducts(itemRefsTuple);
+    }
     public async Task<AdtractionFeedProduct?> GetFeedProduct(AdtractionItemReference itemReference)
     {
         return await adtractionRepository.GetFeedProduct(itemReference.ProgramId, itemReference.FeedId, itemReference.Sku);

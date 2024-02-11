@@ -29,6 +29,31 @@ public class PartnerAdsRepository(ILogger<PartnerAdsRepository> logger, SqliteDa
         return await conn.QuerySingleOrDefaultAsync<PartnerAdsProductFeedDto>(sql, new { programId, feedLink });
     }
 
+    public async Task<List<PartnerAdsFeedProduct>> GetFeedProducts(List<(string programId, string productId)> itemIdentifiers)
+    {
+        using var conn = context.CreateConnection();
+        conn.Open();
+        using var tx = conn.BeginTransaction();
+        var dtos = new List<PartnerAdsProductFeedItemDto>();
+        foreach (var (programId, productId) in itemIdentifiers)
+        {
+            var sql =
+            """
+        SELECT item.* FROM PartnerAdsProductFeedItems item
+        JOIN PartnerAdsProductFeed feed ON item.PartnerAdsProductFeedId = feed.Id
+        WHERE feed.ProgramId = @programId AND item.ProductId = @productId
+        LIMIT 1
+        """;
+            var dto = await conn.QuerySingleOrDefaultAsync<PartnerAdsProductFeedItemDto>(sql, new { programId, productId }, tx);
+            if (dto != null)
+            {
+                dtos.Add(dto);
+            }
+        }
+        tx.Commit();
+        return dtos.Select(x => x.ToFeedProduct()).ToList();
+    }
+
     public async Task<PartnerAdsFeedProduct?> GetFeedProduct(string programId, string productId)
     {
         using var conn = context.CreateConnection();
@@ -43,6 +68,7 @@ public class PartnerAdsRepository(ILogger<PartnerAdsRepository> logger, SqliteDa
         if (dto == null) return null;
         return dto.ToFeedProduct();
     }
+
 
     public async Task<List<PartnerAdsFeedProduct>> SearchFeedProducts(string? searchQuery, string? programId, int skip, int limit)
     {
