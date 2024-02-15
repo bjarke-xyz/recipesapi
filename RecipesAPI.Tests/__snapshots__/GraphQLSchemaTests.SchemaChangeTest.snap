@@ -383,6 +383,7 @@ type Query {
   recipe(id: String slugOrId: String): Recipe
   recipesByIds(slugsOrIds: [String!]!): [Recipe!]!
   parseIngredient(ingredient: String!): RecipeIngredient
+  searchRecipes(input: RecipeSearchInput!): [Recipe!]!
   food(id: Int!): FoodItem
   foods(limit: Int skip: Int): [FoodItem!]!
   partnerCategories: [PartnerCategories!]!
@@ -646,6 +647,13 @@ input RecipePartInput {
   title: String!
   ingredients: [RecipePartIngredientInput!]!
   steps: [String!]!
+}
+
+input RecipeSearchInput {
+  searchQuery: String!
+  searchPartsAndTips: Boolean
+  skip: Int
+  limit: Int
 }
 
 input SearchProductFeedInput {
