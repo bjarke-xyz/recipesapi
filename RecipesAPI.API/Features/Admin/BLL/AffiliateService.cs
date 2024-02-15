@@ -5,11 +5,43 @@ using RecipesAPI.API.Infrastructure;
 
 namespace RecipesAPI.API.Features.Admin.BLL;
 
-public class AffiliateService(AdtractionService adtractionService, PartnerAdsService partnerAdsService, SettingsService settingsService, AffiliateSearchServiceV1 affiliateSearchServiceV1)
+public class AffiliateService(AdtractionService adtractionService, PartnerAdsService partnerAdsService, SettingsService settingsService, AffiliateSearchServiceV1 affiliateSearchServiceV1, AffiliateSearchServiceV2 affiliateSearchServiceV2, IConfiguration config)
 {
     private readonly AdtractionService adtractionService = adtractionService;
     private readonly PartnerAdsService partnerAdsService = partnerAdsService;
     private readonly AffiliateSearchServiceV1 affiliateSearchServiceV1 = affiliateSearchServiceV1;
+    private readonly AffiliateSearchServiceV2 affiliateSearchServiceV2 = affiliateSearchServiceV2;
+
+    public async Task BuildSearchIndex(CancellationToken cancellationToken)
+    {
+        affiliateSearchServiceV2.ResetIndex();
+        var adtractionPrograms = await adtractionService.GetPrograms("DK", null, config.GetValue<int>("AdtractionChannelId"), 1, null);
+        foreach (var adtractionProgram in adtractionPrograms)
+        {
+            foreach (var feed in adtractionProgram.Feeds ?? [])
+            {
+                var adtractionFeedProducts = await adtractionService.GetFeedProducts(adtractionProgram.ProgramId, feed.FeedId, null, null, null);
+                var affiliateItems = adtractionFeedProducts.Select(x => new AffiliateItem(x)).ToList();
+                affiliateSearchServiceV2.IndexData(affiliateItems);
+            }
+        }
+
+        var partnerAdsPrograms = await partnerAdsService.GetPrograms(publicView: false);
+        foreach (var partnerAdsProgram in partnerAdsPrograms)
+        {
+            var partnerAdsFeedProducts = await partnerAdsService.GetFeedProducts(partnerAdsProgram.ProgramId, partnerAdsProgram.FeedLink, null, null, null);
+            var affiliateItems = partnerAdsFeedProducts.Select(x => new AffiliateItem(x)).ToList();
+            affiliateSearchServiceV2.IndexData(affiliateItems);
+        }
+        affiliateSearchServiceV2.CommitIndex();
+    }
+
+    public async Task RefreshProductFeeds(CancellationToken cancellationToken)
+    {
+        await adtractionService.RefreshProductFeeds("DK", config.GetValue<int>("AdtractionChannelId"), null, null);
+        await partnerAdsService.RefreshProductFeeds(null, null);
+        await BuildSearchIndex(cancellationToken);
+    }
 
     private async Task<AffiliateItem?> GetAdtractionItem(AffiliateItemReference itemReference)
     {
@@ -83,12 +115,10 @@ public class AffiliateService(AdtractionService adtractionService, PartnerAdsSer
     public async Task<List<AffiliateItem>> SearchAffiliateItems(string? searchQuery, int count = 100, List<PartnerSettingsDto>? settings = null)
     {
         if (string.IsNullOrEmpty(searchQuery)) return [];
-        var version = 1;
+        var version = 2;
         var searchResults = new List<AffiliateItemSearchDoc>();
-        if (version == 1)
-        {
-            searchResults = await affiliateSearchServiceV1.Search(searchQuery!);
-        }
+        if (version == 1) searchResults = await affiliateSearchServiceV1.Search(searchQuery!);
+        else if (version == 2) searchResults = affiliateSearchServiceV2.Search(searchQuery);
         var itemRefs = searchResults.Select(x => AffiliateItemReference.FromIdentifier(x.Id)).Where(x => x != null).Select(x => x!).ToList();
         var affiliateItems = await GetAffiliateItems(itemRefs);
         return affiliateItems;

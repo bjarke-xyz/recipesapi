@@ -1,12 +1,98 @@
+using System.Diagnostics;
+using Lucene.Net.Analysis.Da;
+using Lucene.Net.Documents;
+using Lucene.Net.Index;
+using Lucene.Net.QueryParsers.Classic;
+using Lucene.Net.Search;
+using Lucene.Net.Store;
+using Lucene.Net.Util;
 using RecipesAPI.API.Features.Admin.Common;
 using RecipesAPI.API.Features.Food.BLL;
 using RecipesAPI.API.Infrastructure;
 
 namespace RecipesAPI.API.Features.Admin.BLL;
 
-public class AffiliateSearchServiceV2
+public class AffiliateSearchServiceV2(ILogger<AffiliateSearchServiceV2> logger, string indexBasePath)
 {
-    // TODO: search using lucene
+    const LuceneVersion AppLuceneVersion = LuceneVersion.LUCENE_48;
+    private static Lucene.Net.Analysis.Analyzer danishAnalyzer = new DanishAnalyzer(AppLuceneVersion);
+    private IndexWriter? writer = null;
+
+    private IndexWriter GetWriter()
+    {
+        if (writer != null)
+        {
+            return writer;
+        }
+        var indexPath = System.IO.Path.Combine(indexBasePath, "affiliate");
+        var dir = FSDirectory.Open(indexPath);
+
+        // Create an index writer
+        var indexConfig = new IndexWriterConfig(AppLuceneVersion, danishAnalyzer);
+        writer = new IndexWriter(dir, indexConfig);
+        return writer;
+    }
+
+    public void ResetIndex()
+    {
+        var writer = GetWriter();
+        writer.DeleteAll();
+    }
+
+    public void IndexData(List<AffiliateItem> affiliateItems)
+    {
+        var writer = GetWriter();
+        logger.LogInformation("indexing affiliate data, {count} items", affiliateItems.Count);
+        var sw = Stopwatch.StartNew();
+        var docs = affiliateItems.Where(x => x.ItemInfo != null).Select(source => new Document()
+        {
+            new StringField("id", source.ItemReference.ToIdentifier(), Field.Store.YES),
+            new TextField("title", source.ItemInfo!.Title ?? "", Field.Store.YES),
+            new TextField("productName", source.ItemInfo!.ProductName ?? "", Field.Store.YES),
+            new TextField("description", source.ItemInfo!.Description ?? "", Field.Store.YES),
+            new TextField("category", source.ItemInfo!.Category ?? "", Field.Store.YES),
+            new TextField("brand", source.ItemInfo!.Brand ?? "", Field.Store.YES),
+        });
+
+        writer.AddDocuments(docs);
+        sw.Stop();
+        logger.LogInformation("affiliate data documents added, {count} documents in {ms}ms", writer.NumDocs, sw.ElapsedMilliseconds);
+    }
+
+    public void CommitIndex()
+    {
+        var writer = GetWriter();
+        logger.LogInformation("comitting index, {count} items", writer.NumDocs);
+        writer.Flush(triggerMerge: false, applyAllDeletes: false);
+        writer.Commit();
+        logger.LogInformation("affiliate data indexed, {count} docs", writer.NumDocs);
+    }
+
+    public List<AffiliateItemSearchDoc> Search(string queryString)
+    {
+        var writer = GetWriter();
+        using var reader = writer.GetReader(applyAllDeletes: true);
+        var searcher = new IndexSearcher(reader);
+        var queryParser = new MultiFieldQueryParser(AppLuceneVersion,
+            ["title", "productName", "description", "category", "brand"], danishAnalyzer);
+        var query = queryParser.Parse(queryString);
+        var hits = searcher.Search(query, 15);
+        var result = hits.ScoreDocs.Select(scoreDoc =>
+        {
+            var doc = searcher.Doc(scoreDoc.Doc);
+            var affiliateItemSearchDoc = new AffiliateItemSearchDoc(
+                doc.Get("id"),
+                doc.Get("title"),
+                doc.Get("description"),
+                doc.Get("category"),
+                doc.Get("brand"),
+                doc.Get("productName"),
+                scoreDoc.Score
+            );
+            return affiliateItemSearchDoc;
+        }).ToList();
+        return result;
+    }
 }
 
 public class AffiliateSearchServiceV1(ICacheProvider cache, PartnerAdsService partnerAdsService, AdtractionService adtractionService)
@@ -306,7 +392,6 @@ public class AffiliateSearchServiceV1(ICacheProvider cache, PartnerAdsService pa
         var adtractionFeedProducts = await adtractionService.SearchFeedProducts(searchQuery, programId, skip, limit);
         var adtractionAffiliateItems = adtractionFeedProducts.Select(x => new AffiliateItem(x)).ToList();
         return adtractionAffiliateItems;
-
     }
     private async Task<List<AffiliateItem>> SearchPartnerAdsItems(string? searchQuery, string? programId, int skip, int limit)
     {

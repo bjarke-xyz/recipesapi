@@ -167,7 +167,10 @@ builder.Services
         return new FoodSearchServiceV2(sp.GetRequiredService<ILogger<FoodSearchServiceV2>>(), builder.Configuration["SearchIndexPath"]!);
     })
     .AddSingleton<FoodSearchServiceV1>()
-    .AddSingleton<AffiliateSearchServiceV2>()
+    .AddSingleton<AffiliateSearchServiceV2>(sp =>
+    {
+        return new AffiliateSearchServiceV2(sp.GetRequiredService<ILogger<AffiliateSearchServiceV2>>(), builder.Configuration["SearchIndexPath"]!);
+    })
     .AddSingleton<AffiliateSearchServiceV1>()
     .AddSingleton<UserService>()
     .AddSingleton<ICacheKeyGetter>(sp => sp.GetRequiredService<UserService>())

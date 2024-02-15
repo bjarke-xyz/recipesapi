@@ -12,6 +12,7 @@ using Lucene.Net.Analysis.Miscellaneous;
 using Lucene.Net.Analysis.Da;
 using Hangfire.Server;
 using System.Text.RegularExpressions;
+using System.Diagnostics;
 
 namespace RecipesAPI.API.Features.Food.BLL;
 
@@ -46,8 +47,9 @@ public class FoodSearchServiceV2(ILogger<FoodSearchServiceV2> logger, string ind
     public void IndexData(IReadOnlyList<FoodItem> foodItems)
     {
         var writer = GetWriter();
-        writer.DeleteAll();
         logger.LogInformation("indexing food data, {count} items", foodItems.Count);
+        var sw = Stopwatch.StartNew();
+        writer.DeleteAll();
         var docs = foodItems.Select(source => new Document()
         {
             new Int32Field("id", source.FoodId, Field.Store.YES),
@@ -58,7 +60,8 @@ public class FoodSearchServiceV2(ILogger<FoodSearchServiceV2> logger, string ind
         writer.AddDocuments(docs);
         writer.Flush(triggerMerge: false, applyAllDeletes: false);
         writer.Commit();
-        logger.LogInformation("food data indexed, indexed {count} documents", writer.NumDocs);
+        sw.Stop();
+        logger.LogInformation("food data indexed, indexed {count} documents in {ms}ms", writer.NumDocs, sw.ElapsedMilliseconds);
     }
 
     private static Regex parensRegex = new(@"\(.*\)");
@@ -79,7 +82,6 @@ public class FoodSearchServiceV2(ILogger<FoodSearchServiceV2> logger, string ind
         var searcher = new IndexSearcher(reader);
         var queryParser = new QueryParser(AppLuceneVersion, "foodNameDa", perFieldAnalyzerWrapper);
         var query = queryParser.Parse(queryString);
-        query.Boost = 10;
         var hits = searcher.Search(query, 10);
         // if (hits.TotalHits == 0)
         // {

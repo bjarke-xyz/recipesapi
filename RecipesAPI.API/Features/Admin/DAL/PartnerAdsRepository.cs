@@ -102,7 +102,7 @@ public class PartnerAdsRepository(ILogger<PartnerAdsRepository> logger, SqliteDa
         using var conn = context.CreateConnection();
         var sqlSb = new StringBuilder(
             """
-            SELECT * FROM PartnerAdsProductFeedItems WHERE PartnerAdsProductFeedId = @id
+            SELECT *, @programId as ProgramId FROM PartnerAdsProductFeedItems WHERE PartnerAdsProductFeedId = @id
             """
         );
         if (!string.IsNullOrWhiteSpace(searchQuery))
@@ -118,7 +118,7 @@ public class PartnerAdsRepository(ILogger<PartnerAdsRepository> logger, SqliteDa
             sqlSb.Append(" OFFSET @offset");
         }
         var feedItemDtos = await conn.QueryAsync<PartnerAdsProductFeedItemDto>(
-            sqlSb.ToString(), new { id = feedDto.Id, query = searchQuery, limit, offset = skip }
+            sqlSb.ToString(), new { id = feedDto.Id, query = searchQuery, limit, offset = skip, programId = feedDto.ProgramId }
         );
         var feedProducts = feedItemDtos.Select(dto => dto.ToFeedProduct()).ToList();
         return feedProducts;
