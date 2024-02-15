@@ -79,6 +79,7 @@ type AdtractionProgram {
 
 type AffiliateItem {
   provider: AffiliateProvider!
+  itemReference: AffiliateItemReference!
   itemInfo: AffiliateItemInfo
 }
 
@@ -96,6 +97,7 @@ type AffiliateItemInfo {
 }
 
 type AffiliateItemReference {
+  toIdentifier: String!
   provider: AffiliateProvider!
   adtraction: AdtractionItemReference
   partnerAds: PartnerAdsItemReference
