@@ -26,6 +26,7 @@ public class HangfireRecurringJobs : BackgroundService
         Hangfire.RecurringJob.TriggerJob("partnerads_" + nameof(PartnerAdsService.GetPrograms));
 
         Hangfire.BackgroundJob.Enqueue<FoodService>(s => s.BuildSearchIndex(CancellationToken.None));
+        Hangfire.BackgroundJob.Enqueue<RecipeService>(s => s.BuildSearchIndex(CancellationToken.None));
 
         return Task.CompletedTask;
     }

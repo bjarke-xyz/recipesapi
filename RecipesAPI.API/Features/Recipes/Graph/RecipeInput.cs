@@ -51,6 +51,14 @@ public class RecipeFilter
     public int? Limit { get; set; }
 }
 
+public class RecipeSearchInput
+{
+    public string SearchQuery { get; set; } = "";
+    public bool? SearchPartsAndTips { get; set; } = null;
+    public int? Skip { get; set; } = null;
+    public int? Limit { get; set; } = null;
+}
+
 public class CreateUploadUrlInput
 {
     public string ContentType { get; set; } = default!;

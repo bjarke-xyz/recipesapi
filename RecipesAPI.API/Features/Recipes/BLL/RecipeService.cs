@@ -20,6 +20,7 @@ public class RecipeService : ICacheKeyGetter
     private readonly ILogger<RecipeService> logger;
     private readonly EquipmentService equipmentService;
     private readonly RatingsService ratingsService;
+    private readonly RecipeSearchService recipeSearchService;
 
     public const string GetRecipesCacheKey = "GetRecipes";
     public string GetRecipeCacheKey(string id) => $"GetRecipe:{id}";
@@ -27,7 +28,7 @@ public class RecipeService : ICacheKeyGetter
     public string GetRecipeBySlugCacheKey(string slug) => $"GetRecipeBySlug:{slug}";
     public string RecipeStatsCacheKey(bool published) => $"RecipeStats:{published}";
 
-    public RecipeService(RecipeRepository recipeRepository, ICacheProvider cache, ParserService parserService, FoodService foodService, ILogger<RecipeService> logger, EquipmentService equipmentService, RatingsService ratingsService)
+    public RecipeService(RecipeRepository recipeRepository, ICacheProvider cache, ParserService parserService, FoodService foodService, ILogger<RecipeService> logger, EquipmentService equipmentService, RatingsService ratingsService, RecipeSearchService recipeSearchService)
     {
         this.recipeRepository = recipeRepository;
         this.cache = cache;
@@ -35,6 +36,7 @@ public class RecipeService : ICacheKeyGetter
         this.logger = logger;
         this.equipmentService = equipmentService;
         this.ratingsService = ratingsService;
+        this.recipeSearchService = recipeSearchService;
     }
 
     public CacheKeyInfo GetCacheKeyInfo()
@@ -134,6 +136,22 @@ public class RecipeService : ICacheKeyGetter
         {
             recipe.Slugs = new List<string> { recipe.Id };
         }
+    }
+
+    public async Task BuildSearchIndex(CancellationToken cancellationToken)
+    {
+        var allRecipes = await GetRecipes(cancellationToken, null);
+        recipeSearchService.IndexData(allRecipes);
+    }
+
+    public async Task<List<Recipe>> SearchRecipes(CancellationToken cancellationToken, User? loggedInUser, string searchQuery, bool searchPartsAndTips, int limit, int skip)
+    {
+        var searchDocs = recipeSearchService.Search(searchQuery, searchPartsAndTips, limit);
+        if (searchDocs.Count == 0) return [];
+        var recipeIds = searchDocs.Select(x => x.Id).ToHashSet();
+        var recipes = await GetRecipes(cancellationToken, loggedInUser);
+        recipes = recipes.Where(x => recipeIds.Contains(x.Id)).Skip(skip).Take(limit).ToList();
+        return recipes;
     }
 
     public async Task<RecipeStats> GetRecipeStats(bool published, bool moderated, CancellationToken cancellationToken)

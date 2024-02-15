@@ -90,6 +90,12 @@ public class RecipeQueries
         var parsedIngredient = parserService.Parse(ingredient);
         return parsedIngredient;
     }
+
+    public async Task<List<Recipe>> SearchRecipes([User] User loggedInUser, [Service] RecipeService recipeService, CancellationToken cancellationToken, RecipeSearchInput input)
+    {
+        var recipes = await recipeService.SearchRecipes(cancellationToken, loggedInUser, input.SearchQuery, input.SearchPartsAndTips ?? false, input.Limit ?? 100, input.Skip ?? 0);
+        return recipes;
+    }
 }
 
 [ExtendObjectType(typeof(RecipeIngredient))]

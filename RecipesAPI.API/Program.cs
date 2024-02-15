@@ -162,14 +162,18 @@ builder.Services
         return new FoodRepository(csvPath);
     })
     .AddSingleton<FoodService>()
-    .AddSingleton<FoodSearchServiceV2>(sp =>
+    .AddSingleton(sp =>
     {
         return new FoodSearchServiceV2(sp.GetRequiredService<ILogger<FoodSearchServiceV2>>(), builder.Configuration["SearchIndexPath"]!);
     })
     .AddSingleton<FoodSearchServiceV1>()
-    .AddSingleton<AffiliateSearchServiceV2>(sp =>
+    .AddSingleton(sp =>
     {
         return new AffiliateSearchServiceV2(sp.GetRequiredService<ILogger<AffiliateSearchServiceV2>>(), builder.Configuration["SearchIndexPath"]!);
+    })
+    .AddSingleton(sp =>
+    {
+        return new RecipeSearchService(sp.GetRequiredService<ILogger<RecipeSearchService>>(), builder.Configuration["SearchIndexPath"]!);
     })
     .AddSingleton<AffiliateSearchServiceV1>()
     .AddSingleton<UserService>()
