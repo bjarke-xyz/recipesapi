@@ -51,26 +51,58 @@ public class RecipeSearchService(ILogger<RecipeSearchService> logger, string ind
         return sb.ToString();
     }
 
-    public void IndexData(List<Recipe> recipes)
+    private Document GetDocument(Recipe source)
     {
-        var writer = GetWriter();
-        logger.LogInformation("indexing recipes, {count} items", recipes.Count);
-        var sw = Stopwatch.StartNew();
-        writer.DeleteAll();
-        var docs = recipes.Select(source => new Document()
+        return new Document()
         {
             new StringField("id", source.Id, Field.Store.YES),
             new TextField("title", source.Title, Field.Store.YES),
             new TextField("description", source.Description ?? "", Field.Store.YES),
             new TextField("tips", string.Join("\n", source.Tips ?? []), Field.Store.YES),
             new TextField("parts", FormatParts(source.Parts), Field.Store.YES),
-        }).ToList();
+        };
+    }
+
+    public void IndexData(List<Recipe> recipes)
+    {
+        var writer = GetWriter();
+        logger.LogInformation("indexing recipes, {count} items", recipes.Count);
+        var sw = Stopwatch.StartNew();
+        writer.DeleteAll();
+        var docs = recipes.Select(GetDocument).ToList();
 
         writer.AddDocuments(docs);
         writer.Flush(triggerMerge: false, applyAllDeletes: false);
         writer.Commit();
         sw.Stop();
         logger.LogInformation("recipes indexed, indexed {count} docs in {ms}ms", writer.NumDocs, sw.ElapsedMilliseconds);
+    }
+
+    public void UpdateIndex(Recipe recipe, bool create)
+    {
+        var writer = GetWriter();
+        if (create)
+        {
+            var doc = GetDocument(recipe);
+            writer.AddDocument(doc);
+        }
+        else
+        {
+            var doc = GetDocument(recipe);
+            writer.UpdateDocument(new Term("id", doc.Get("id")), doc);
+        }
+
+        writer.Flush(triggerMerge: false, applyAllDeletes: false);
+        writer.Commit();
+    }
+
+    public void RemoveDocument(Recipe recipe)
+    {
+        var writer = GetWriter();
+        var doc = GetDocument(recipe);
+        writer.DeleteDocuments(new Term("id", doc.Get("id")));
+        writer.Flush(triggerMerge: false, applyAllDeletes: false);
+        writer.Commit();
     }
 
     public List<RecipeSearchDoc> Search(string queryString, bool searchPartsAndTips, int count)

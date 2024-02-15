@@ -282,6 +282,7 @@ public class RecipeService : ICacheKeyGetter
         {
             throw new GraphQLErrorException("failed to get saved recipe");
         }
+        Hangfire.BackgroundJob.Enqueue<RecipeSearchService>(s => s.UpdateIndex(savedRecipe, true));
         return savedRecipe;
     }
 
@@ -303,6 +304,7 @@ public class RecipeService : ICacheKeyGetter
         {
             throw new GraphQLErrorException("failed to get saved recipe");
         }
+        Hangfire.BackgroundJob.Enqueue<RecipeSearchService>(s => s.UpdateIndex(savedRecipe, false));
         return savedRecipe;
     }
 
@@ -337,6 +339,7 @@ public class RecipeService : ICacheKeyGetter
     {
         await recipeRepository.DeleteRecipe(recipe, cancellationToken);
         await ClearCache(recipe.Id, recipe.UserId, recipe.Slugs);
+        Hangfire.BackgroundJob.Enqueue<RecipeSearchService>(s => s.RemoveDocument(recipe));
     }
 
     public async Task UpdateRating(Recipe recipe, CancellationToken cancellationToken)
