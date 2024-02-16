@@ -20,6 +20,9 @@ public class EquipmentItemDto
 
     [FirestoreProperty("links")]
     public List<EquipmentLinkDto> Links { get; set; } = [];
+
+    [FirestoreProperty("searchQuery")]
+    public string? SearchQuery { get; set; }
 }
 
 [FirestoreData]

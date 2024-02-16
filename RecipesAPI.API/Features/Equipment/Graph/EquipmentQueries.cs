@@ -26,7 +26,7 @@ public class ExtendedEquipmentQueries
 {
     public async Task<List<AffiliateItem>> GetAffiliateItems([Parent] EquipmentItem equipmentItem, AffiliateEquipmentSearchDataLoader affiliateSearchDataLoader, CancellationToken cancellationToken)
     {
-        var affiliateItems = await affiliateSearchDataLoader.LoadAsync(equipmentItem.Title, cancellationToken);
+        var affiliateItems = await affiliateSearchDataLoader.LoadAsync(equipmentItem.SearchQuery ?? equipmentItem.Title, cancellationToken);
         return affiliateItems;
     }
 }

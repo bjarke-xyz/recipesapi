@@ -14,6 +14,8 @@ public class EquipmentItem
     public string? Icon { get; set; } = default!;
 
     public List<EquipmentLink> Links { get; set; } = [];
+
+    public string? SearchQuery { get; set; }
 }
 
 public class EquipmentLink

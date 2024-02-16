@@ -9,4 +9,5 @@ public class EquipmentInput
     public string? Description { get; set; }
     public string? Icon { get; set; }
     public List<EquipmentLink>? Links { get; set; }
+    public string? SearchQuery { get; set; }
 }
