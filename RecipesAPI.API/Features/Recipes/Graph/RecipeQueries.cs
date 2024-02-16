@@ -91,9 +91,15 @@ public class RecipeQueries
         return parsedIngredient;
     }
 
-    public async Task<List<Recipe>> SearchRecipes([User] User loggedInUser, [Service] RecipeService recipeService, CancellationToken cancellationToken, RecipeSearchInput input)
+    private static readonly List<string> noModifyQueryChars = ["*", "~", ":"];
+    public async Task<List<Recipe>> SearchRecipes([User] User loggedInUser, [Service] RecipeService recipeService, RecipeSearchInput input, CancellationToken cancellationToken)
     {
-        var recipes = await recipeService.SearchRecipes(cancellationToken, loggedInUser, input.SearchQuery, input.SearchPartsAndTips ?? false, input.Limit ?? 100, input.Skip ?? 0);
+        var searchQuery = input.SearchQuery;
+        if (!noModifyQueryChars.Any(x => searchQuery.Contains(x)))
+        {
+            searchQuery += "*";
+        }
+        var recipes = await recipeService.SearchRecipes(cancellationToken, loggedInUser, searchQuery, input.SearchPartsAndTips ?? false, input.Limit ?? 100, input.Skip ?? 0);
         return recipes;
     }
 }
