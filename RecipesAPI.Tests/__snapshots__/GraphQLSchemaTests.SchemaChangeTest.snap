@@ -139,6 +139,7 @@ type EquipmentItem {
   description: String
   icon: String
   links: [EquipmentLink!]!
+  searchQuery: String
   affiliateItems: [AffiliateItem!]!
 }
 
@@ -566,6 +567,7 @@ input EquipmentInput {
   description: String
   icon: String
   links: [EquipmentLinkInput!]
+  searchQuery: String
 }
 
 input EquipmentLinkInput {
