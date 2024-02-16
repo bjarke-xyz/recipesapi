@@ -16,7 +16,7 @@ public class HangfireRecurringJobs : BackgroundService
 
     protected override Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        Hangfire.RecurringJob.AddOrUpdate<RecipeService>(nameof(RecipeService.GetRecipe), s => s.GetRecipes(CancellationToken.None, null), "0 * * * *");
+        Hangfire.RecurringJob.AddOrUpdate<CacheJobService>(nameof(CacheJobService.RunRecipeCacheJob), s => s.RunRecipeCacheJob(CancellationToken.None), "*/10 * * * *");
         Hangfire.RecurringJob.AddOrUpdate<AffiliateService>(nameof(AffiliateService.RefreshProductFeeds), s => s.RefreshProductFeeds(CancellationToken.None), "0 * * * *");
         Hangfire.RecurringJob.AddOrUpdate<PartnerAdsService>("partnerads_" + nameof(PartnerAdsService.GetPrograms), s => s.GetPrograms(true), "0 * * * *");
         Hangfire.RecurringJob.AddOrUpdate<SqliteCacheProvider>(nameof(SqliteCacheProvider.RemoveExpired), s => s.RemoveExpired(), "* * * * *");
@@ -24,6 +24,7 @@ public class HangfireRecurringJobs : BackgroundService
 
         Hangfire.RecurringJob.TriggerJob(nameof(AffiliateService.RefreshProductFeeds));
         Hangfire.RecurringJob.TriggerJob("partnerads_" + nameof(PartnerAdsService.GetPrograms));
+        Hangfire.RecurringJob.TriggerJob(nameof(CacheJobService.RunRecipeCacheJob));
 
         Hangfire.BackgroundJob.Enqueue<FoodService>(s => s.BuildSearchIndex(CancellationToken.None));
         Hangfire.BackgroundJob.Enqueue<RecipeService>(s => s.BuildSearchIndex(CancellationToken.None));

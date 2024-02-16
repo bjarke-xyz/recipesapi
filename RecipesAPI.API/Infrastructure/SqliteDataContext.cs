@@ -68,6 +68,8 @@ public class SqliteDataContext
                     ExtrasJson TEXT
                 );
                 CREATE INDEX IF NOT EXISTS adtraction_product_feed_items_product_feed_id ON AdtractionProductFeedItems(AdtractionProductFeedId);
+                CREATE INDEX IF NOT EXISTS adtraction_product_feed_items_sku ON AdtractionProductFeedItems(Sku);
+                CREATE INDEX IF NOT EXISTS adtraction_product_feed_items_feed_id_sku ON AdtractionProductFeedItems(AdtractionProductFeedId, Sku);
 
 
                 CREATE TABLE IF NOT EXISTS 
@@ -99,6 +101,8 @@ public class SqliteDataContext
                     ProductUrl TEXT
                 );
                 CREATE INDEX IF NOT EXISTS partnerads_product_feed_items_product_feed_id ON PartnerAdsProductFeedItems(PartnerAdsProductFeedId);
+                CREATE INDEX IF NOT EXISTS partnerads_product_feed_items_product_id ON PartnerAdsProductFeedItems(ProductId);
+                CREATE INDEX IF NOT EXISTS partnerads_product_feed_items_product_feed_id_product_id ON PartnerAdsProductFeedItems(PartnerAdsProductFeedId, ProductId);
             """;
             await conn.ExecuteAsync(sql);
         }

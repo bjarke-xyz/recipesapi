@@ -17,7 +17,7 @@ public class FoodQueries
         var foodData = await foodService.GetFoodData(cancellationToken);
         if (foodData == null)
         {
-            throw new GraphQLException("could not get food data");
+            return [];
         }
         if (limit.HasValue && skip.HasValue)
         {

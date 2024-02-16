@@ -112,13 +112,13 @@ public class AffiliateService(AdtractionService adtractionService, PartnerAdsSer
         return result;
     }
 
-    public async Task<List<AffiliateItem>> SearchAffiliateItems(string? searchQuery, int count = 100, List<PartnerSettingsDto>? settings = null)
+    public async Task<List<AffiliateItem>> SearchAffiliateItems(string? searchQuery, int count = 15, List<PartnerSettingsDto>? settings = null)
     {
         if (string.IsNullOrEmpty(searchQuery)) return [];
         var version = 2;
         var searchResults = new List<AffiliateItemSearchDoc>();
         if (version == 1) searchResults = await affiliateSearchServiceV1.Search(searchQuery!);
-        else if (version == 2) searchResults = affiliateSearchServiceV2.Search(searchQuery);
+        else if (version == 2) searchResults = affiliateSearchServiceV2.Search(searchQuery, count);
         var itemRefs = searchResults.Select(x => AffiliateItemReference.FromIdentifier(x.Id)).Where(x => x != null).Select(x => x!).ToList();
         var affiliateItems = await GetAffiliateItems(itemRefs);
         return affiliateItems;

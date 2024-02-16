@@ -68,7 +68,7 @@ public class AffiliateSearchServiceV2(ILogger<AffiliateSearchServiceV2> logger, 
         logger.LogInformation("affiliate data indexed, {count} docs", writer.NumDocs);
     }
 
-    public List<AffiliateItemSearchDoc> Search(string queryString)
+    public List<AffiliateItemSearchDoc> Search(string queryString, int count)
     {
         var writer = GetWriter();
         using var reader = writer.GetReader(applyAllDeletes: true);
@@ -76,7 +76,7 @@ public class AffiliateSearchServiceV2(ILogger<AffiliateSearchServiceV2> logger, 
         var queryParser = new MultiFieldQueryParser(AppLuceneVersion,
             ["title", "productName", "description", "category", "brand"], danishAnalyzer);
         var query = queryParser.Parse(queryString);
-        var hits = searcher.Search(query, 15);
+        var hits = searcher.Search(query, count);
         var result = hits.ScoreDocs.Select(scoreDoc =>
         {
             var doc = searcher.Doc(scoreDoc.Doc);

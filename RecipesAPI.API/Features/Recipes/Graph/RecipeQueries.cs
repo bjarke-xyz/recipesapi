@@ -107,32 +107,19 @@ public class RecipeQueries
 [ExtendObjectType(typeof(RecipeIngredient))]
 public class RecipeIngredientQueries
 {
-    private string getSearchQuery(RecipeIngredient recipeIngredient)
-    {
-        var query = recipeIngredient.Title;
-        if (recipeIngredient.Meta != null && recipeIngredient.Meta.Any())
-        {
-            var percentage = recipeIngredient.Meta.FirstOrDefault(x => x.Contains("%"));
-            if (!string.IsNullOrEmpty(percentage))
-            {
-                query = $"{query} {percentage}";
-            }
-        }
-        return query ?? "";
-    }
-    public async Task<FoodItem?> GetFood([Parent] RecipeIngredient recipeIngredient, FoodDataLoader foodDataLoader, CancellationToken cancellationToken)
+    public async Task<FoodItem?> GetFood([Parent] RecipeIngredient recipeIngredient, [Service] FoodService foodService, FoodDataLoader foodDataLoader, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(recipeIngredient.Title)) return null;
 
-        var foodData = await foodDataLoader.LoadAsync(getSearchQuery(recipeIngredient), cancellationToken);
+        var foodData = await foodDataLoader.LoadAsync(foodService.GetSearchQuery(recipeIngredient), cancellationToken);
         return foodData.FirstOrDefault();
     }
 
-    public async Task<List<FoodItem>> GetFoods([Parent] RecipeIngredient recipeIngredient, FoodDataLoader foodDataLoader, CancellationToken cancellationToken, int skip = 0, int limit = 10)
+    public async Task<List<FoodItem>> GetFoods([Parent] RecipeIngredient recipeIngredient, [Service] FoodService foodService, FoodDataLoader foodDataLoader, CancellationToken cancellationToken, int skip = 0, int limit = 10)
     {
         if (string.IsNullOrEmpty(recipeIngredient.Title)) return [];
 
-        var foodData = await foodDataLoader.LoadAsync(getSearchQuery(recipeIngredient), cancellationToken);
+        var foodData = await foodDataLoader.LoadAsync(foodService.GetSearchQuery(recipeIngredient), cancellationToken);
         return foodData.Skip(skip).Take(limit).ToList();
     }
 
@@ -204,62 +191,12 @@ public class ExtendedRecipeQueries
         return recipeReactions;
     }
 
-    public async Task<Image?> GetImage([Parent] Recipe recipe, [Service] IFileService fileService, FileDataLoader fileDataLoader, [Service] ImageProcessingService imageProcessingService, [Service] IConfiguration config, CancellationToken cancellationToken)
+    public async Task<Image?> GetImage([Parent] Recipe recipe, FileDataLoader fileDataLoader, [Service] ImageService imageService, CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(recipe.ImageId)) return null;
         var file = await fileDataLoader.LoadAsync(recipe.ImageId, cancellationToken);
         if (file == null) return null;
-        ImageThumbnails? thumbnails = null;
-        var originalDimensions = file.Dimensions?.Original;
-        thumbnails = new ImageThumbnails();
-        var sizes = new List<ThumbnailSize> { ThumbnailSize.Small, ThumbnailSize.Medium, ThumbnailSize.Large };
-        foreach (var thumbnailSize in sizes)
-        {
-            var thumbnailDto = file.GetImageThumbnail(thumbnailSize);
-            if (thumbnailDto == null && originalDimensions != null)
-            {
-                var baseUrl = config["ApiUrl"];
-                var generateThumbnailApiUrl = $"{baseUrl}/api/recipes/thumbnail/{recipe.Id}?thumbnailSize={thumbnailSize}";
-                var (width, height, _) = imageProcessingService.GetImageThumbnailDimensions(originalDimensions.Width, originalDimensions.Height, thumbnailSize);
-                var thumbnail = new ImageThumbnail
-                {
-                    Size = 0,
-                    Src = generateThumbnailApiUrl,
-                    Type = file.ContentType,
-                    ThumbnailSize = thumbnailSize,
-                    Dimensions = new ImageDimension
-                    {
-                        Width = width,
-                        Height = height,
-                    },
-                };
-                thumbnails.SetThumbnail(thumbnailSize, thumbnail);
-            }
-            else if (thumbnailDto != null)
-            {
-                var thumbnailSrc = fileService.GetPublicUrl(file.Bucket, thumbnailDto.Key);
-                var thumbnail = new ImageThumbnail
-                {
-                    Size = thumbnailDto.Size,
-                    Type = thumbnailDto.ContentType,
-                    Src = thumbnailSrc,
-                    ThumbnailSize = thumbnailSize,
-                    Dimensions = RecipeMapper.MapDto(thumbnailDto.Dimensions),
-                };
-                thumbnails.SetThumbnail(thumbnailSize, thumbnail);
-            }
-        }
-        var imageSrc = fileService.GetPublicUrl(file);
-        var image = new Image
-        {
-            ImageId = recipe.ImageId,
-            Name = file.FileName,
-            Size = file.Size,
-            Type = file.ContentType,
-            Src = imageSrc,
-            Thumbnails = thumbnails,
-            Dimensions = RecipeMapper.MapDto(file.Dimensions),
-        };
+        var image = imageService.GetImage(recipe, file);
         return image;
     }
 

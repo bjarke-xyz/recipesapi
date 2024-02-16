@@ -1,16 +1,17 @@
 using System.Text.RegularExpressions;
 using RecipesAPI.API.Features.Food.Common;
 using RecipesAPI.API.Features.Food.DAL;
+using RecipesAPI.API.Features.Recipes.Common;
 using RecipesAPI.API.Infrastructure;
 
 namespace RecipesAPI.API.Features.Food.BLL;
 
 public class FoodService
 {
+    private bool loadingFoodData = false;
     private readonly FoodRepository foodRepository;
     private readonly FoodSearchServiceV1 foodSearchServiceV1;
     private readonly FoodSearchServiceV2 foodSearchServiceV2;
-    private readonly ICacheProvider cache;
 
     private IReadOnlyList<FoodItem>? localCache = null;
     private Dictionary<int, FoodItem>? localCacheDict = null;
@@ -20,12 +21,25 @@ public class FoodService
         { "mel", "hvedemel"}
     };
 
-    public FoodService(FoodRepository foodRepository, ICacheProvider cache, FoodSearchServiceV2 foodSearchServiceV2, FoodSearchServiceV1 foodSearchServiceV1)
+    public FoodService(FoodRepository foodRepository, FoodSearchServiceV2 foodSearchServiceV2, FoodSearchServiceV1 foodSearchServiceV1)
     {
         this.foodRepository = foodRepository;
-        this.cache = cache;
         this.foodSearchServiceV2 = foodSearchServiceV2;
         this.foodSearchServiceV1 = foodSearchServiceV1;
+    }
+
+    public string GetSearchQuery(RecipeIngredient recipeIngredient)
+    {
+        var query = recipeIngredient.Title;
+        if (recipeIngredient.Meta != null && recipeIngredient.Meta.Any())
+        {
+            var percentage = recipeIngredient.Meta.FirstOrDefault(x => x.Contains("%"));
+            if (!string.IsNullOrEmpty(percentage))
+            {
+                query = $"{query} {percentage}";
+            }
+        }
+        return query ?? "";
     }
 
     public async Task BuildSearchIndex(CancellationToken cancellationToken)
@@ -55,6 +69,8 @@ public class FoodService
 
     private async Task PopulateLocalCache(CancellationToken cancellationToken)
     {
+        if (loadingFoodData) return;
+        loadingFoodData = true;
         var cached = localCache;
         if (cached == null)
         {
@@ -66,6 +82,7 @@ public class FoodService
         {
             localCacheDict = cached.GroupBy(x => x.FoodId).ToDictionary(x => x.Key, x => x.First());
         }
+        loadingFoodData = false;
     }
 
     public async Task<Dictionary<string, List<FoodItem>>> SearchFoodData(List<string> queries, CancellationToken cancellationToken)

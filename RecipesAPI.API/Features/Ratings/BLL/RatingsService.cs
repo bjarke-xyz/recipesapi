@@ -13,12 +13,19 @@ public class RatingsService(RatingsRepository ratingsRepository, ILogger<Ratings
 
     private string RatingCacheKey(RatingType type, string entityId) => $"GetRating:{type}:{entityId}";
     private string ReactionsCacheKey(RatingType type, string entityId) => $"GetReactions:{type}:{entityId}";
+    private string CommentCacheKey(string id) => $"GetComment:{id}";
+    private string CommentsCacheKey(RatingType type, string entityId) => $"GetComments:{type}:{entityId}";
+    private string CommentsDictCacheKey(RatingType type, List<string> entityIds) => $"GetComments:{type}:{string.Join('-', entityIds)}";
 
     #region comments
-    // TODO: caching
     public async Task<List<Comment>> GetComments(RatingType type, string id, CancellationToken cancellationToken, bool buildTree = false)
     {
-        var comments = await ratingsRepository.GetComments(type, id, cancellationToken);
+        var comments = await cache.Get<List<Comment>>(CommentsCacheKey(type, id), cancellationToken);
+        if (comments == null)
+        {
+            comments = await ratingsRepository.GetComments(type, id, cancellationToken);
+            await cache.Put(CommentsCacheKey(type, id), comments, cancellationToken: cancellationToken);
+        }
         if (buildTree)
         {
             comments = CommentsUtil.BuildTree(comments);
@@ -28,7 +35,12 @@ public class RatingsService(RatingsRepository ratingsRepository, ILogger<Ratings
 
     public async Task<Dictionary<string, List<Comment>>> GetComments(RatingType type, List<string> ids, CancellationToken cancellationToken, bool buildTree = false)
     {
-        var commentsDict = await ratingsRepository.GetComments(type, ids, cancellationToken);
+        var commentsDict = await cache.Get<Dictionary<string, List<Comment>>>(CommentsDictCacheKey(type, ids), cancellationToken);
+        if (commentsDict == null)
+        {
+            commentsDict = await ratingsRepository.GetComments(type, ids, cancellationToken);
+            await cache.Put(CommentsDictCacheKey(type, ids), commentsDict, cancellationToken: cancellationToken);
+        }
         var keys = commentsDict.Keys.ToList();
         foreach (var key in keys)
         {
@@ -40,7 +52,16 @@ public class RatingsService(RatingsRepository ratingsRepository, ILogger<Ratings
 
     public async Task<Comment?> GetComment(string id, CancellationToken cancellationToken)
     {
-        return await ratingsRepository.GetComment(id, cancellationToken);
+        var comment = await cache.Get<Comment>(CommentCacheKey(id), cancellationToken);
+        if (comment == null)
+        {
+            comment = await ratingsRepository.GetComment(id, cancellationToken);
+            if (comment != null)
+            {
+                await cache.Put(CommentCacheKey(id), comment, cancellationToken: cancellationToken);
+            }
+        }
+        return comment;
     }
 
     public async Task<Comment> SaveComment(Comment comment, CancellationToken cancellationToken, bool create)
@@ -67,13 +88,22 @@ public class RatingsService(RatingsRepository ratingsRepository, ILogger<Ratings
             comment.Id = Guid.NewGuid().ToString();
         }
         await ratingsRepository.SaveComment(comment, cancellationToken);
+        await ClearCache(comment, cancellationToken);
         return await GetComment(comment.Id, cancellationToken) ?? throw new GraphQLErrorException("failed to get saved comment");
     }
 
     public async Task<Comment> DeleteComment(Comment comment, CancellationToken cancellationToken)
     {
         await ratingsRepository.DeleteComment(comment, cancellationToken);
+        await ClearCache(comment, cancellationToken);
         return await GetComment(comment.Id, cancellationToken) ?? throw new GraphQLErrorException("failed to get soft deleted comment");
+    }
+
+    private async Task ClearCache(Comment comment, CancellationToken cancellationToken)
+    {
+        await cache.Remove(CommentCacheKey(comment.Id), cancellationToken);
+        await cache.Remove(CommentsCacheKey(comment.EntityType, comment.EntityId), cancellationToken);
+        await cache.RemoveByPrefix(CommentsDictCacheKey(comment.EntityType, []), cancellationToken);
     }
 
     #endregion

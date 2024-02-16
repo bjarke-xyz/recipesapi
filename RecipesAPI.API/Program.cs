@@ -230,6 +230,8 @@ builder.Services
         var cache = sp.GetRequiredService<ICacheProvider>();
         return new AdtractionService(logger, url, key, httpClient, adtractionRepository, defaultMarket, defaultChannelId, cache);
     })
+    .AddSingleton<ImageService>()
+    .AddSingleton<CacheJobService>()
     .AddSingleton<AffiliateService>()
     .AddSingleton<SqliteDataContext>()
     .AddSingleton<SettingsRepository>()
