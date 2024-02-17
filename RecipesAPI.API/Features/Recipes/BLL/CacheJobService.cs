@@ -41,26 +41,26 @@ public class CacheJobService(
                 await ratingsService.GetComments(Ratings.Common.RatingType.Recipe, recipe.Id, cancellationToken);
                 await ratingsService.GetReactions(Ratings.Common.RatingType.Recipe, recipe.Id, cancellationToken);
                 await userService.GetUserById(recipe.UserId, cancellationToken);
-                if (!string.IsNullOrEmpty(recipe.ImageId))
-                {
-                    var file = await fileService.GetFile(recipe.ImageId, cancellationToken);
-                    if (file != null)
-                    {
-                        var img = imageService.GetImage(recipe, file);
-                        if (img != null)
-                        {
-                            // No reason to do this in dev
-                            // Does not hit cloudflare cache, and only uses up storage bandwidth
-                            if (!env.IsDevelopment())
-                            {
-                                _ = httpClient.GetAsync(img.Src, cancellationToken);
-                                // _ = GetThumbnail(img.Thumbnails?.Small, cancellationToken);
-                                _ = GetThumbnail(img.Thumbnails?.Medium, cancellationToken);
-                                // _ = GetThumbnail(img.Thumbnails?.Large, cancellationToken);
-                            }
-                        }
-                    }
-                }
+                // if (!string.IsNullOrEmpty(recipe.ImageId))
+                // {
+                //     var file = await fileService.GetFile(recipe.ImageId, cancellationToken);
+                //     if (file != null)
+                //     {
+                //         var img = imageService.GetImage(recipe, file);
+                //         if (img != null)
+                //         {
+                //             // No reason to do this in dev
+                //             // Does not hit cloudflare cache, and only uses up storage bandwidth
+                //             if (!env.IsDevelopment())
+                //             {
+                //                 _ = httpClient.GetAsync(img.Src, cancellationToken);
+                //                 // _ = GetThumbnail(img.Thumbnails?.Small, cancellationToken);
+                //                 _ = GetThumbnail(img.Thumbnails?.Medium, cancellationToken);
+                //                 // _ = GetThumbnail(img.Thumbnails?.Large, cancellationToken);
+                //             }
+                //         }
+                //     }
+                // }
                 if (recipe.EquipmentIds?.Count > 0)
                 {
                     await equipmentService.GetEquipmentByIds(recipe.EquipmentIds, cancellationToken);
