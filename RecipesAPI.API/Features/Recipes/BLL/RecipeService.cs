@@ -11,6 +11,7 @@ using RecipesAPI.API.Features.Equipment.BLL;
 using RecipesAPI.API.Features.Ratings.BLL;
 using RecipesAPI.API.Features.Users.BLL;
 using RecipesAPI.API.Features.Files.BLL;
+using System.Diagnostics;
 
 namespace RecipesAPI.API.Features.Recipes.BLL;
 
@@ -174,6 +175,7 @@ public class RecipeService : ICacheKeyGetter
         if (cached == null)
         {
             cached = await recipeRepository.GetRecipes(cancellationToken);
+            Parallel.ForEach(cached, EnrichIngredients);
             await cache.Put<List<Recipe>>(GetRecipesCacheKey, cached);
             var recipesById = cached.GroupBy(x => x.Id).ToDictionary(x => GetRecipeCacheKey(x.Key), x => x.First());
             await cache.Put(recipesById);
@@ -185,7 +187,6 @@ public class RecipeService : ICacheKeyGetter
         {
             SetDefaultSlug(recipe);
             HideDraft(recipe, loggedInUser);
-            EnrichIngredients(recipe);
         }
         return cached;
     }
@@ -199,6 +200,7 @@ public class RecipeService : ICacheKeyGetter
             cached = await recipeRepository.GetRecipe(id, cancellationToken);
             if (cached != null)
             {
+                EnrichIngredients(cached);
                 await cache.Put(GetRecipeCacheKey(id), cached);
             }
         }
@@ -210,7 +212,6 @@ public class RecipeService : ICacheKeyGetter
         {
             SetDefaultSlug(cached);
             HideDraft(cached, loggedInUser);
-            EnrichIngredients(cached);
         }
         return cached;
     }
@@ -230,7 +231,9 @@ public class RecipeService : ICacheKeyGetter
             cached = await recipeRepository.GetRecipeBySlug(slug, cancellationToken);
             if (cached != null)
             {
+                EnrichIngredients(cached);
                 await cache.Put(GetRecipeBySlugCacheKey(slug), cached);
+                await cache.Put(GetRecipeCacheKey(cached.Id), cached);
             }
         }
         if (!IsRecipeVisible(cached, loggedInUser))
@@ -241,7 +244,6 @@ public class RecipeService : ICacheKeyGetter
         {
             SetDefaultSlug(cached);
             HideDraft(cached, loggedInUser);
-            EnrichIngredients(cached);
         }
         return cached;
     }
@@ -252,6 +254,7 @@ public class RecipeService : ICacheKeyGetter
         if (cached == null)
         {
             cached = await recipeRepository.GetRecipesByUserId(userId, cancellationToken);
+            Parallel.ForEach(cached, EnrichIngredients);
             await cache.Put(GetRecipeByUserCacheKey(userId), cached);
         }
         if (!showUnpublished)
@@ -261,7 +264,6 @@ public class RecipeService : ICacheKeyGetter
         foreach (var recipe in cached)
         {
             SetDefaultSlug(recipe);
-            EnrichIngredients(recipe);
         }
         return cached;
     }
