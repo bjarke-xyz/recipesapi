@@ -14,7 +14,7 @@ public interface IFileService : ICacheKeyGetter
     Task<Stream?> GetFileContent(string fileId, CancellationToken cancellationToken);
     Task<Stream?> GetFileContent(string bucket, string key, CancellationToken cancellationToken);
     string GetPublicUrl(FileDto file);
-    string GetPublicUrl(string bucket, string key, string? contentType);
+    string GetPublicUrl(string bucket, string key, string? contentType, string? hash);
     Task<FileDto?> SaveFile(FileDto file, CancellationToken cancellationToken);
     Task<FileDto?> SaveFile(FileDto file, Stream content, CancellationToken cancellationToken);
     Task DeleteFile(FileDto file, CancellationToken cancellationToken);
@@ -130,14 +130,23 @@ public class FileService : IFileService
 
     public string GetPublicUrl(FileDto file)
     {
-        return GetPublicUrl(file.Bucket, file.Key, file.ContentType);
+        return GetPublicUrl(file.Bucket, file.Key, file.ContentType, file.GetFileHash());
     }
 
-    public string GetPublicUrl(string bucket, string key, string? contentType)
+    public string GetPublicUrl(string bucket, string key, string? contentType, string? hash)
     {
         // return $"https://pub-fc8159a8900d44e2b3f022917f202fc1.r2.dev/{file.Key}";
         // return $"https://storage.googleapis.com/{bucket}/{key}";
-        return $"{apiUrl}/api/files/file/file.jpeg?bucket={WebUtility.UrlEncode(bucket)}&key={WebUtility.UrlEncode(key)}";
+        var ext = ".jpeg";
+        if (!string.IsNullOrEmpty(contentType))
+        {
+            var _ext = MimeTypes.MimeTypeMap.GetExtension(contentType, throwErrorIfNotFound: false);
+            if (!string.IsNullOrEmpty(_ext))
+            {
+                ext = _ext;
+            }
+        }
+        return $"{apiUrl}/api/files/file/file{ext}?bucket={WebUtility.UrlEncode(bucket)}&key={WebUtility.UrlEncode(key)}&hash={hash}";
     }
 
     public async Task<FileDto?> SaveFile(FileDto file, CancellationToken cancellationToken)

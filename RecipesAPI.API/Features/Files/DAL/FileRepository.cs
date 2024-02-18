@@ -31,6 +31,10 @@ public class FileRepository
         {
             dto.CreatedAt = doc.CreateTime?.ToDateTimeOffset();
         }
+        if (!dto.UpdatedAt.HasValue)
+        {
+            dto.UpdatedAt = doc.UpdateTime?.ToDateTimeOffset();
+        }
         if (string.IsNullOrEmpty(dto.Id))
         {
             dto.Id = doc.Id;
@@ -59,6 +63,10 @@ public class FileRepository
                 if (!dto.CreatedAt.HasValue)
                 {
                     dto.CreatedAt = doc.CreateTime?.ToDateTimeOffset();
+                }
+                if (!dto.UpdatedAt.HasValue)
+                {
+                    dto.UpdatedAt = doc.UpdateTime?.ToDateTimeOffset();
                 }
                 if (string.IsNullOrEmpty(dto.Id))
                 {
@@ -115,7 +123,16 @@ public class FileDto
 
     public DateTimeOffset? CreatedAt { get; set; }
 
+    public DateTimeOffset? UpdatedAt { get; set; }
+
     public DateTime? DeletedAt { get; set; }
+
+    public string? GetFileHash()
+    {
+        var dateTime = UpdatedAt ?? CreatedAt;
+        if (dateTime == null) return null;
+        return dateTime.Value.ToUnixTimeSeconds().ToString();
+    }
 }
 
 

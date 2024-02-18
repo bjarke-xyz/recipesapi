@@ -33,7 +33,7 @@ public class RecipesController : BaseController
         var thumbnail = file.GetImageThumbnail(thumbnailSize);
         if (thumbnail != null)
         {
-            var publicUrl = fileService.GetPublicUrl(file.Bucket, thumbnail.Key, thumbnail.ContentType);
+            var publicUrl = fileService.GetPublicUrl(file.Bucket, thumbnail.Key, thumbnail.ContentType, file.GetFileHash());
             return Redirect(publicUrl);
         }
         else
@@ -52,7 +52,7 @@ public class RecipesController : BaseController
             var updatedThumbnail = updatedFile.GetImageThumbnail(thumbnailSize);
             if (updatedThumbnail == null) return NotFound("failed to get updated thumbnail");
 
-            var publicUrl = fileService.GetPublicUrl(file.Bucket, updatedThumbnail.Key, updatedThumbnail.ContentType);
+            var publicUrl = fileService.GetPublicUrl(file.Bucket, updatedThumbnail.Key, updatedThumbnail.ContentType, file.GetFileHash());
             return Redirect(publicUrl);
         }
 

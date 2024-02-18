@@ -27,6 +27,7 @@
     <PackageReference Include="Lucene.Net.Analysis.Common" Version="4.8.0-beta00016" />
     <PackageReference Include="Lucene.Net.QueryParser" Version="4.8.0-beta00016" />
     <PackageReference Include="MessagePack" Version="2.5.140" />
+    <PackageReference Include="MimeTypeMapOfficial" Version="1.0.17" />
     <PackageReference Include="OpenTelemetry.Exporter.Console" Version="1.7.0-rc.1" />
     <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.7.0-rc.1" />
     <PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.7.0-rc.1" />

@@ -38,6 +38,7 @@ using Serilog;
 using System.Text;
 using Serilog.Sinks.Slack;
 using Serilog.Sinks.Slack.Models;
+using Google.Cloud.Storage.V1;
 
 CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
 
@@ -81,9 +82,6 @@ if (!string.IsNullOrEmpty(googleAppCredContent))
 
 var port = 5001;
 if (int.TryParse(builder.Configuration["PORT"], out var _port)) port = _port;
-
-
-var storageBucket = "recipes-5000.appspot.com";
 
 FirebaseApp.Create();
 
@@ -190,7 +188,7 @@ builder.Services
         var cacheProvider = sp.GetRequiredService<ICacheProvider>();
         var storageClient = sp.GetRequiredService<IStorageClient>();
         var logger = sp.GetRequiredService<ILogger<FileService>>();
-        return new FileService(fileRepository, cacheProvider, storageClient, logger, storageBucket, builder.Configuration["ApiUrl"] ?? throw new Exception("Missing ApiUrl"));
+        return new FileService(fileRepository, cacheProvider, storageClient, logger, GoogleStorageClient.StorageBucket, builder.Configuration["ApiUrl"] ?? throw new Exception("Missing ApiUrl"));
     })
     .AddSingleton<AdminService>()
     .AddSingleton<ImageProcessingService>(sp =>
@@ -198,7 +196,7 @@ builder.Services
         var fileService = sp.GetRequiredService<IFileService>();
         var logger = sp.GetRequiredService<ILogger<ImageProcessingService>>();
         var storageClient = sp.GetRequiredService<IStorageClient>();
-        return new ImageProcessingService(fileService, logger, storageClient, storageBucket);
+        return new ImageProcessingService(fileService, logger, storageClient, GoogleStorageClient.StorageBucket);
     })
     .AddSingleton<HealthcheckService>()
     .AddSingleton<EquipmentRepository>()

@@ -62,6 +62,7 @@ public class S3StorageClient : IStorageClient
 
 public class GoogleStorageClient : IStorageClient
 {
+    public const string StorageBucket = "recipes-5000.appspot.com";
     private readonly Google.Cloud.Storage.V1.StorageClient client;
     private readonly ILogger<GoogleStorageClient> logger;
 
