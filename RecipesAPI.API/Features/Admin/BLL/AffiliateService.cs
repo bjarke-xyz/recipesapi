@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using Amazon.Auth.AccessControlPolicy;
 using RecipesAPI.API.Features.Admin.Common;
 using RecipesAPI.API.Features.Admin.DAL;
 using RecipesAPI.API.Infrastructure;
@@ -80,6 +81,9 @@ public class AffiliateService(AdtractionService adtractionService, PartnerAdsSer
 
     public async Task<List<AffiliateItem>> GetAffiliateItems(List<AffiliateItemReference> itemReferences)
     {
+        if (itemReferences.Count == 0) return [];
+        using var activity = Telemetry.ActivitySource.StartActivity("GetAffiliateItems");
+        activity?.AddTag("itemCount", itemReferences.Count);
         var byProvider = itemReferences.GroupBy(x => x.Provider).ToDictionary(x => x.Key, x => x.ToList());
         var items = new List<AffiliateItem>();
         foreach (var (provider, itemRefs) in byProvider)
@@ -115,6 +119,9 @@ public class AffiliateService(AdtractionService adtractionService, PartnerAdsSer
     public async Task<List<AffiliateItem>> SearchAffiliateItems(string? searchQuery, int count = 15, List<PartnerSettingsDto>? settings = null)
     {
         if (string.IsNullOrEmpty(searchQuery)) return [];
+        using var activity = Telemetry.ActivitySource.StartActivity("SearchAffiliateItems");
+        activity?.AddTag("searchQuery", searchQuery);
+        activity?.AddTag("count", count);
         var version = 2;
         var searchResults = new List<AffiliateItemSearchDoc>();
         if (version == 1) searchResults = await affiliateSearchServiceV1.Search(searchQuery!);

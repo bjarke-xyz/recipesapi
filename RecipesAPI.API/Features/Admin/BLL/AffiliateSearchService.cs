@@ -70,6 +70,9 @@ public class AffiliateSearchServiceV2(ILogger<AffiliateSearchServiceV2> logger, 
 
     public List<AffiliateItemSearchDoc> Search(string queryString, int count)
     {
+        using var activity = Telemetry.ActivitySource.StartActivity("AffiliearSearchServiceV2-Search");
+        activity?.AddTag("queryString", queryString);
+        activity?.AddTag("count", count);
         var writer = GetWriter();
         using var reader = writer.GetReader(applyAllDeletes: true);
         var searcher = new IndexSearcher(reader);
