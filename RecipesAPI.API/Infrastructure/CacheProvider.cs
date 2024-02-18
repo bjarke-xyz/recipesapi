@@ -4,6 +4,9 @@ using StackExchange.Redis;
 using Dapper;
 using System.Data;
 using MessagePack;
+using System.Diagnostics;
+using OpenTelemetry.Trace;
+using System.Runtime.CompilerServices;
 
 namespace RecipesAPI.API.Infrastructure;
 
@@ -123,8 +126,26 @@ public class SqliteCacheProvider(ILogger<SqliteCacheProvider> logger, SqliteData
         return val.Length == 1 && (val[0] == 144 || val[0] == 128);
     }
 
+    private static Activity? StartActivity(string key, [CallerMemberName] string method = "")
+    {
+        var activity = Telemetry.ActivitySource.StartActivity($"SqliteCache:{method}");
+        activity?.SetTag("key", key);
+        return activity;
+    }
+    private static Activity? StartActivity(IEnumerable<string> keys, [CallerMemberName] string method = "")
+    {
+        var activity = Telemetry.ActivitySource.StartActivity($"SqliteCache:{method}");
+        activity?.SetTag("key", string.Join(", ", keys));
+        return activity;
+    }
+    private static void SetError(Activity? activity, Exception ex)
+    {
+        activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
+    }
+
     public async Task<T?> Get<T>(string key, CancellationToken cancellationToken = default) where T : class
     {
+        using var activity = StartActivity(key);
         try
         {
             using var conn = sqliteDataContext.CreateCacheConnection();
@@ -142,6 +163,7 @@ public class SqliteCacheProvider(ILogger<SqliteCacheProvider> logger, SqliteData
         catch (Exception ex)
         {
             logger.LogError(ex, "Get failed. key={key}", key);
+            SetError(activity, ex);
             return null;
         }
     }
@@ -149,6 +171,7 @@ public class SqliteCacheProvider(ILogger<SqliteCacheProvider> logger, SqliteData
     public async Task<List<T?>> Get<T>(IReadOnlyList<string> keys, CancellationToken cancellationToken = default) where T : class
     {
         if (keys == null || keys.Count == 0) return [];
+        using var activity = StartActivity(keys);
         try
         {
             using var conn = sqliteDataContext.CreateCacheConnection();
@@ -182,12 +205,14 @@ public class SqliteCacheProvider(ILogger<SqliteCacheProvider> logger, SqliteData
         catch (Exception ex)
         {
             logger.LogError(ex, "Get failed. keys={@keys}", keys);
+            SetError(activity, ex);
             return [];
         }
     }
 
     public async Task Put<T>(string key, T value, TimeSpan? expiration = null, CancellationToken cancellationToken = default) where T : class
     {
+        using var activity = StartActivity(key);
         try
         {
             using var conn = sqliteDataContext.CreateCacheConnection();
@@ -196,12 +221,14 @@ public class SqliteCacheProvider(ILogger<SqliteCacheProvider> logger, SqliteData
         catch (Exception ex)
         {
             logger.LogError(ex, "Put failed. key={key}", key);
+            SetError(activity, ex);
         }
     }
 
     public async Task Put<T>(IReadOnlyDictionary<string, T> keyValuePairs, TimeSpan? expiration = null, CancellationToken cancellationToken = default) where T : class
     {
         if (keyValuePairs == null || keyValuePairs.Count == 0) return;
+        using var activity = StartActivity(keyValuePairs.Select(x => x.Key));
         try
         {
             using var conn = sqliteDataContext.CreateCacheConnection();
@@ -213,6 +240,7 @@ public class SqliteCacheProvider(ILogger<SqliteCacheProvider> logger, SqliteData
         catch (Exception ex)
         {
             logger.LogError(ex, "Put failed. keys={@keys}", keyValuePairs.Select(x => x.Key).ToList());
+            SetError(activity, ex);
         }
     }
 
@@ -232,6 +260,7 @@ public class SqliteCacheProvider(ILogger<SqliteCacheProvider> logger, SqliteData
 
     public async Task Remove(string key, CancellationToken cancellationToken = default)
     {
+        using var activity = StartActivity(key);
         try
         {
             using var conn = sqliteDataContext.CreateCacheConnection();
@@ -240,11 +269,13 @@ public class SqliteCacheProvider(ILogger<SqliteCacheProvider> logger, SqliteData
         catch (Exception ex)
         {
             logger.LogError(ex, "Remove failed. key={key}", key);
+            SetError(activity, ex);
         }
     }
 
     public async Task RemoveByPrefix(string keyPrefix, CancellationToken cancellationToken = default)
     {
+        using var activity = StartActivity(keyPrefix);
         try
         {
             using var conn = sqliteDataContext.CreateCacheConnection();
@@ -253,11 +284,13 @@ public class SqliteCacheProvider(ILogger<SqliteCacheProvider> logger, SqliteData
         catch (Exception ex)
         {
             logger.LogError(ex, "RemoveByPrefix failed. keyPrefix={keyPrefix}", keyPrefix);
+            SetError(activity, ex);
         }
     }
 
     public async Task RemoveExpired()
     {
+        using var activity = StartActivity("");
         try
         {
             var now = DateTime.UtcNow;
@@ -267,6 +300,7 @@ public class SqliteCacheProvider(ILogger<SqliteCacheProvider> logger, SqliteData
         catch (Exception ex)
         {
             logger.LogError(ex, "RemoveExpired failed");
+            SetError(activity, ex);
         }
     }
 }

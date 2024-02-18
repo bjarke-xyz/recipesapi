@@ -169,6 +169,7 @@ public class RecipeService : ICacheKeyGetter
 
     public async Task<List<Recipe>> GetRecipes(CancellationToken cancellationToken, User? loggedInUser)
     {
+        using var activity = Telemetry.ActivitySource.StartActivity("GetRecipes");
         var cached = await cache.Get<List<Recipe>>(GetRecipesCacheKey);
         if (cached == null)
         {
