@@ -1,6 +1,7 @@
 using RecipesAPI.API.Features.Files.BLL;
 using RecipesAPI.API.Features.Files.DAL;
 using RecipesAPI.API.Infrastructure;
+using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
 
 namespace RecipesAPI.API.Features.Recipes.BLL;
@@ -22,9 +23,8 @@ public class ImageProcessingService
 
     public async Task<(SixLabors.ImageSharp.Image, SixLabors.ImageSharp.Formats.IImageFormat?)> LoadImage(Stream fileContent, CancellationToken cancellationToken)
     {
-        var format = await SixLabors.ImageSharp.Image.DetectFormatAsync(fileContent, cancellationToken);
         var image = await SixLabors.ImageSharp.Image.LoadAsync(fileContent, cancellationToken);
-        return (image, format);
+        return (image, image?.Metadata?.DecodedImageFormat);
     }
 
     public (int width, int height, bool requiresResize) GetImageThumbnailDimensions(int imageWidth, int imageHeight, ThumbnailSize thumbnailSize)
@@ -54,13 +54,37 @@ public class ImageProcessingService
         return (width, height, requiresResize);
     }
 
-    public void ResizeImage(SixLabors.ImageSharp.Image image, ThumbnailSize thumbnailSize)
+    private void ResizeImage(SixLabors.ImageSharp.Image image, ThumbnailSize thumbnailSize)
     {
         var (width, height, doResize) = GetImageThumbnailDimensions(image.Width, image.Height, thumbnailSize);
         if (doResize)
         {
             image.Mutate(x => x.Resize(width, height));
         }
+    }
+
+    private async Task<Stream?> ConvertToWebP(SixLabors.ImageSharp.Image image, SixLabors.ImageSharp.Formats.IImageFormat imageFormat, CancellationToken cancellationToken)
+    {
+        if (string.Equals(imageFormat.DefaultMimeType, "image/webp", StringComparison.OrdinalIgnoreCase)) return null;
+        var ms = new MemoryStream();
+        await image.SaveAsWebpAsync(ms, cancellationToken);
+        ms.Position = 0;
+        return ms;
+    }
+
+    private async Task<(SixLabors.ImageSharp.Image? image, SixLabors.ImageSharp.Formats.IImageFormat? format, Stream imageContent, bool needsReSaving)> LoadAndConvertImage(Stream originalFileContent, CancellationToken cancellationToken)
+    {
+        var (originalImage, originalFormat) = await LoadImage(originalFileContent, cancellationToken);
+        if (originalImage == null || originalFormat == null) return (null, null, originalFileContent, false);
+        var webpFileContent = await ConvertToWebP(originalImage, originalFormat, cancellationToken);
+        if (webpFileContent == null)
+        {
+            return (originalImage, originalFormat, originalFileContent, false);
+        }
+        originalImage.Dispose();
+        originalFileContent.Dispose();
+        var (webpImage, webpFormat) = await LoadImage(webpFileContent, cancellationToken);
+        return (webpImage, webpFormat, webpFileContent, true);
     }
 
     public async ValueTask ProcessRecipeImage(string imageId, string recipeId, ThumbnailSize thumbnailSize, CancellationToken cancellationToken)
@@ -83,19 +107,38 @@ public class ImageProcessingService
         int originalWidth = -1;
         int originalHeight = -1;
         SixLabors.ImageSharp.Image? image = null;
+        SixLabors.ImageSharp.Formats.IImageFormat? format = null;
+
+        // convert to webp if necessary
         try
         {
-            var imageAndFormat = await LoadImage(fileContent, cancellationToken);
-            image = imageAndFormat.Item1;
+            Stream imageContent;
+            bool needsReSaving;
+            (image, format, imageContent, needsReSaving) = await LoadAndConvertImage(fileContent, cancellationToken);
             if (image == null)
             {
                 throw new Exception("Failed to load image, image was null");
             }
-            var format = imageAndFormat.Item2;
             if (format == null)
             {
                 throw new Exception("Unable to detect format of image");
             }
+            if (needsReSaving)
+            {
+                file.Size = imageContent.Length;
+                file.ContentType = format.DefaultMimeType;
+                await fileService.SaveFile(file, imageContent, cancellationToken);
+            }
+
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "image conversion failed");
+            throw;
+        }
+
+        try
+        {
             // Store original image width and height before resizing to thumbnail size
             originalWidth = image.Width;
             originalHeight = image.Height;

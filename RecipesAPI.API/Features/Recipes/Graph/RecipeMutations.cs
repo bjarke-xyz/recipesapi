@@ -24,7 +24,7 @@ namespace RecipesAPI.API.Features.Recipes.Graph;
 public class RecipeMutations
 {
 
-    private static IReadOnlySet<string> allowedContentTypes = new HashSet<string> { "image/jpeg", "image/jpg", "image/png", "image/svg+xml", "image/gif" };
+    private static IReadOnlySet<string> allowedContentTypes = new HashSet<string> { "image/jpeg", "image/jpg", "image/png", "image/svg+xml", "image/gif", "image/webp" };
 
     private static async Task<string> UploadImage(string fileCode, string recipeId, ThumbnailSize thumbnailSize, IFileService fileService, ImageProcessingService imageProcessingService, CancellationToken cancellationToken)
     {

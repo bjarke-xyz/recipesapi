@@ -35,7 +35,7 @@ public class ImageService(IFileService fileService, ImageProcessingService image
             }
             else if (thumbnailDto != null)
             {
-                var thumbnailSrc = fileService.GetPublicUrl(file.Bucket, thumbnailDto.Key);
+                var thumbnailSrc = fileService.GetPublicUrl(file.Bucket, thumbnailDto.Key, thumbnailDto.ContentType);
                 var thumbnail = new ImageThumbnail
                 {
                     Size = thumbnailDto.Size,

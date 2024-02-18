@@ -14,7 +14,7 @@ public interface IFileService : ICacheKeyGetter
     Task<Stream?> GetFileContent(string fileId, CancellationToken cancellationToken);
     Task<Stream?> GetFileContent(string bucket, string key, CancellationToken cancellationToken);
     string GetPublicUrl(FileDto file);
-    string GetPublicUrl(string bucket, string key);
+    string GetPublicUrl(string bucket, string key, string? contentType);
     Task<FileDto?> SaveFile(FileDto file, CancellationToken cancellationToken);
     Task<FileDto?> SaveFile(FileDto file, Stream content, CancellationToken cancellationToken);
     Task DeleteFile(FileDto file, CancellationToken cancellationToken);
@@ -130,10 +130,10 @@ public class FileService : IFileService
 
     public string GetPublicUrl(FileDto file)
     {
-        return GetPublicUrl(file.Bucket, file.Key);
+        return GetPublicUrl(file.Bucket, file.Key, file.ContentType);
     }
 
-    public string GetPublicUrl(string bucket, string key)
+    public string GetPublicUrl(string bucket, string key, string? contentType)
     {
         // return $"https://pub-fc8159a8900d44e2b3f022917f202fc1.r2.dev/{file.Key}";
         // return $"https://storage.googleapis.com/{bucket}/{key}";
