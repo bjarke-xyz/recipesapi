@@ -24,13 +24,16 @@ public class RecipeQueries
 {
     public async Task<List<Recipe>> GetRecipes([User] User loggedInUser, [Service] RecipeService recipeService, CancellationToken cancellationToken, RecipeFilter? filter = null)
     {
+        using var activity = Telemetry.ActivitySource.StartActivity("Queries:GetRecipes");
         filter = filter ?? new RecipeFilter();
         var recipes = await recipeService.GetRecipes(cancellationToken, loggedInUser);
 
+        using var filterActivity = Telemetry.ActivitySource.StartActivity("Queries:GetRecipes/Filter");
         recipes = recipes.Where(x => x.Published == (filter.Published ?? true)).ToList();
         recipes = recipes.Where(x => x.ModeratedAt.HasValue == (filter.IsModerated ?? true)).ToList();
 
 
+        using var orderByActivity = Telemetry.ActivitySource.StartActivity("Queries:GetRecipes/OrderBy");
         if (!string.IsNullOrEmpty(filter.OrderByProperty))
         {
             if (!ClassUtils.IsPropertyOf<Recipe>(filter.OrderByProperty, out var propertyInfo) || propertyInfo == null)
@@ -40,6 +43,7 @@ public class RecipeQueries
             recipes = recipes.AsQueryable().OrderBy(propertyInfo.Name, filter.OrderDesc ?? true).ToList();
         }
 
+        using var paginationActivity = Telemetry.ActivitySource.StartActivity("Queries:GetRecipes/Pagination");
         recipes = recipes.Skip(filter.Skip ?? 0).Take(filter.Limit ?? recipes.Count).ToList();
 
         return recipes;
