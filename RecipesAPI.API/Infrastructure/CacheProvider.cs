@@ -118,6 +118,11 @@ public class SqliteCacheProvider(ILogger<SqliteCacheProvider> logger, SqliteData
     private readonly ILogger<SqliteCacheProvider> logger = logger;
     private readonly SqliteDataContext sqliteDataContext = sqliteDataContext;
 
+    private static bool EmptyCollectionHack(byte[] val)
+    {
+        return val.Length == 1 && (val[0] == 144 || val[0] == 128);
+    }
+
     public async Task<T?> Get<T>(string key, CancellationToken cancellationToken = default) where T : class
     {
         try
@@ -125,7 +130,7 @@ public class SqliteCacheProvider(ILogger<SqliteCacheProvider> logger, SqliteData
             using var conn = sqliteDataContext.CreateCacheConnection();
             var val = await conn.QueryFirstOrDefaultAsync<byte[]>("SELECT Val FROM kv WHERE Key = @key", new { key });
             if (val == null) return null;
-            if (val.Length == 1 && val[0] == 144)
+            if (EmptyCollectionHack(val))
             {
                 // hack to fix empty collections throwing an error on deserialize
                 var empty = (T?)Activator.CreateInstance(typeof(T));
@@ -154,7 +159,7 @@ public class SqliteCacheProvider(ILogger<SqliteCacheProvider> logger, SqliteData
             {
                 if (valuesByKey.TryGetValue(key, out var val))
                 {
-                    if (val.Length == 1 && val[0] == 144)
+                    if (EmptyCollectionHack(val))
                     {
                         // hack to fix empty collections throwing an error on deserialize
                         var empty = (T?)Activator.CreateInstance(typeof(T));
