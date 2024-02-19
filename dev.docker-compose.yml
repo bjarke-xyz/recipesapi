@@ -1,7 +1,20 @@
 version: "3.8"
 
 services:
-  redis:
-    image: redis:alpine
+  grafana_agent:
+    image: grafana/agent:v0.39.2
+    entrypoint:
+      - /bin/grafana-agent
+      - -server.http.address=0.0.0.0:12345
+      - -config.file=/etc/agent/agent.yaml
+      - -metrics.wal-directory=/tmp/agent/wal
+      # - -enable-features=integrations-next
+      - -config.expand-env
+      # - -config.enable-read-api
+    env_file: ./RecipesAPI.API/.env
     ports:
-      - "6379:6379"
+      - "4317:4317"
+      - "12345:12345"
+    volumes:
+      - "./data/grafana-data:/etc/agent/data"
+      - "./grafana/agent.yaml:/etc/agent/agent.yaml"
