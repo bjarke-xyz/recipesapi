@@ -154,9 +154,10 @@ public class PartnerAdsService(string url, string key, HttpClient httpClient, IL
         }
     }
 
-    public IEnumerable<PartnerAdsFeedProduct> ParseProductFeed(string feedLink)
+    public async IAsyncEnumerable<PartnerAdsFeedProduct> ParseProductFeed(string feedLink)
     {
-        using var reader = XmlReader.Create(feedLink);
+        using var stream = await httpClient.GetStreamAsync(feedLink);
+        using var reader = XmlReader.Create(stream);
         var serializer = new XmlSerializer(typeof(PartnerAdsFeedProduct));
         while (reader.ReadToFollowing("produkt"))
         {
@@ -187,7 +188,7 @@ public class PartnerAdsService(string url, string key, HttpClient httpClient, IL
         }
     }
 
-    public async Task<List<PartnerAdsFeedProduct>> GetFeedProducts(string? programId, string? feedLink, int? skip, int? limit, string? searchQuery, bool retry = true)
+    public async Task<List<PartnerAdsFeedProduct>> GetFeedProducts(string? programId, string? feedLink, int? skip, int? limit, string? searchQuery, bool retry = true, int? afterId = null)
     {
         if (string.IsNullOrEmpty(programId) || string.IsNullOrEmpty(feedLink))
         {
@@ -207,7 +208,7 @@ public class PartnerAdsService(string url, string key, HttpClient httpClient, IL
             }
         }
 
-        var feedProducts = await partnerAdsRepository.GetFeedProducts(feedDto, skip, limit, searchQuery);
+        var feedProducts = await partnerAdsRepository.GetFeedProducts(feedDto, skip, limit, searchQuery, afterId);
         return feedProducts;
     }
 

@@ -101,7 +101,7 @@ public class AdtractionRepository(SqliteDataContext context, ILogger<AdtractionR
         return dtos.Select(x => x.ToFeedProduct()).ToList();
     }
 
-    public async Task<List<AdtractionFeedProduct>> GetFeedProducts(AdtractionProductFeedDto feedDto, int? skip, int? limit, string? searchQuery)
+    public async Task<List<AdtractionFeedProduct>> GetFeedProducts(AdtractionProductFeedDto feedDto, int? skip, int? limit, string? searchQuery, int? afterId = null)
     {
         using var conn = context.CreateConnection();
         var sqlSb = new StringBuilder(
@@ -109,10 +109,15 @@ public class AdtractionRepository(SqliteDataContext context, ILogger<AdtractionR
             SELECT * FROM AdtractionProductFeedItems WHERE AdtractionProductFeedId = @id
             """
         );
+        if (afterId.HasValue)
+        {
+            sqlSb.Append(" AND ItemId > @afterId");
+        }
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
             sqlSb.Append(" AND Name LIKE ('%' || @query || '%')");
         }
+        sqlSb.Append(" ORDER BY ItemId ");
         if (limit.HasValue)
         {
             sqlSb.Append(" LIMIT @limit");
@@ -122,7 +127,7 @@ public class AdtractionRepository(SqliteDataContext context, ILogger<AdtractionR
             sqlSb.Append(" OFFSET @offset");
         }
         var feedItemDtos = await conn.QueryAsync<AdtractionProductFeedItemDto>(
-            sqlSb.ToString(), new { id = feedDto.Id, query = searchQuery, limit, offset = skip }
+            sqlSb.ToString(), new { id = feedDto.Id, query = searchQuery, limit, offset = skip, afterId }
         );
         foreach (var dto in feedItemDtos)
         {
@@ -133,7 +138,7 @@ public class AdtractionRepository(SqliteDataContext context, ILogger<AdtractionR
         return feedProducts;
     }
 
-    public async Task SaveProductFeed(int programId, Feed feed, IEnumerable<AdtractionFeedProduct> feedProducts)
+    public async Task SaveProductFeed(int programId, Feed feed, IAsyncEnumerable<AdtractionFeedProduct> feedProducts)
     {
         ArgumentNullException.ThrowIfNull(feed.FeedId);
         ArgumentNullException.ThrowIfNull(feed.LastUpdated);
@@ -164,7 +169,7 @@ public class AdtractionRepository(SqliteDataContext context, ILogger<AdtractionR
                 RETURNING Id
                 """, new AdtractionProductFeedDto(programId, feed));
 
-                foreach (var product in feedProducts)
+                await foreach (var product in feedProducts)
                 {
                     var item = new AdtractionProductFeedItemDto(createdId, product);
                     await conn.ExecuteAsync("""

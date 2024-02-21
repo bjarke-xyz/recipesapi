@@ -5,7 +5,8 @@ primary_region = "ams"
 
 [env]
 PORT = "8080"
-ConnectionStrings__LocalData = "Data Source=/data/LocalData.db"
+ConnectionStrings__LocalDataOld = "Data Source=/data/LocalData.db"
+ConnectionStrings__LocalData = "Data Source=/data/LocalData-v2.db"
 ConnectionStrings__SqliteCache = "Data Source=/data/SqliteCache.db"
 FridaCsvPath = "/static-data/frida.csv"
 

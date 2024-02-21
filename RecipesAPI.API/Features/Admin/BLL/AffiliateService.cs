@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using Amazon.Auth.AccessControlPolicy;
+using Lucene.Net.Analysis.Miscellaneous;
 using RecipesAPI.API.Features.Admin.Common;
 using RecipesAPI.API.Features.Admin.DAL;
 using RecipesAPI.API.Infrastructure;
@@ -17,22 +18,39 @@ public class AffiliateService(AdtractionService adtractionService, PartnerAdsSer
     {
         affiliateSearchServiceV2.ResetIndex();
         var adtractionPrograms = await adtractionService.GetPrograms("DK", null, config.GetValue<int>("AdtractionChannelId"), 1, null);
+        const int limit = 1000;
         foreach (var adtractionProgram in adtractionPrograms)
         {
             foreach (var feed in adtractionProgram.Feeds ?? [])
             {
-                var adtractionFeedProducts = await adtractionService.GetFeedProducts(adtractionProgram.ProgramId, feed.FeedId, null, null, null);
-                var affiliateItems = adtractionFeedProducts.Select(x => new AffiliateItem(x)).ToList();
-                affiliateSearchServiceV2.IndexData(affiliateItems);
+                int? afterId = null;
+                int? productCount = null;
+                while (productCount == null || productCount == limit)
+                {
+                    var adtractionFeedProducts = await adtractionService.GetFeedProducts(adtractionProgram.ProgramId, feed.FeedId, null, limit, null, true, afterId);
+                    if (adtractionFeedProducts.Count == 0) break;
+                    productCount = adtractionFeedProducts.Count;
+                    afterId = adtractionFeedProducts.Last().ItemId;
+                    var affiliateItems = adtractionFeedProducts.Select(x => new AffiliateItem(x)).ToList();
+                    affiliateSearchServiceV2.IndexData(affiliateItems);
+                }
             }
         }
 
         var partnerAdsPrograms = await partnerAdsService.GetPrograms(publicView: false);
         foreach (var partnerAdsProgram in partnerAdsPrograms)
         {
-            var partnerAdsFeedProducts = await partnerAdsService.GetFeedProducts(partnerAdsProgram.ProgramId, partnerAdsProgram.FeedLink, null, null, null);
-            var affiliateItems = partnerAdsFeedProducts.Select(x => new AffiliateItem(x)).ToList();
-            affiliateSearchServiceV2.IndexData(affiliateItems);
+            int? afterId = null;
+            int? productCount = null;
+            while (productCount == null || productCount == limit)
+            {
+                var partnerAdsFeedProducts = await partnerAdsService.GetFeedProducts(partnerAdsProgram.ProgramId, partnerAdsProgram.FeedLink, null, null, null);
+                if (partnerAdsFeedProducts.Count == 0) break;
+                productCount = partnerAdsFeedProducts.Count;
+                afterId = partnerAdsFeedProducts.Last().ItemId;
+                var affiliateItems = partnerAdsFeedProducts.Select(x => new AffiliateItem(x)).ToList();
+                affiliateSearchServiceV2.IndexData(affiliateItems);
+            }
         }
         affiliateSearchServiceV2.CommitIndex();
     }

@@ -157,6 +157,8 @@ public class AdtractionProductFeed
 [XmlRoot("product")]
 public class AdtractionFeedProduct
 {
+    [XmlIgnore, GraphQLIgnore]
+    public int? ItemId { get; set; }
     [XmlElement("SKU")]
     public string? Sku { get; set; }
     public string? Name { get; set; }

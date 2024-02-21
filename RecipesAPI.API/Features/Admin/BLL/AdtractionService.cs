@@ -74,9 +74,10 @@ public class AdtractionService(ILogger<AdtractionService> logger, string url, st
         }
     }
 
-    public IEnumerable<AdtractionFeedProduct> ParseProductFeed(string feedUrl)
+    public async IAsyncEnumerable<AdtractionFeedProduct> ParseProductFeed(string feedUrl)
     {
-        using var reader = XmlReader.Create(feedUrl);
+        using var stream = await httpClient.GetStreamAsync(feedUrl);
+        using var reader = XmlReader.Create(stream);
         var serializer = new XmlSerializer(typeof(AdtractionFeedProduct));
         while (reader.ReadToFollowing("product"))
         {
@@ -111,7 +112,7 @@ public class AdtractionService(ILogger<AdtractionService> logger, string url, st
         }
     }
 
-    public async Task<List<AdtractionFeedProduct>> GetFeedProducts(int? programId, int? feedId, int? skip, int? limit, string? searchQuery, bool retry = true)
+    public async Task<List<AdtractionFeedProduct>> GetFeedProducts(int? programId, int? feedId, int? skip, int? limit, string? searchQuery, bool retry = true, int? afterId = null)
     {
         if (!programId.HasValue || !feedId.HasValue)
         {
@@ -124,7 +125,7 @@ public class AdtractionService(ILogger<AdtractionService> logger, string url, st
             if (retry)
             {
                 await RefreshProductFeeds(defaultMarket, defaultChannelId, programId, feedId);
-                return await GetFeedProducts(programId, feedId, skip, limit, searchQuery, retry: false);
+                return await GetFeedProducts(programId, feedId, skip, limit, searchQuery, retry: false, afterId: afterId);
             }
             else
             {
@@ -132,7 +133,7 @@ public class AdtractionService(ILogger<AdtractionService> logger, string url, st
             }
         }
 
-        var feedProducts = await adtractionRepository.GetFeedProducts(productFeed, skip, limit, searchQuery);
+        var feedProducts = await adtractionRepository.GetFeedProducts(productFeed, skip, limit, searchQuery, afterId);
         return feedProducts;
     }
 

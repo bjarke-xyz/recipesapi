@@ -2,6 +2,7 @@ using System.Collections;
 using System.Data;
 using Dapper;
 using Microsoft.Data.Sqlite;
+using Serilog;
 
 namespace RecipesAPI.API.Infrastructure;
 
@@ -24,8 +25,31 @@ public class SqliteDataContext
         return new SqliteConnection(configuration.GetConnectionString("SqliteCache"));
     }
 
+    private void DeleteOldDb()
+    {
+        try
+        {
+            var oldDataSource = configuration.GetConnectionString("LocalDataOld");
+            var parts = oldDataSource?.Split("=");
+            if (parts?.Length >= 2)
+            {
+                var path = parts[1];
+                if (File.Exists(path))
+                {
+                    File.Delete(path);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "error deleting old db");
+        }
+
+    }
+
     public async Task Init()
     {
+        DeleteOldDb();
         using var connection = CreateConnection();
         await _initProductFeed(connection);
 
@@ -49,6 +73,7 @@ public class SqliteDataContext
 
                 CREATE TABLE IF NOT EXISTS 
                 AdtractionProductFeedItems (
+                    ItemId INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
                     AdtractionProductFeedId INTEGER,
                     Sku TEXT,
                     Name TEXT,
@@ -84,6 +109,7 @@ public class SqliteDataContext
 
                 CREATE TABLE IF NOT EXISTS
                 PartnerAdsProductFeedItems (
+                    ItemId INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
                     PartnerAdsProductFeedId INTEGER,
                     Retailer TEXT,
                     CategoryName TEXT,

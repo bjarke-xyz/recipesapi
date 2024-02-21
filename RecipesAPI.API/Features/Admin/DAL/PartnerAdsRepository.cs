@@ -97,7 +97,7 @@ public class PartnerAdsRepository(ILogger<PartnerAdsRepository> logger, SqliteDa
         return dtos.Select(x => x.ToFeedProduct()).ToList();
     }
 
-    public async Task<List<PartnerAdsFeedProduct>> GetFeedProducts(PartnerAdsProductFeedDto feedDto, int? skip, int? limit, string? searchQuery)
+    public async Task<List<PartnerAdsFeedProduct>> GetFeedProducts(PartnerAdsProductFeedDto feedDto, int? skip, int? limit, string? searchQuery, int? afterId)
     {
         using var conn = context.CreateConnection();
         var sqlSb = new StringBuilder(
@@ -105,10 +105,15 @@ public class PartnerAdsRepository(ILogger<PartnerAdsRepository> logger, SqliteDa
             SELECT *, @programId as ProgramId FROM PartnerAdsProductFeedItems WHERE PartnerAdsProductFeedId = @id
             """
         );
+        if (afterId.HasValue)
+        {
+            sqlSb.Append(" AND ItemId > @afterId");
+        }
         if (!string.IsNullOrWhiteSpace(searchQuery))
         {
             sqlSb.Append(" AND ProductName LIKE ('%' || @query || '%')");
         }
+        sqlSb.Append(" ORDER BY ItemId ");
         if (limit.HasValue)
         {
             sqlSb.Append(" LIMIT @limit");
@@ -118,13 +123,13 @@ public class PartnerAdsRepository(ILogger<PartnerAdsRepository> logger, SqliteDa
             sqlSb.Append(" OFFSET @offset");
         }
         var feedItemDtos = await conn.QueryAsync<PartnerAdsProductFeedItemDto>(
-            sqlSb.ToString(), new { id = feedDto.Id, query = searchQuery, limit, offset = skip, programId = feedDto.ProgramId }
+            sqlSb.ToString(), new { id = feedDto.Id, query = searchQuery, limit, offset = skip, programId = feedDto.ProgramId, afterId }
         );
         var feedProducts = feedItemDtos.Select(dto => dto.ToFeedProduct()).ToList();
         return feedProducts;
     }
 
-    public async Task SaveProductFeed(string programId, string feedLink, DateTime feedUpdated, IEnumerable<PartnerAdsFeedProduct> feedProducts)
+    public async Task SaveProductFeed(string programId, string feedLink, DateTime feedUpdated, IAsyncEnumerable<PartnerAdsFeedProduct> feedProducts)
     {
         ArgumentNullException.ThrowIfNull(feedLink);
         using var conn = context.CreateConnection();
@@ -154,7 +159,7 @@ public class PartnerAdsRepository(ILogger<PartnerAdsRepository> logger, SqliteDa
                 RETURNING Id
                 """, new PartnerAdsProductFeedDto(programId, feedLink, feedUpdated));
 
-                foreach (var product in feedProducts)
+                await foreach (var product in feedProducts)
                 {
                     var item = new PartnerAdsProductFeedItemDto(createdId, product);
                     await conn.ExecuteAsync("""

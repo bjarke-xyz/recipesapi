@@ -113,6 +113,8 @@ public class PartnerAdsPrograms
 [XmlRoot("produkt")]
 public class PartnerAdsFeedProduct
 {
+    [XmlIgnore, GraphQLIgnore]
+    public int? ItemId { get; set; }
     [XmlElement("forhandler")]
     public string? Retailer { get; set; }
 

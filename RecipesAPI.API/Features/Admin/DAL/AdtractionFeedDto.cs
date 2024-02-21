@@ -47,6 +47,7 @@ public class AdtractionProductFeedItemDto
         ManufacturerArticleNumber = product.ManufacturerArticleNumber;
         ExtrasJson = JsonConvert.SerializeObject(product.Extras);
     }
+    public int ItemId { get; set; }
     public int AdtractionProductFeedId { get; set; }
     public int ProgramId { get; set; } // manually set
     public int FeedId { get; set; } // manually set
@@ -70,6 +71,7 @@ public class AdtractionProductFeedItemDto
     {
         var feedProduct = new AdtractionFeedProduct
         {
+            ItemId = ItemId,
             Sku = Sku,
             Name = Name,
             Description = Description,

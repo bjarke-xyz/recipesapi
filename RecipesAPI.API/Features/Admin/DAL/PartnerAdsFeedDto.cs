@@ -43,6 +43,7 @@ public class PartnerAdsProductFeedItemDto
         ProductUrl = product.ProductUrl;
         ProgramId = product.ProgramId;
     }
+    public int ItemId { get; set; }
     public int PartnerAdsProductFeedId { get; set; }
     public int ProgramId { get; set; }
 
@@ -65,6 +66,7 @@ public class PartnerAdsProductFeedItemDto
     {
         var feedProduct = new PartnerAdsFeedProduct
         {
+            ItemId = ItemId,
             Retailer = Retailer,
             CategoryName = CategoryName,
             Brand = Brand,
