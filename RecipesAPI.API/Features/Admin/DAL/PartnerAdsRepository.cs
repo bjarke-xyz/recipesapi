@@ -124,7 +124,7 @@ public class PartnerAdsRepository(ILogger<PartnerAdsRepository> logger, SqliteDa
         return feedProducts;
     }
 
-    public async Task SaveProductFeed(string programId, string feedLink, DateTime feedUpdated, List<PartnerAdsFeedProduct> feedProducts)
+    public async Task SaveProductFeed(string programId, string feedLink, DateTime feedUpdated, IEnumerable<PartnerAdsFeedProduct> feedProducts)
     {
         ArgumentNullException.ThrowIfNull(feedLink);
         using var conn = context.CreateConnection();
@@ -154,12 +154,9 @@ public class PartnerAdsRepository(ILogger<PartnerAdsRepository> logger, SqliteDa
                 RETURNING Id
                 """, new PartnerAdsProductFeedDto(programId, feedLink, feedUpdated));
 
-                var feedItems = feedProducts
-                    .Select(p => new PartnerAdsProductFeedItemDto(createdId, p))
-                    .ToList();
-
-                foreach (var item in feedItems)
+                foreach (var product in feedProducts)
                 {
+                    var item = new PartnerAdsProductFeedItemDto(createdId, product);
                     await conn.ExecuteAsync("""
                 INSERT INTO PartnerAdsProductFeedItems
                 (PartnerAdsProductFeedId, Retailer, CategoryName, Brand, ProductName, ProductId, Description, NewPrice, OldPrice, DeliveryCost, StockQuantity, DeliveryTime, Size, ImageUrl, ProductUrl)

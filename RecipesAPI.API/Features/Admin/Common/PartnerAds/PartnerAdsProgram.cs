@@ -110,6 +110,7 @@ public class PartnerAdsPrograms
 
 }
 
+[XmlRoot("produkt")]
 public class PartnerAdsFeedProduct
 {
     [XmlElement("forhandler")]

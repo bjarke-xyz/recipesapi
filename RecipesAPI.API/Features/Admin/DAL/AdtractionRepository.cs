@@ -133,7 +133,7 @@ public class AdtractionRepository(SqliteDataContext context, ILogger<AdtractionR
         return feedProducts;
     }
 
-    public async Task SaveProductFeed(int programId, Feed feed, List<AdtractionFeedProduct> feedProducts)
+    public async Task SaveProductFeed(int programId, Feed feed, IEnumerable<AdtractionFeedProduct> feedProducts)
     {
         ArgumentNullException.ThrowIfNull(feed.FeedId);
         ArgumentNullException.ThrowIfNull(feed.LastUpdated);
@@ -164,12 +164,9 @@ public class AdtractionRepository(SqliteDataContext context, ILogger<AdtractionR
                 RETURNING Id
                 """, new AdtractionProductFeedDto(programId, feed));
 
-                var feedItems = feedProducts
-                    .Select(p => new AdtractionProductFeedItemDto(createdId, p))
-                    .ToList();
-
-                foreach (var item in feedItems)
+                foreach (var product in feedProducts)
                 {
+                    var item = new AdtractionProductFeedItemDto(createdId, product);
                     await conn.ExecuteAsync("""
                 INSERT INTO AdtractionProductFeedItems
                 (AdtractionProductFeedId, Sku, Name, Description, Category, Price, Shipping, Currency, InStock, ProductUrl, ImageUrl, TrackingUrl, Brand, OriginalPrice, Ean, ManufacturerArticleNumber, ExtrasJson)

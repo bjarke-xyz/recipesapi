@@ -1,4 +1,5 @@
 using System.Net.Http.Headers;
+using System.Xml;
 using System.Xml.Serialization;
 using Newtonsoft.Json;
 using RecipesAPI.API.Features.Admin.Common;
@@ -73,16 +74,15 @@ public class AdtractionService(ILogger<AdtractionService> logger, string url, st
         }
     }
 
-    public async Task<List<AdtractionFeedProduct>> ParseProductFeed(string feedUrl)
+    public IEnumerable<AdtractionFeedProduct> ParseProductFeed(string feedUrl)
     {
-        var xmlStream = await httpClient.GetStreamAsync(feedUrl);
-        var xmlSerializer = new XmlSerializer(typeof(AdtractionProductFeed));
-        IEnumerable<AdtractionFeedProduct> feedProducts = (xmlSerializer.Deserialize(xmlStream) as AdtractionProductFeed ?? new()).ProductFeed ?? new();
-        foreach (var p in feedProducts)
+        using var reader = XmlReader.Create(feedUrl);
+        var serializer = new XmlSerializer(typeof(AdtractionFeedProduct));
+        while (reader.ReadToFollowing("product"))
         {
-            p.SetExtrasFromXml();
+            var product = serializer.Deserialize(reader) as AdtractionFeedProduct;
+            if (product != null) yield return product;
         }
-        return feedProducts.ToList();
     }
 
     public async Task RefreshProductFeeds(string market, int channelId, int? programId, int? feedId)
@@ -103,7 +103,7 @@ public class AdtractionService(ILogger<AdtractionService> logger, string url, st
                 var feedDto = await adtractionRepository.GetProductFeed(program.ProgramId, feed.FeedId.Value);
                 if (feedDto == null || feedDto.LastUpdated < feed.LastUpdated)
                 {
-                    var productFeed = await ParseProductFeed(feed.FeedUrl);
+                    var productFeed = ParseProductFeed(feed.FeedUrl);
                     await adtractionRepository.SaveProductFeed(program.ProgramId, feed, productFeed);
                 }
 

@@ -154,6 +154,7 @@ public class AdtractionProductFeed
     public List<AdtractionFeedProduct> ProductFeed { get; set; } = new();
 }
 
+[XmlRoot("product")]
 public class AdtractionFeedProduct
 {
     [XmlElement("SKU")]

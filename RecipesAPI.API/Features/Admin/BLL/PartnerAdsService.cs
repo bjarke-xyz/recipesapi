@@ -1,3 +1,5 @@
+using System.Xml;
+using System.Xml.Linq;
 using System.Xml.Serialization;
 using RecipesAPI.API.Features.Admin.Common;
 using RecipesAPI.API.Features.Admin.DAL;
@@ -152,12 +154,15 @@ public class PartnerAdsService(string url, string key, HttpClient httpClient, IL
         }
     }
 
-    public async Task<List<PartnerAdsFeedProduct>> ParseProductFeed(string feedLink)
+    public IEnumerable<PartnerAdsFeedProduct> ParseProductFeed(string feedLink)
     {
-        var xmlStream = await httpClient.GetStreamAsync(feedLink);
-        var xmlSerializer = new XmlSerializer(typeof(PartnerAdsProductFeed));
-        var productFeed = (xmlSerializer.Deserialize(xmlStream) as PartnerAdsProductFeed ?? new()).Products ?? new();
-        return productFeed;
+        using var reader = XmlReader.Create(feedLink);
+        var serializer = new XmlSerializer(typeof(PartnerAdsFeedProduct));
+        while (reader.ReadToFollowing("produkt"))
+        {
+            var product = serializer.Deserialize(reader) as PartnerAdsFeedProduct;
+            if (product != null) yield return product;
+        }
     }
 
     public async Task RefreshProductFeeds(string? programId, string? feedLink)
@@ -174,7 +179,7 @@ public class PartnerAdsService(string url, string key, HttpClient httpClient, IL
                 var feedDto = await partnerAdsRepository.GetProductFeed(program.ProgramId, program.FeedLink);
                 if (feedDto == null || feedDto.FeedUpdated < program.FeedUpdated.Value)
                 {
-                    var productFeed = await ParseProductFeed(program.FeedLink);
+                    var productFeed = ParseProductFeed(program.FeedLink);
                     await partnerAdsRepository.SaveProductFeed(program.ProgramId, program.FeedLink, program.FeedUpdated.Value, productFeed);
 
                 }
