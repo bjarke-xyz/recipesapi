@@ -44,7 +44,7 @@ public class AffiliateService(AdtractionService adtractionService, PartnerAdsSer
             int? productCount = null;
             while (productCount == null || productCount == limit)
             {
-                var partnerAdsFeedProducts = await partnerAdsService.GetFeedProducts(partnerAdsProgram.ProgramId, partnerAdsProgram.FeedLink, null, null, null);
+                var partnerAdsFeedProducts = await partnerAdsService.GetFeedProducts(partnerAdsProgram.ProgramId, partnerAdsProgram.FeedLink, null, limit, null, true, afterId);
                 if (partnerAdsFeedProducts.Count == 0) break;
                 productCount = partnerAdsFeedProducts.Count;
                 afterId = partnerAdsFeedProducts.Last().ItemId;
