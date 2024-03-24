@@ -14,7 +14,7 @@ public class RecipeTests
   {
     var container = new ContainerBuilder()
       // remember to build Dockerfile.firebase using docker compose
-      .WithImage("recipesapi-firebase_emulator")
+      .WithImage("bjarkt/firebase_emulator")
       .WithPortBinding(4000, true)
       .WithPortBinding(8080, true)
       .WithWaitStrategy(Wait.ForUnixContainer().UntilHttpRequestIsSucceeded(r => r.ForPort(4000)))

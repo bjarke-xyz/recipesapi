@@ -2,6 +2,7 @@ version: "3.8"
 
 services:
   firebase_emulator:
+    image: bjarkt/firebase_emulator
     build:  
       context: .
       dockerfile: Dockerfile.firebase
