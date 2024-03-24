@@ -36,7 +36,6 @@ public class AdtractionRepository(SqliteDataContext context, ILogger<AdtractionR
     {
         using var conn = context.CreateConnection();
         conn.Open();
-        using var tx = conn.BeginTransaction();
         var dtos = new List<AdtractionProductFeedItemDto>();
         foreach (var (programId, feedId, sku) in itemIdentifiers)
         {
@@ -47,13 +46,12 @@ public class AdtractionRepository(SqliteDataContext context, ILogger<AdtractionR
             WHERE item.Sku = @sku AND feed.ProgramId = @programId AND feed.FeedId = @feedId
             LIMIT 1
             """;
-            var dto = await conn.QueryFirstOrDefaultAsync<AdtractionProductFeedItemDto>(sql, new { programId, feedId, sku }, tx);
+            var dto = await conn.QueryFirstOrDefaultAsync<AdtractionProductFeedItemDto>(sql, new { programId, feedId, sku });
             if (dto != null)
             {
                 dtos.Add(dto);
             }
         }
-        tx.Commit();
         return dtos.Select(dto => dto.ToFeedProduct()).ToList();
     }
 

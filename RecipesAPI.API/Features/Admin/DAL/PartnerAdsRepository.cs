@@ -33,7 +33,6 @@ public class PartnerAdsRepository(ILogger<PartnerAdsRepository> logger, SqliteDa
     {
         using var conn = context.CreateConnection();
         conn.Open();
-        using var tx = conn.BeginTransaction();
         var dtos = new List<PartnerAdsProductFeedItemDto>();
         foreach (var (programId, productId) in itemIdentifiers)
         {
@@ -44,13 +43,12 @@ public class PartnerAdsRepository(ILogger<PartnerAdsRepository> logger, SqliteDa
         WHERE feed.ProgramId = @programId AND item.ProductId = @productId
         LIMIT 1
         """;
-            var dto = await conn.QuerySingleOrDefaultAsync<PartnerAdsProductFeedItemDto>(sql, new { programId, productId }, tx);
+            var dto = await conn.QuerySingleOrDefaultAsync<PartnerAdsProductFeedItemDto>(sql, new { programId, productId });
             if (dto != null)
             {
                 dtos.Add(dto);
             }
         }
-        tx.Commit();
         return dtos.Select(x => x.ToFeedProduct()).ToList();
     }
 
