@@ -6,7 +6,13 @@ namespace RecipesAPI.API.Features.Admin.Common;
 
 public class AffiliateItem
 {
-    public AffiliateItem() { }
+    public AffiliateItem()
+    {
+        ItemReference = new AffiliateItemReference
+        {
+            Provider = AffiliateProvider.NoValue,
+        };
+    }
     public AffiliateItem(AdtractionFeedProduct adtractionFeedProduct)
     {
         Provider = AffiliateProvider.Adtraction;

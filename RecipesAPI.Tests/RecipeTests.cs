@@ -10,8 +10,9 @@ namespace RecipesAPI.Tests;
 public class RecipeTests
 {
   [TestCase]
-  public async Task TestTest()
+  public Task TestTest()
   {
+    return Task.CompletedTask;
     // var container = new ContainerBuilder()
     //   // remember to build Dockerfile.firebase using docker compose
     //   .WithImage("bjarkt/firebase_emulator")
