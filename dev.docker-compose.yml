@@ -1,6 +1,17 @@
 version: "3.8"
 
 services:
+  firebase_emulator:
+    build:  
+      context: .
+      dockerfile: Dockerfile.firebase
+    ports:
+      - "8080:8080" # firestore
+      - "9099:9099" # auth
+      - "4000:4000" # ui
+      - "4400:4400" # emulator hub
+      - "9150:9150" # ui websocket
+
   grafana_agent:
     image: grafana/agent:v0.39.2
     entrypoint:
@@ -18,3 +29,44 @@ services:
     volumes:
       - "./data/grafana-data:/etc/agent/data"
       - "./grafana/agent.yaml:/etc/agent/agent.yaml"
+
+# configs:
+#   firebasejson:
+#     content: |
+#       {
+#         "emulators": {
+#           "auth": {
+#             "port": 9099,
+#             "host": "0.0.0.0"
+#           },
+#           "functions": {
+#             "port": 5001,
+#             "host": "0.0.0.0"
+#           },
+#           "firestore": {
+#             "port": 8080,
+#             "host": "0.0.0.0"
+#           },
+#           "hosting": {
+#             "port": 5000,
+#             "host": "0.0.0.0"
+#           },
+#           "hub": {
+#             "host": "0.0.0.0",
+#             "port": 4400
+#           },
+#           "logging": {
+#             "host": "0.0.0.0",
+#             "port": 4500
+#           },
+#           "eventarc": {
+#             "host": "0.0.0.0",
+#             "port": 9299
+#           },
+#           "ui": {
+#             "enabled": true,
+#             "port": 4000,
+#             "host": "0.0.0.0"
+#           },
+#         }
+#       }

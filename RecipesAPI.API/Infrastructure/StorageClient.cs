@@ -140,6 +140,98 @@ public class GoogleStorageClient : IStorageClient
     }
 }
 
+public class FileStorageClient : IStorageClient, IDisposable
+{
+    private readonly string dataDir;
+    private readonly string metadataDir;
+
+
+    public FileStorageClient(string dataDir, string metadataDir)
+    {
+        this.dataDir = dataDir;
+        this.metadataDir = metadataDir;
+    }
+
+    public Task Delete(string bucket, string key, CancellationToken cancellationToken)
+    {
+        var dataFilepath = System.IO.Path.Join(dataDir, bucket, key);
+        if (File.Exists(dataFilepath))
+        {
+            File.Delete(dataFilepath);
+        }
+        var metadataFilepath = System.IO.Path.Join(metadataDir, bucket, key);
+        if (File.Exists(metadataFilepath))
+        {
+            File.Delete(metadataFilepath);
+        }
+        return Task.CompletedTask;
+    }
+
+    public Task<string> GetSignedUploadUrl(string bucket, string key, string contentType, ulong contentLength, CancellationToken cancellationToken)
+    {
+        return Task.FromResult("");
+    }
+
+    private void CreateDirIfNotExists(string filepath)
+    {
+        var dir = System.IO.Path.GetDirectoryName(filepath);
+        if (string.IsNullOrEmpty(dir)) return;
+
+        if (!Directory.Exists(dir))
+        {
+            Directory.CreateDirectory(dir);
+        }
+    }
+
+    public async Task PutStream(string bucket, string key, Stream data, string contentType, CancellationToken cancellationToken)
+    {
+        var filepath = System.IO.Path.Join(dataDir, bucket, key);
+        CreateDirIfNotExists(filepath);
+        using var file = File.Create(filepath);
+        await data.CopyToAsync(file, cancellationToken);
+
+        var metadataFilepath = System.IO.Path.Join(metadataDir, bucket, key);
+        CreateDirIfNotExists(metadataFilepath);
+        await File.WriteAllTextAsync(metadataFilepath, contentType, cancellationToken);
+    }
+
+    public async Task<(byte[]?, string? contentType)> Get(string bucket, string key, CancellationToken cancellationToken)
+    {
+        var filepath = System.IO.Path.Join(dataDir, bucket, key);
+        CreateDirIfNotExists(filepath);
+        var bytes = await File.ReadAllBytesAsync(filepath, cancellationToken);
+
+        var metadataFilepath = System.IO.Path.Join(metadataDir, bucket, key);
+        CreateDirIfNotExists(metadataFilepath);
+        var contentType = await File.ReadAllTextAsync(metadataFilepath, cancellationToken);
+        return (bytes, contentType);
+    }
+
+    public async Task<(Stream?, string? contentType)> GetStream(string bucket, string key, CancellationToken cancellationToken)
+    {
+        var filepath = System.IO.Path.Join(dataDir, bucket, key);
+        CreateDirIfNotExists(filepath);
+        var stream = new FileStream(filepath, FileMode.Open, FileAccess.Read, FileShare.Read);
+
+        var metadataFilepath = System.IO.Path.Join(metadataDir, bucket, key);
+        CreateDirIfNotExists(metadataFilepath);
+        var contentType = await File.ReadAllTextAsync(metadataFilepath, cancellationToken);
+        return (stream, contentType);
+    }
+
+    public void Dispose()
+    {
+        if (Directory.Exists(this.dataDir))
+        {
+            Directory.Delete(this.dataDir, true);
+        }
+        if (Directory.Exists(this.metadataDir))
+        {
+            Directory.Delete(this.metadataDir, true);
+        }
+    }
+}
+
 public interface IStorageClient
 {
     Task Delete(string bucket, string key, CancellationToken cancellationToken);
