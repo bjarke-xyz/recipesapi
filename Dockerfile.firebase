@@ -8,4 +8,4 @@ WORKDIR /app
 
 COPY ./firebase.json ./firebase.json
 
-CMD ["firebase", "--config", "firebase.json", "--project", "demo", "emulators:start", "--only", "firestore,auth"]
+CMD ["firebase", "--config", "firebase.json", "--project", "demo-recipesapi", "emulators:start", "--only", "firestore,auth"]

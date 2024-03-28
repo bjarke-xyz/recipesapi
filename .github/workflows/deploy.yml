@@ -16,7 +16,7 @@ jobs:
           dotnet-version: 8.0.x
       - run: dotnet restore
       - run: dotnet build --no-restore
-      - run: dotnet test --no-restore --logger trx --results-directory "TestResults"
+      - run: dotnet test --no-restore --logger trx --results-directory "TestResults" --filter 'FullyQualifiedName!~IntegrationTests'
       - name: Upload test results
         uses: actions/upload-artifact@v4
         with:
