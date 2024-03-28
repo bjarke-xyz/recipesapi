@@ -1,7 +1,7 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 
-export default async function () {
+export default async function() {
 	const query = `
 	fragment SimpleRecipe on Recipe {
 id
@@ -66,7 +66,9 @@ query GetRecipes($filter: RecipeFilterInput) {
 	const headers = {
 		"Content-Type": "application/json",
 	};
-	const res = http.post("https://recipesapi.bjarke.xyz/graphql", JSON.stringify(data), { headers });
+	let baseUrl = "https://recipesapi.bjarke.xyz"
+	baseUrl = "http://localhost:5003"
+	const res = http.post(`${baseUrl}/graphql`, JSON.stringify(data), { headers });
 	check(res, { 'success get recipes': r => r.status === 200 });
 
 	sleep(0.3);
