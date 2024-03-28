@@ -115,6 +115,17 @@ builder.Services
     //     var redis = sp.GetRequiredService<IConnectionMultiplexer>();
     //     return new RedisCacheProvider(distributedCache, keyPrefix, redis);
     // })
+    .AddSingleton<RecipesAPI.API.Infrastructure.Serializers.ISerializer>(sp =>
+    {
+        var serializerTag = builder.Configuration["SQLITE_CACHE_SERIALIZER"];
+        Log.Information("serializer: {serializer}", serializerTag);
+        return serializerTag switch
+        {
+            // RecipesAPI.API.Infrastructure.Serializers.MyCborSerializer.Tag => new RecipesAPI.API.Infrastructure.Serializers.MyCborSerializer(),
+            RecipesAPI.API.Infrastructure.Serializers.MyJsonSerializer.Tag => new RecipesAPI.API.Infrastructure.Serializers.MyJsonSerializer(),
+            _ or RecipesAPI.API.Infrastructure.Serializers.MyMessagePackSerializer.Tag => new RecipesAPI.API.Infrastructure.Serializers.MyMessagePackSerializer(),
+        };
+    })
     .AddSingleton<ICacheProvider, SqliteCacheProvider>()
     .AddSingleton<SqliteCacheProvider>()
     .AddSingleton<S3StorageClient>(sp =>

@@ -1,8 +1,6 @@
-using System.Collections;
 using System.Data;
 using Dapper;
 using Microsoft.Data.Sqlite;
-using Serilog;
 
 namespace RecipesAPI.API.Infrastructure;
 
@@ -17,39 +15,27 @@ public class SqliteDataContext
 
     public IDbConnection CreateConnection()
     {
-        return new SqliteConnection(configuration.GetConnectionString("LocalData"));
+        var conn = new SqliteConnection(configuration.GetConnectionString("LocalData"));
+        SetPragmas(conn);
+        return conn;
     }
 
     public IDbConnection CreateCacheConnection()
     {
-        return new SqliteConnection(configuration.GetConnectionString("SqliteCache"));
+        var conn = new SqliteConnection(configuration.GetConnectionString("SqliteCache"));
+        SetPragmas(conn);
+        return conn;
     }
 
-    private void DeleteOldDb()
+    private void SetPragmas(SqliteConnection conn)
     {
-        try
-        {
-            var oldDataSource = configuration.GetConnectionString("LocalDataOld");
-            var parts = oldDataSource?.Split("=");
-            if (parts?.Length >= 2)
-            {
-                var path = parts[1];
-                if (File.Exists(path))
-                {
-                    File.Delete(path);
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Log.Error(ex, "error deleting old db");
-        }
-
+        conn.Open();
+        using var command = new SqliteCommand("PRAGMA journal_mode=WAL", conn);
+        command.ExecuteNonQuery();
     }
 
     public async Task Init()
     {
-        DeleteOldDb();
         using var connection = CreateConnection();
         await _initProductFeed(connection);
 

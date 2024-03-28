@@ -3,10 +3,9 @@ using Microsoft.Extensions.Caching.Distributed;
 using StackExchange.Redis;
 using Dapper;
 using System.Data;
-using MessagePack;
 using System.Diagnostics;
-using OpenTelemetry.Trace;
 using System.Runtime.CompilerServices;
+using RecipesAPI.API.Infrastructure.Serializers;
 
 namespace RecipesAPI.API.Infrastructure;
 
@@ -114,17 +113,16 @@ public class RedisCacheProvider : ICacheProvider
 /// </remarks>
 /// <param name="logger"></param>
 /// <param name="sqliteDataContext"></param>
-public class SqliteCacheProvider(ILogger<SqliteCacheProvider> logger, SqliteDataContext sqliteDataContext) : ICacheProvider
+/// <param name="serializer"></param>
+public class SqliteCacheProvider(ILogger<SqliteCacheProvider> logger, SqliteDataContext sqliteDataContext, ISerializer serializer) : ICacheProvider
 {
     private readonly TimeSpan defaultExpiration = TimeSpan.FromHours(1);
 
     private readonly ILogger<SqliteCacheProvider> logger = logger;
     private readonly SqliteDataContext sqliteDataContext = sqliteDataContext;
 
-    private static bool EmptyCollectionHack(byte[] val)
-    {
-        return val.Length == 1 && (val[0] == 144 || val[0] == 128);
-    }
+    private readonly ISerializer serializer = serializer;
+
 
     private static Activity? StartActivity(string key, [CallerMemberName] string method = "")
     {
@@ -142,22 +140,25 @@ public class SqliteCacheProvider(ILogger<SqliteCacheProvider> logger, SqliteData
     {
         activity?.SetStatus(ActivityStatusCode.Error, ex.Message);
     }
+    private string GetKey(string key)
+    {
+        return $"{serializer.GetTag()}{key}";
+    }
+    private IReadOnlyList<string> GetKeys(IEnumerable<string> keys)
+    {
+        return keys.Select(GetKey).ToList();
+    }
 
     public async Task<T?> Get<T>(string key, CancellationToken cancellationToken = default) where T : class
     {
+        key = GetKey(key);
         using var activity = StartActivity(key);
         try
         {
             using var conn = sqliteDataContext.CreateCacheConnection();
             var val = await conn.QueryFirstOrDefaultAsync<byte[]>("SELECT Val FROM kv WHERE Key = @key", new { key });
             if (val == null) return null;
-            if (EmptyCollectionHack(val))
-            {
-                // hack to fix empty collections throwing an error on deserialize
-                var empty = (T?)Activator.CreateInstance(typeof(T));
-                return empty;
-            }
-            var deserialized = MessagePackSerializer.Deserialize<T>(val, MessagePack.Resolvers.ContractlessStandardResolver.Options, cancellationToken);
+            var deserialized = await serializer.Deserialize<T>(val, cancellationToken);
             return deserialized;
         }
         catch (Exception ex)
@@ -171,6 +172,7 @@ public class SqliteCacheProvider(ILogger<SqliteCacheProvider> logger, SqliteData
     public async Task<List<T?>> Get<T>(IReadOnlyList<string> keys, CancellationToken cancellationToken = default) where T : class
     {
         if (keys == null || keys.Count == 0) return [];
+        keys = GetKeys(keys);
         using var activity = StartActivity(keys);
         try
         {
@@ -182,17 +184,8 @@ public class SqliteCacheProvider(ILogger<SqliteCacheProvider> logger, SqliteData
             {
                 if (valuesByKey.TryGetValue(key, out var val))
                 {
-                    if (EmptyCollectionHack(val))
-                    {
-                        // hack to fix empty collections throwing an error on deserialize
-                        var empty = (T?)Activator.CreateInstance(typeof(T));
-                        result.Add(empty);
-                    }
-                    else
-                    {
-                        var deserialized = MessagePackSerializer.Deserialize<T>(val, MessagePack.Resolvers.ContractlessStandardResolver.Options, cancellationToken);
-                        result.Add(deserialized);
-                    }
+                    var deserialized = await serializer.Deserialize<T>(val, cancellationToken);
+                    result.Add(deserialized);
                 }
                 else
                 {
@@ -212,6 +205,7 @@ public class SqliteCacheProvider(ILogger<SqliteCacheProvider> logger, SqliteData
 
     public async Task Put<T>(string key, T value, TimeSpan? expiration = null, CancellationToken cancellationToken = default) where T : class
     {
+        key = GetKey(key);
         using var activity = StartActivity(key);
         try
         {
@@ -228,18 +222,20 @@ public class SqliteCacheProvider(ILogger<SqliteCacheProvider> logger, SqliteData
     public async Task Put<T>(IReadOnlyDictionary<string, T> keyValuePairs, TimeSpan? expiration = null, CancellationToken cancellationToken = default) where T : class
     {
         if (keyValuePairs == null || keyValuePairs.Count == 0) return;
-        using var activity = StartActivity(keyValuePairs.Select(x => x.Key));
+        var keys = GetKeys(keyValuePairs.Select(x => x.Key));
+        using var activity = StartActivity(keys);
         try
         {
             using var conn = sqliteDataContext.CreateCacheConnection();
-            foreach (var (key, val) in keyValuePairs)
+            foreach (var (_key, val) in keyValuePairs)
             {
+                var key = GetKey(_key);
                 await InternalPut(conn, key, val, expiration, cancellationToken);
             }
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Put failed. keys={@keys}", keyValuePairs.Select(x => x.Key).ToList());
+            logger.LogError(ex, "Put failed. keys={@keys}", keys);
             SetError(activity, ex);
         }
     }
@@ -252,7 +248,7 @@ public class SqliteCacheProvider(ILogger<SqliteCacheProvider> logger, SqliteData
              new
              {
                  Key = key,
-                 Val = MessagePackSerializer.Serialize(value, MessagePack.Resolvers.ContractlessStandardResolver.Options, cancellationToken),
+                 Val = await serializer.Serialize(value, cancellationToken),
                  CreatedAt = now,
                  ExpireAt = now.Add(expiration ?? defaultExpiration)
              });
@@ -260,6 +256,7 @@ public class SqliteCacheProvider(ILogger<SqliteCacheProvider> logger, SqliteData
 
     public async Task Remove(string key, CancellationToken cancellationToken = default)
     {
+        key = GetKey(key);
         using var activity = StartActivity(key);
         try
         {
@@ -275,6 +272,7 @@ public class SqliteCacheProvider(ILogger<SqliteCacheProvider> logger, SqliteData
 
     public async Task RemoveByPrefix(string keyPrefix, CancellationToken cancellationToken = default)
     {
+        keyPrefix = GetKey(keyPrefix);
         using var activity = StartActivity(keyPrefix);
         try
         {
