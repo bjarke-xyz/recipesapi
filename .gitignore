@@ -11,9 +11,9 @@
 *serviceaccount*.json
 .env
 
-LocalData.db
-LocalData-v2.db
-SqliteCache.db
+LocalData.db*
+LocalData-v2.db*
+SqliteCache.db*
 
 data
 
