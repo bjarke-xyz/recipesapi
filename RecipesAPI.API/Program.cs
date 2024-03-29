@@ -39,6 +39,7 @@ using System.Text;
 using Serilog.Sinks.Slack;
 using Serilog.Sinks.Slack.Models;
 using Google.Cloud.Storage.V1;
+using FirebaseAdmin.Auth;
 
 CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
 
@@ -155,7 +156,8 @@ builder.Services
     .AddSingleton(sp =>
     {
         var db = sp.GetRequiredService<FirestoreDb>();
-        return new UserRepository(builder.Configuration["FirebaseWebApiKey"]!, db, sp.GetRequiredService<ILogger<UserRepository>>());
+        var webApiBaseUrl = "https://identitytoolkit.googleapis.com";
+        return new UserRepository(webApiBaseUrl, builder.Configuration["FirebaseWebApiKey"]!, db, FirebaseAuth.DefaultInstance, sp.GetRequiredService<ILogger<UserRepository>>());
     })
     .AddSingleton<FoodRepository>(sp =>
     {

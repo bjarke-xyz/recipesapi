@@ -7,22 +7,16 @@ using RecipesAPI.API.Features.Users.Common;
 
 namespace RecipesAPI.API.Features.Users.DAL;
 
-public class UserRepository
+public class UserRepository(string firebaseWebApiBaseUrl, string firebaseWebApiKey, FirestoreDb db, FirebaseAuth auth, ILogger<UserRepository> logger)
 {
-    private readonly string firebaseWebApiKey;
-    private readonly HttpClient httpClient;
-    private readonly FirestoreDb db;
-    private readonly ILogger<UserRepository> logger;
+    private readonly string firebaseWebApiBaseUrl = firebaseWebApiBaseUrl;
+    private readonly string firebaseWebApiKey = firebaseWebApiKey;
+    private readonly HttpClient httpClient = new HttpClient();
+    private readonly FirestoreDb db = db;
+    private readonly FirebaseAuth auth = auth;
+    private readonly ILogger<UserRepository> logger = logger;
 
     private const string usersCollection = "users";
-
-    public UserRepository(string firebaseWebApiKey, FirestoreDb db, ILogger<UserRepository> logger)
-    {
-        this.firebaseWebApiKey = firebaseWebApiKey;
-        this.db = db;
-        httpClient = new HttpClient();
-        this.logger = logger;
-    }
 
     private User? MapUserRecord(UserRecord? userRecord)
     {
@@ -74,7 +68,7 @@ public class UserRepository
                 requestType = "PASSWORD_RESET",
                 email = email,
             };
-            var resp = await httpClient.PostAsJsonAsync($"https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key={firebaseWebApiKey}", payload, cancellationToken: cancellationToken);
+            var resp = await httpClient.PostAsJsonAsync($"{firebaseWebApiBaseUrl}/v1/accounts:sendOobCode?key={firebaseWebApiKey}", payload, cancellationToken: cancellationToken);
             if (!resp.IsSuccessStatusCode)
             {
                 var respBody = await resp.Content.ReadAsStringAsync();
@@ -96,7 +90,7 @@ public class UserRepository
                 requestType = "VERIFY_EMAIL",
                 idToken = idToken
             };
-            var resp = await httpClient.PostAsJsonAsync($"https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key={firebaseWebApiKey}", payload);
+            var resp = await httpClient.PostAsJsonAsync($"{firebaseWebApiBaseUrl}/v1/accounts:sendOobCode?key={firebaseWebApiKey}", payload);
             if (!resp.IsSuccessStatusCode)
             {
                 var respBody = await resp.Content.ReadAsStringAsync();
@@ -111,14 +105,14 @@ public class UserRepository
 
     public async Task<int> GetUserCount(CancellationToken cancellationToken)
     {
-        var count = await FirebaseAuth.DefaultInstance.ListUsersAsync(null).CountAsync();
+        var count = await auth.ListUsersAsync(null).CountAsync();
         return count;
     }
 
     public async Task<List<User>> GetUsers(CancellationToken cancellationToken)
     {
         var users = new List<User>();
-        var enumerator = FirebaseAuth.DefaultInstance.ListUsersAsync(null).GetAsyncEnumerator();
+        var enumerator = auth.ListUsersAsync(null).GetAsyncEnumerator(cancellationToken);
         while (await enumerator.MoveNextAsync())
         {
             ExportedUserRecord userRecord = enumerator.Current;
@@ -130,13 +124,13 @@ public class UserRepository
 
     public async Task<string> GetUserIdFromToken(string idToken, CancellationToken cancellationToken)
     {
-        var decodedToken = await FirebaseAuth.DefaultInstance.VerifyIdTokenAsync(idToken, cancellationToken);
+        var decodedToken = await auth.VerifyIdTokenAsync(idToken, cancellationToken);
         return decodedToken.Uid;
     }
 
     public async Task<User?> GetUserById(string userId, CancellationToken cancellationToken)
     {
-        var userRecord = await FirebaseAuth.DefaultInstance.GetUserAsync(userId, cancellationToken);
+        var userRecord = await auth.GetUserAsync(userId, cancellationToken);
         return MapUserRecord(userRecord);
     }
 
@@ -156,20 +150,69 @@ public class UserRepository
         return MapDto(dto);
     }
 
+    public async Task SyncUsers(List<string>? userIds, CancellationToken cancellationToken)
+    {
+        // TODO: if userIds?.Count > 0, only get those users from auth
+        var userRecords = await GetUsers(cancellationToken);
+        var userRecordIdentifiers = userRecords.Select(x => x.Id);
+        var userRecordIdsSet = userRecordIdentifiers.ToHashSet();
+        var userInfos = await GetUserInfos(userRecordIdentifiers.ToList(), cancellationToken);
+        foreach (var uf in userInfos)
+        {
+            if (userRecordIdsSet.Contains(uf.UserId))
+            {
+                userRecordIdsSet.Remove(uf.UserId);
+            }
+        }
+
+        // create missing
+        foreach (var userId in userRecordIdsSet)
+        {
+            var userInfo = CreateDefaultUserInfo(userId);
+            await this.UpdateUserInfo(userId, userInfo, cancellationToken);
+        }
+    }
+
+    private static UserInfo CreateDefaultUserInfo(string userId)
+    {
+        return new UserInfo
+        {
+            BookmarkedRecipes = [],
+            Name = "",
+            Role = Role.USER,
+            UserId = userId,
+        };
+
+    }
+
     public async Task<UserInfo> GetUserInfoOrDefault(string userId, CancellationToken cancellationToken)
     {
         var userInfo = await GetUserInfo(userId, cancellationToken);
         if (userInfo == null)
         {
-            userInfo = new UserInfo
-            {
-                BookmarkedRecipes = [],
-                Name = "",
-                Role = Role.USER,
-                UserId = userId,
-            };
+            userInfo = CreateDefaultUserInfo(userId);
         }
         return userInfo;
+    }
+
+    public async Task<List<UserInfo>> GetUserInfos(CancellationToken cancellationToken)
+    {
+        var snapshot = await db.Collection(usersCollection).GetSnapshotAsync(cancellationToken);
+        var userInfos = new List<UserInfo>();
+        foreach (var doc in snapshot.Documents)
+        {
+            var dto = doc.ConvertTo<UserInfoDto>();
+            if (string.IsNullOrEmpty(dto.UserId))
+            {
+                dto.UserId = doc.Id;
+            }
+            var userInfo = MapDto(dto);
+            if (userInfo != null)
+            {
+                userInfos.Add(userInfo);
+            }
+        }
+        return userInfos;
     }
 
     public async Task<List<UserInfo>> GetUserInfos(List<string> userIds, CancellationToken cancellationToken)
@@ -178,7 +221,7 @@ public class UserRepository
         {
             return new List<UserInfo>();
         }
-        var snapshot = await db.Collection(usersCollection).WhereIn(FieldPath.DocumentId, userIds).GetSnapshotAsync();
+        var snapshot = await db.Collection(usersCollection).WhereIn(FieldPath.DocumentId, userIds).GetSnapshotAsync(cancellationToken);
         var userInfos = new List<UserInfo>();
         foreach (var doc in snapshot.Documents)
         {
@@ -204,7 +247,7 @@ public class UserRepository
             Password = password,
             DisplayName = displayName,
         };
-        var userRecord = await FirebaseAuth.DefaultInstance.CreateUserAsync(args, cancellationToken);
+        var userRecord = await auth.CreateUserAsync(args, cancellationToken);
         var userInfo = new UserInfoDto
         {
             UserId = userRecord.Uid,
@@ -228,7 +271,7 @@ public class UserRepository
         {
             args.Password = password;
         }
-        var userRecord = await FirebaseAuth.DefaultInstance.UpdateUserAsync(args);
+        var userRecord = await auth.UpdateUserAsync(args);
         return MapUserRecord(userRecord);
     }
 
@@ -262,7 +305,7 @@ public class UserRepository
         var request = new HttpRequestMessage
         {
             Method = HttpMethod.Post,
-            RequestUri = new Uri("https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=" + this.firebaseWebApiKey),
+            RequestUri = new Uri("{firebaseWebApiBaseUrl}/v1/accounts:signInWithPassword?key=" + firebaseWebApiKey),
             Content = requestBodyContent,
         };
         var response = await httpClient.SendAsync(request, cancellationToken);
@@ -285,7 +328,7 @@ public class UserRepository
         var request = new HttpRequestMessage
         {
             Method = HttpMethod.Post,
-            RequestUri = new Uri("https://securetoken.googleapis.com/v1/token?key=" + this.firebaseWebApiKey),
+            RequestUri = new Uri("https://securetoken.googleapis.com/v1/token?key=" + firebaseWebApiKey),
             Content = requestBodyContent,
         };
         var response = await httpClient.SendAsync(request, cancellationToken);

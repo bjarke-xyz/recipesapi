@@ -116,13 +116,13 @@ public class UserService : ICacheKeyGetter
 
     public async Task<User?> GetUserById(string userId, CancellationToken cancellationToken)
     {
-        var cached = await cache.Get<User>(UserByIdCacheKey(userId));
+        var cached = await cache.Get<User>(UserByIdCacheKey(userId), cancellationToken);
         if (cached == null)
         {
             cached = await userRepository.GetUserById(userId, cancellationToken);
             if (cached != null)
             {
-                await cache.Put(UserByIdCacheKey(userId), cached);
+                await cache.Put(UserByIdCacheKey(userId), cached, cancellationToken: cancellationToken);
             }
         }
         if (cached != null)
@@ -173,6 +173,11 @@ public class UserService : ICacheKeyGetter
         if (cached == null)
         {
             cached = await userRepository.GetUserInfo(userId, cancellationToken);
+            if (cached == null)
+            {
+                await SyncUsers([userId], cancellationToken);
+                cached = await userRepository.GetUserInfo(userId, cancellationToken);
+            }
             if (cached != null)
             {
                 await cache.Put(UserInfoByIdCacheKey(userId), cached);
@@ -243,6 +248,11 @@ public class UserService : ICacheKeyGetter
     {
         await userRepository.SetBookmarkedRecipes(userId, recipeIds, cancellationToken);
         await ClearCache(userId);
+    }
+
+    public async Task SyncUsers(List<string>? userIds, CancellationToken cancellationToken)
+    {
+        await userRepository.SyncUsers(userIds, cancellationToken);
     }
 
 
