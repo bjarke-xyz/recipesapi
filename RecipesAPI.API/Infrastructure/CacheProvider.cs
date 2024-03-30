@@ -6,6 +6,8 @@ using System.Data;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using RecipesAPI.API.Infrastructure.Serializers;
+using System.Diagnostics.Metrics;
+using Prometheus;
 
 namespace RecipesAPI.API.Infrastructure;
 
@@ -108,9 +110,6 @@ public class RedisCacheProvider : ICacheProvider
 /// <summary>
 /// Sqlite cache provider
 /// </summary>
-/// <remarks>
-/// TODO: Consider CBOR as alternative to messagepack
-/// </remarks>
 /// <param name="logger"></param>
 /// <param name="sqliteDataContext"></param>
 /// <param name="serializer"></param>
@@ -122,6 +121,14 @@ public class SqliteCacheProvider(ILogger<SqliteCacheProvider> logger, SqliteData
     private readonly SqliteDataContext sqliteDataContext = sqliteDataContext;
 
     private readonly ISerializer serializer = serializer;
+
+    private static readonly Counter cacheRequests = Metrics
+    .CreateCounter("recipesapi_cache_requests", "Number of cache requests.", labelNames: ["key"]);
+    private static readonly Counter cacheMisses = Metrics
+    .CreateCounter("recipesapi_cache_misses", "Number of cache misses.", labelNames: ["key"]);
+    private static readonly Counter cacheHits = Metrics
+    .CreateCounter("recipesapi_cache_hits", "Number of cache hits.", labelNames: ["key"]);
+
 
 
     private static Activity? StartActivity(string key, [CallerMemberName] string method = "")
@@ -144,7 +151,7 @@ public class SqliteCacheProvider(ILogger<SqliteCacheProvider> logger, SqliteData
     {
         return $"{serializer.GetTag()}{key}";
     }
-    private IReadOnlyList<string> GetKeys(IEnumerable<string> keys)
+    private List<string> GetKeys(IEnumerable<string> keys)
     {
         return keys.Select(GetKey).ToList();
     }
@@ -152,12 +159,18 @@ public class SqliteCacheProvider(ILogger<SqliteCacheProvider> logger, SqliteData
     public async Task<T?> Get<T>(string key, CancellationToken cancellationToken = default) where T : class
     {
         key = GetKey(key);
+        cacheRequests.WithLabels(key).Inc();
         using var activity = StartActivity(key);
         try
         {
             using var conn = sqliteDataContext.CreateCacheConnection();
             var val = await conn.QueryFirstOrDefaultAsync<byte[]>("SELECT Val FROM kv WHERE Key = @key", new { key });
-            if (val == null) return null;
+            if (val == null)
+            {
+                cacheMisses.WithLabels(key).Inc();
+                return null;
+            }
+            cacheHits.WithLabels(key).Inc();
             var deserialized = await serializer.Deserialize<T>(val, cancellationToken);
             return deserialized;
         }
@@ -173,6 +186,10 @@ public class SqliteCacheProvider(ILogger<SqliteCacheProvider> logger, SqliteData
     {
         if (keys == null || keys.Count == 0) return [];
         keys = GetKeys(keys);
+        foreach (var k in keys)
+        {
+            cacheRequests.WithLabels(k).Inc();
+        }
         using var activity = StartActivity(keys);
         try
         {
@@ -184,11 +201,13 @@ public class SqliteCacheProvider(ILogger<SqliteCacheProvider> logger, SqliteData
             {
                 if (valuesByKey.TryGetValue(key, out var val))
                 {
+                    cacheHits.WithLabels(key).Inc();
                     var deserialized = await serializer.Deserialize<T>(val, cancellationToken);
                     result.Add(deserialized);
                 }
                 else
                 {
+                    cacheMisses.WithLabels(key).Inc();
                     result.Add(null);
                 }
             }

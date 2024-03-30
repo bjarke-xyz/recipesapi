@@ -143,7 +143,15 @@ public class RatingsService(RatingsRepository ratingsRepository, ILogger<Ratings
         {
             await cache.Put(ReactionsCacheKey(type, reaction.Key), reaction.Value, cancellationToken: cancellationToken);
             result[reaction.Key] = reaction.Value;
+            mutableIds.Remove(reaction.Key);
         }
+
+        // load cache with empty values for remaining ids, so we dont hit firestore directly every time for these
+        foreach (var id in mutableIds)
+        {
+            await cache.Put(ReactionsCacheKey(type, id), new List<Reaction>(), cancellationToken: cancellationToken);
+        }
+
         return await ratingsRepository.GetReactions(type, ids, cancellationToken);
     }
 
