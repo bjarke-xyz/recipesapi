@@ -13,7 +13,7 @@ public class EquipmentDataLoader : BatchDataLoader<string, EquipmentItem>
 
     protected override async Task<IReadOnlyDictionary<string, EquipmentItem>> LoadBatchAsync(IReadOnlyList<string> keys, CancellationToken cancellationToken)
     {
-        var equipment = await equipmentService.GetEquipmentByIds(keys, cancellationToken);
+        var equipment = await equipmentService.GetEquipmentByIdsV2(keys, cancellationToken);
         return equipment;
     }
 }

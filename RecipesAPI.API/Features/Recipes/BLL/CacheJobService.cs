@@ -63,7 +63,7 @@ public class CacheJobService(
                 }
                 if (recipe.EquipmentIds?.Count > 0)
                 {
-                    await equipmentService.GetEquipmentByIds(recipe.EquipmentIds, cancellationToken);
+                    await equipmentService.GetEquipmentByIdsV2(recipe.EquipmentIds, cancellationToken);
                 }
 
                 foreach (var part in recipe.Parts ?? [])

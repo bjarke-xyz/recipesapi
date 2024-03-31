@@ -319,7 +319,7 @@ public class RecipeService : ICacheKeyGetter
         {
             if (recipe.EquipmentIds?.Count > 0)
             {
-                var equipment = await equipmentService.GetEquipmentByIds(recipe.EquipmentIds, cancellationToken);
+                var equipment = await equipmentService.GetEquipmentByIdsV2(recipe.EquipmentIds, cancellationToken);
                 var idsToDelete = new List<string>();
                 foreach (var id in recipe.EquipmentIds)
                 {

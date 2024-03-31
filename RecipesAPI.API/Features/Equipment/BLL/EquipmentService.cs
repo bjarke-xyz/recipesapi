@@ -41,6 +41,18 @@ public class EquipmentService(EquipmentRepository equipmentRepository, ICachePro
         return cached;
     }
 
+    public async Task<Dictionary<string, EquipmentItem>> GetEquipmentByIdsV2(IReadOnlyList<string> ids, CancellationToken cancellationToken)
+    {
+        var allEquipment = await GetEquipment(cancellationToken);
+        var equipmentById = allEquipment.GroupBy(x => x.Id).ToDictionary(x => x.Key, x => x.First());
+        var idsToRemove = equipmentById.Keys.Except(ids);
+        foreach (var id in idsToRemove)
+        {
+            equipmentById.Remove(id);
+        }
+        return equipmentById;
+    }
+
     public async Task<Dictionary<string, EquipmentItem>> GetEquipmentByIds(IReadOnlyList<string> ids, CancellationToken cancellationToken)
     {
         var mutableIds = ids.ToList();
@@ -59,6 +71,7 @@ public class EquipmentService(EquipmentRepository equipmentRepository, ICachePro
         {
             await cache.Put(GetEquipmentByIdCacheKey(item.Value.Id), item.Value);
             result[item.Key] = item.Value;
+            mutableIds.Remove(item.Key);
         }
         return result;
     }
