@@ -1,8 +1,3 @@
-using DotNet.Testcontainers.Builders;
-using Google.Cloud.Firestore;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
-using RecipesAPI.API.Features.Recipes.BLL;
 using RecipesAPI.API.Features.Recipes.DAL;
 
 namespace RecipesAPI.Tests.IntegrationTests;
@@ -18,8 +13,7 @@ public class RecipeTests
   [Test]
   public async Task TestTest()
   {
-    var db = FirebaseTestHelper.GetDb();
-    var recipeRepository = new RecipeRepository(db, NullLoggerFactory.Instance.CreateLogger<RecipeRepository>());
+    var recipeRepository = TestHelper.GetRequiredService<RecipeRepository>();
     var recipeId = Guid.NewGuid().ToString();
     await recipeRepository.SaveRecipe(new API.Features.Recipes.Common.Recipe
     {

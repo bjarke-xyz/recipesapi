@@ -40,6 +40,7 @@ using Serilog.Sinks.Slack;
 using Serilog.Sinks.Slack.Models;
 using Google.Cloud.Storage.V1;
 using FirebaseAdmin.Auth;
+using RecipesAPI.API.HotChocolateHelpers;
 
 CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
 
@@ -89,6 +90,7 @@ FirebaseApp.Create();
 var jwtUtil = new JwtUtil(builder.Configuration["FirebaseAppId"]!, null);
 
 builder.Services
+    .AddDependencies(builder.Configuration, builder.Environment)
     .AddHttpClient()
     .AddControllers().AddControllersAsServices().Services
     .AddSwaggerGen()
@@ -108,145 +110,6 @@ builder.Services
     )
     .AddHangfireServer()
     .AddHangfireAuthorizationMiddleware()
-    .AddSingleton<JwtUtil>(sp => new JwtUtil(builder.Configuration["FirebaseAppId"]!, sp.GetRequiredService<ICacheProvider>()))
-    // .AddSingleton<ICacheProvider, RedisCacheProvider>(sp =>
-    // {
-    //     var distributedCache = sp.GetRequiredService<IDistributedCache>();
-    //     var keyPrefix = builder.Configuration["REDIS_PREFIX"]!;
-    //     var redis = sp.GetRequiredService<IConnectionMultiplexer>();
-    //     return new RedisCacheProvider(distributedCache, keyPrefix, redis);
-    // })
-    .AddSingleton<RecipesAPI.API.Infrastructure.Serializers.ISerializer>(sp =>
-    {
-        var serializerTag = builder.Configuration["SQLITE_CACHE_SERIALIZER"];
-        Log.Information("serializer: {serializer}", serializerTag);
-        return serializerTag switch
-        {
-            // RecipesAPI.API.Infrastructure.Serializers.MyCborSerializer.Tag => new RecipesAPI.API.Infrastructure.Serializers.MyCborSerializer(),
-            RecipesAPI.API.Infrastructure.Serializers.MyJsonSerializer.Tag => new RecipesAPI.API.Infrastructure.Serializers.MyJsonSerializer(),
-            _ or RecipesAPI.API.Infrastructure.Serializers.MyMessagePackSerializer.Tag => new RecipesAPI.API.Infrastructure.Serializers.MyMessagePackSerializer(),
-        };
-    })
-    .AddSingleton<ICacheProvider, SqliteCacheProvider>()
-    .AddSingleton<SqliteCacheProvider>()
-    .AddSingleton<S3StorageClient>(sp =>
-    {
-        var r2AccountId = builder.Configuration["R2_ACCOUNTID"]!;
-        var r2AccessKeySecret = builder.Configuration["R2_ACCESSKEYSECRET"]!;
-        var r2AccessKeyId = builder.Configuration["R2_ACCESSKEYID"]!;
-        return new S3StorageClient(r2AccessKeyId, r2AccessKeySecret, r2AccountId);
-    })
-    .AddSingleton<IStorageClient, GoogleStorageClient>()
-    .AddSingleton<IEmailService, EmailService>(sp =>
-    {
-        var apiUrl = builder.Configuration["EMAILSERVICE_URL"]!;
-        var apiUser = builder.Configuration["EMAILSERVICE_USER"]!;
-        var apiPassword = builder.Configuration["EMAILSERVICE_PASSWORD"]!;
-        var logger = sp.GetRequiredService<ILogger<EmailService>>();
-        return new EmailService(apiUrl, apiUser, apiPassword, logger);
-    })
-    .AddSingleton(sp =>
-    {
-        return FirestoreDb.Create(builder.Configuration["FirebaseAppId"]);
-    })
-    .AddSingleton(sp =>
-    {
-        return Google.Cloud.Storage.V1.StorageClient.Create();
-    })
-    .AddSingleton(sp =>
-    {
-        var db = sp.GetRequiredService<FirestoreDb>();
-        var webApiBaseUrl = "https://identitytoolkit.googleapis.com";
-        return new UserRepository(webApiBaseUrl, builder.Configuration["FirebaseWebApiKey"]!, db, FirebaseAuth.DefaultInstance, sp.GetRequiredService<ILogger<UserRepository>>());
-    })
-    .AddSingleton<FoodRepository>(sp =>
-    {
-        var csvPath = "../scripts/frida/output/final/frida.csv";
-        if (builder.Environment.IsProduction())
-        {
-            csvPath = builder.Configuration["FridaCsvPath"];
-            if (string.IsNullOrEmpty(csvPath))
-            {
-                csvPath = "/data/frida.csv";
-            }
-        }
-        return new FoodRepository(csvPath);
-    })
-    .AddSingleton<FoodService>()
-    .AddSingleton(sp =>
-    {
-        return new FoodSearchServiceV2(sp.GetRequiredService<ILogger<FoodSearchServiceV2>>(), builder.Configuration["SearchIndexPath"]!);
-    })
-    .AddSingleton<FoodSearchServiceV1>()
-    .AddSingleton(sp =>
-    {
-        return new AffiliateSearchServiceV2(sp.GetRequiredService<ILogger<AffiliateSearchServiceV2>>(), builder.Configuration["SearchIndexPath"]!);
-    })
-    .AddSingleton(sp =>
-    {
-        return new RecipeSearchService(sp.GetRequiredService<ILogger<RecipeSearchService>>(), builder.Configuration["SearchIndexPath"]!);
-    })
-    .AddSingleton<AffiliateSearchServiceV1>()
-    .AddSingleton<UserService>()
-    .AddSingleton<ICacheKeyGetter>(sp => sp.GetRequiredService<UserService>())
-    .AddSingleton<RecipeRepository>()
-    .AddSingleton<RecipeService>()
-    .AddSingleton<ICacheKeyGetter>(sp => sp.GetRequiredService<RecipeService>())
-    .AddSingleton<ParserService>()
-    .AddSingleton<FileRepository>()
-    .AddSingleton<SettingsService>()
-    .AddSingleton<IFileService, FileService>(sp =>
-    {
-        var fileRepository = sp.GetRequiredService<FileRepository>();
-        var cacheProvider = sp.GetRequiredService<ICacheProvider>();
-        var storageClient = sp.GetRequiredService<IStorageClient>();
-        var logger = sp.GetRequiredService<ILogger<FileService>>();
-        return new FileService(fileRepository, cacheProvider, storageClient, logger, GoogleStorageClient.StorageBucket, builder.Configuration["ApiUrl"] ?? throw new Exception("Missing ApiUrl"));
-    })
-    .AddSingleton<AdminService>()
-    .AddSingleton<ImageProcessingService>(sp =>
-    {
-        var fileService = sp.GetRequiredService<IFileService>();
-        var logger = sp.GetRequiredService<ILogger<ImageProcessingService>>();
-        var storageClient = sp.GetRequiredService<IStorageClient>();
-        return new ImageProcessingService(fileService, logger, storageClient, GoogleStorageClient.StorageBucket);
-    })
-    .AddSingleton<HealthcheckService>()
-    .AddSingleton<EquipmentRepository>()
-    .AddSingleton<EquipmentService>()
-    .AddSingleton<RatingsRepository>()
-    .AddSingleton<RatingsService>()
-    .AddSingleton<PartnerAdsRepository>()
-    .AddSingleton<PartnerAdsService>(sp =>
-    {
-        var url = builder.Configuration["PartnerAdsUrl"] ?? "";
-        var key = builder.Configuration["PartnerAdsKey"] ?? "";
-        var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
-        var httpClient = httpClientFactory.CreateClient(nameof(PartnerAdsService));
-        var logger = sp.GetRequiredService<ILogger<PartnerAdsService>>();
-        var partnerAdsRepository = sp.GetRequiredService<PartnerAdsRepository>();
-        return new PartnerAdsService(url, key, httpClient, logger, partnerAdsRepository, sp.GetRequiredService<ICacheProvider>());
-    })
-    .AddSingleton<AdtractionRepository>()
-    .AddSingleton<AdtractionService>(sp =>
-    {
-        var url = builder.Configuration["AdtractionApiUrl"] ?? "";
-        var key = builder.Configuration["AdtractionApiKey"] ?? "";
-        var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
-        var httpClient = httpClientFactory.CreateClient(nameof(AdtractionService));
-        var logger = sp.GetRequiredService<ILogger<AdtractionService>>();
-        var adtractionRepository = sp.GetRequiredService<AdtractionRepository>();
-        var defaultMarket = "DK";
-        var defaultChannelId = builder.Configuration.GetValue<int>("AdtractionChannelId");
-        var cache = sp.GetRequiredService<ICacheProvider>();
-        return new AdtractionService(logger, url, key, httpClient, adtractionRepository, defaultMarket, defaultChannelId, cache);
-    })
-    .AddSingleton<ImageService>()
-    .AddSingleton<CacheJobService>()
-    .AddSingleton<AffiliateService>()
-    .AddSingleton<SqliteDataContext>()
-    .AddSingleton<SettingsRepository>()
-    .AddSingleton<SettingsService>()
     .AddHostedService<CacheRefreshBackgroundService>()
     .AddHostedService<HangfireRecurringJobs>()
     .AddHttpContextAccessor()

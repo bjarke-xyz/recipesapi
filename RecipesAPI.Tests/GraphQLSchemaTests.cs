@@ -1,6 +1,6 @@
 using HotChocolate.Execution;
 using Microsoft.Extensions.DependencyInjection;
-using RecipesAPI.API;
+using RecipesAPI.API.HotChocolateHelpers;
 using Snapshooter.NUnit;
 
 namespace RecipesAPI.Tests;

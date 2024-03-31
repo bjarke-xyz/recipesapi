@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace RecipesAPI.API;
+namespace RecipesAPI.API.Infrastructure;
 public static class Telemetry
 {
     public const string ServiceName = "RecipesAPI.API";

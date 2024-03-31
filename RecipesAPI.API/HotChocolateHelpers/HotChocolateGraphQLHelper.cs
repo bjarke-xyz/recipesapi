@@ -5,7 +5,7 @@ using RecipesAPI.API.Features.Food.Graph;
 using RecipesAPI.API.Features.Recipes.Graph;
 using RecipesAPI.API.Features.Users.Graph;
 
-namespace RecipesAPI.API;
+namespace RecipesAPI.API.HotChocolateHelpers;
 
 public static class HotChocolateGraphQLHelper
 {
