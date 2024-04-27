@@ -93,10 +93,10 @@ public class RecipeQueries
     public async Task<List<Recipe>> SearchRecipes([User] User loggedInUser, [Service] RecipeService recipeService, RecipeSearchInput input, CancellationToken cancellationToken)
     {
         var searchQuery = input.SearchQuery;
-        if (!noModifyQueryChars.Any(x => searchQuery.Contains(x)))
-        {
-            searchQuery += "*";
-        }
+        // if (!noModifyQueryChars.Any(x => searchQuery.Contains(x)))
+        // {
+        //     searchQuery += "*";
+        // }
         var recipes = await recipeService.SearchRecipes(cancellationToken, loggedInUser, searchQuery, input.SearchPartsAndTips ?? false, input.Limit ?? 100, input.Skip ?? 0);
         return recipes;
     }

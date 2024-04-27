@@ -11,6 +11,7 @@ using RecipesAPI.API.Features.Equipment.BLL;
 using RecipesAPI.API.Features.Ratings.BLL;
 using RecipesAPI.API.Features.Users.BLL;
 using RecipesAPI.API.Features.Files.BLL;
+using Lucene.Net.QueryParsers.Classic;
 
 namespace RecipesAPI.API.Features.Recipes.BLL;
 
@@ -148,12 +149,19 @@ public class RecipeService : ICacheKeyGetter
 
     public async Task<List<Recipe>> SearchRecipes(CancellationToken cancellationToken, User? loggedInUser, string searchQuery, bool searchPartsAndTips, int limit, int skip)
     {
-        var searchDocs = recipeSearchService.Search(searchQuery, searchPartsAndTips, limit);
-        if (searchDocs.Count == 0) return [];
-        var recipeIds = searchDocs.Select(x => x.Id).ToHashSet();
-        var recipes = await GetRecipes(cancellationToken, loggedInUser);
-        recipes = recipes.Where(x => recipeIds.Contains(x.Id)).Skip(skip).Take(limit).ToList();
-        return recipes;
+        try
+        {
+            var searchDocs = recipeSearchService.Search(searchQuery, searchPartsAndTips, limit);
+            if (searchDocs.Count == 0) return [];
+            var recipeIds = searchDocs.Select(x => x.Id).ToHashSet();
+            var recipes = await GetRecipes(cancellationToken, loggedInUser);
+            recipes = recipes.Where(x => recipeIds.Contains(x.Id)).Skip(skip).Take(limit).ToList();
+            return recipes;
+        }
+        catch (ParseException pEx)
+        {
+            throw new GraphQLErrorException("failed to parse search query", pEx);
+        }
     }
 
     public async Task<RecipeStats> GetRecipeStats(bool published, bool moderated, CancellationToken cancellationToken)
