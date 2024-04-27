@@ -160,11 +160,12 @@ public class SqliteCacheProvider(ILogger<SqliteCacheProvider> logger, SqliteData
     {
         key = GetKey(key);
         cacheRequests.WithLabels(key).Inc();
+        byte[]? val = null;
         using var activity = StartActivity(key);
         try
         {
             using var conn = sqliteDataContext.CreateCacheConnection();
-            var val = await conn.QueryFirstOrDefaultAsync<byte[]>("SELECT Val FROM kv WHERE Key = @key", new { key });
+            val = await conn.QueryFirstOrDefaultAsync<byte[]>("SELECT Val FROM kv WHERE Key = @key", new { key });
             if (val == null)
             {
                 cacheMisses.WithLabels(key).Inc();
@@ -176,7 +177,7 @@ public class SqliteCacheProvider(ILogger<SqliteCacheProvider> logger, SqliteData
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Get failed. key={key}", key);
+            logger.LogError(ex, "Get failed. key={key}. val={val}", key, val);
             SetError(activity, ex);
             return null;
         }

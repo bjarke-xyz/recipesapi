@@ -15,9 +15,9 @@ public class RatingsService(RatingsRepository ratingsRepository, ILogger<Ratings
     private string EntityIdFromRatingCacheKey(string cacheKey) => cacheKey.Split(":").Last();
     private string ReactionsCacheKey(RatingType type, string entityId) => $"GetReactions:{type}:{entityId}";
     private string EntityIdFromReactionCacheKey(string cacheKey) => cacheKey.Split(":").Last();
-    private string CommentCacheKey(string id) => $"GetComment:{id}";
-    private string CommentsCacheKey(RatingType type, string entityId) => $"GetComments:{type}:{entityId}";
-    private string CommentsDictCacheKey(RatingType type, List<string> entityIds) => $"GetComments:{type}:{string.Join('-', entityIds)}";
+    private string CommentCacheKey(string id) => $"GetComment:v2:{id}";
+    private string CommentsCacheKey(RatingType type, string entityId) => $"GetComments:v2:{type}:{entityId}";
+    private string CommentsDictCacheKey(RatingType type, List<string> entityIds) => $"GetComments-dict:v2:{type}:{string.Join('-', entityIds)}";
 
     #region comments
     public async Task<List<Comment>> GetComments(RatingType type, string id, CancellationToken cancellationToken, bool buildTree = false)
