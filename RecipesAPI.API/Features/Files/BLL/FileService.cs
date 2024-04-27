@@ -95,7 +95,7 @@ public class FileService : IFileService
         var mutableIds = ids.ToList();
         var result = new Dictionary<string, FileDto>();
         var fromCache = await cache.Get<FileDto>(ids.Select(x => FileCacheKey(x)).ToList(), cancellationToken);
-        foreach (var file in fromCache)
+        foreach (var (_, file) in fromCache)
         {
             if (file != null)
             {

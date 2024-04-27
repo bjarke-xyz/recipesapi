@@ -14,7 +14,7 @@ namespace RecipesAPI.API.Infrastructure;
 public interface ICacheProvider
 {
     Task<T?> Get<T>(string key, CancellationToken cancellationToken = default) where T : class;
-    Task<List<T?>> Get<T>(IReadOnlyList<string> keys, CancellationToken cancellationToken = default) where T : class;
+    Task<Dictionary<string, T?>> Get<T>(IReadOnlyList<string> keys, CancellationToken cancellationToken = default) where T : class;
 
     Task Put<T>(string key, T value, TimeSpan? expiration = null, CancellationToken cancellationToken = default) where T : class;
     Task Put<T>(IReadOnlyDictionary<string, T> keyValuePairs, TimeSpan? expiration = null, CancellationToken cancellationToken = default) where T : class;
@@ -43,14 +43,14 @@ public class RedisCacheProvider : ICacheProvider
         return items == null ? null : JsonSerializer.Deserialize<T>(items);
     }
 
-    public async Task<List<T?>> Get<T>(IReadOnlyList<string> keys, CancellationToken cancellationToken = default) where T : class
+    public async Task<Dictionary<string, T?>> Get<T>(IReadOnlyList<string> keys, CancellationToken cancellationToken = default) where T : class
     {
         // TODO: Use redis MGET command instead
-        var result = new List<T?>();
+        var result = new Dictionary<string, T?>();
         foreach (var key in keys)
         {
             var item = await Get<T>(key, cancellationToken);
-            result.Add(item);
+            result[key] = item;
         }
         return result;
     }
@@ -182,33 +182,35 @@ public class SqliteCacheProvider(ILogger<SqliteCacheProvider> logger, SqliteData
         }
     }
 
-    public async Task<List<T?>> Get<T>(IReadOnlyList<string> keys, CancellationToken cancellationToken = default) where T : class
+    public async Task<Dictionary<string, T?>> Get<T>(IReadOnlyList<string> keys, CancellationToken cancellationToken = default) where T : class
     {
         if (keys == null || keys.Count == 0) return [];
-        keys = GetKeys(keys);
-        foreach (var k in keys)
+        var modifiedKeys = GetKeys(keys);
+        foreach (var k in modifiedKeys)
         {
             cacheRequests.WithLabels(k).Inc();
         }
-        using var activity = StartActivity(keys);
+        using var activity = StartActivity(modifiedKeys);
         try
         {
             using var conn = sqliteDataContext.CreateCacheConnection();
-            var values = await conn.QueryAsync<(string key, byte[] val)>("SELECT Key, Val FROM kv WHERE key IN @keys", new { keys });
+            var values = await conn.QueryAsync<(string key, byte[] val)>("SELECT Key, Val FROM kv WHERE key IN @keys", new { keys = modifiedKeys });
             var valuesByKey = values.GroupBy(x => x.key).ToDictionary(x => x.Key, x => x.First().val);
-            var result = new List<T?>();
-            foreach (var key in keys)
+            var result = new Dictionary<string, T?>();
+            for (var i = 0; i < modifiedKeys.Count; i++)
             {
+                var originalKey = keys[i];
+                var key = modifiedKeys[i];
                 if (valuesByKey.TryGetValue(key, out var val))
                 {
                     cacheHits.WithLabels(key).Inc();
                     var deserialized = await serializer.Deserialize<T>(val, cancellationToken);
-                    result.Add(deserialized);
+                    result[originalKey] = deserialized;
                 }
                 else
                 {
                     cacheMisses.WithLabels(key).Inc();
-                    result.Add(null);
+                    result[originalKey] = null;
                 }
             }
             return result;
@@ -216,7 +218,7 @@ public class SqliteCacheProvider(ILogger<SqliteCacheProvider> logger, SqliteData
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Get failed. keys={@keys}", keys);
+            logger.LogError(ex, "Get failed. keys={@keys}", modifiedKeys);
             SetError(activity, ex);
             return [];
         }

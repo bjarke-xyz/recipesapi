@@ -58,7 +58,7 @@ public class EquipmentService(EquipmentRepository equipmentRepository, ICachePro
         var mutableIds = ids.ToList();
         var result = new Dictionary<string, EquipmentItem>();
         var fromCache = await cache.Get<EquipmentItem>(ids.Select(x => GetEquipmentByIdCacheKey(x)).ToList(), cancellationToken);
-        foreach (var item in fromCache)
+        foreach (var (_, item) in fromCache)
         {
             if (item != null)
             {

@@ -86,7 +86,7 @@ public class UserService : ICacheKeyGetter
         var mutableUserIds = userIds.ToList();
         var fromCache = await cache.Get<User>(userIds.Select(x => UserByIdCacheKey(x)).ToList(), cancellationToken);
         var users = new List<User>();
-        foreach (var user in fromCache)
+        foreach (var (_, user) in fromCache)
         {
             if (user != null)
             {

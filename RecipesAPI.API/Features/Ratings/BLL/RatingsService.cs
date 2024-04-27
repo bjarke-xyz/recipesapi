@@ -12,7 +12,9 @@ public class RatingsService(RatingsRepository ratingsRepository, ILogger<Ratings
     private readonly ICacheProvider cache = cache;
 
     private string RatingCacheKey(RatingType type, string entityId) => $"GetRating:{type}:{entityId}";
+    private string EntityIdFromRatingCacheKey(string cacheKey) => cacheKey.Split(":").Last();
     private string ReactionsCacheKey(RatingType type, string entityId) => $"GetReactions:{type}:{entityId}";
+    private string EntityIdFromReactionCacheKey(string cacheKey) => cacheKey.Split(":").Last();
     private string CommentCacheKey(string id) => $"GetComment:{id}";
     private string CommentsCacheKey(RatingType type, string entityId) => $"GetComments:{type}:{entityId}";
     private string CommentsDictCacheKey(RatingType type, List<string> entityIds) => $"GetComments:{type}:{string.Join('-', entityIds)}";
@@ -119,21 +121,22 @@ public class RatingsService(RatingsRepository ratingsRepository, ILogger<Ratings
         var mutableIds = ids.ToList();
         var result = new Dictionary<string, List<Reaction>>();
         var fromCache = await cache.Get<List<Reaction>>(ids.Select(id => ReactionsCacheKey(type, id)).ToList(), cancellationToken);
-        foreach (var reactions in fromCache)
+        foreach (var (key, reactions) in fromCache)
         {
             if (reactions != null)
             {
+                var entityId = EntityIdFromReactionCacheKey(key);
+                mutableIds.Remove(entityId);
                 foreach (var reaction in reactions)
                 {
-                    if (result.ContainsKey(reaction.EntityId))
+                    if (result.TryGetValue(reaction.EntityId, out List<Reaction>? value))
                     {
-                        result[reaction.EntityId].Add(reaction);
+                        value.Add(reaction);
                     }
                     else
                     {
                         result[reaction.EntityId] = [reaction];
                     }
-                    mutableIds.Remove(reaction.EntityId);
                 }
             }
         }
@@ -152,7 +155,7 @@ public class RatingsService(RatingsRepository ratingsRepository, ILogger<Ratings
             await cache.Put(ReactionsCacheKey(type, id), new List<Reaction>(), cancellationToken: cancellationToken);
         }
 
-        return await ratingsRepository.GetReactions(type, ids, cancellationToken);
+        return result;
     }
 
     public async Task<Reaction?> GetReaction(ReactionType reactionType, RatingType type, string id, string userId, CancellationToken cancellationToken)
@@ -227,21 +230,22 @@ public class RatingsService(RatingsRepository ratingsRepository, ILogger<Ratings
         var mutableIds = ids.ToList();
         var result = new Dictionary<string, List<Rating>>();
         var fromCache = await cache.Get<List<Rating>>(ids.Select(id => RatingCacheKey(type, id)).ToList(), cancellationToken);
-        foreach (var ratings in fromCache)
+        foreach (var (key, ratings) in fromCache)
         {
             if (ratings != null)
             {
+                var entityId = EntityIdFromRatingCacheKey(key);
+                mutableIds.Remove(entityId);
                 foreach (var rating in ratings)
                 {
-                    if (result.ContainsKey(rating.EntityId))
+                    if (result.TryGetValue(rating.EntityId, out List<Rating>? value))
                     {
-                        result[rating.EntityId].Add(rating);
+                        value.Add(rating);
                     }
                     else
                     {
                         result[rating.EntityId] = [rating];
                     }
-                    mutableIds.Remove(rating.EntityId);
                 }
             }
         }
@@ -253,7 +257,7 @@ public class RatingsService(RatingsRepository ratingsRepository, ILogger<Ratings
             result[rating.Key] = rating.Value;
         }
 
-        return await ratingsRepository.GetRatings(type, ids, cancellationToken);
+        return result;
     }
 
     public async Task<Rating?> GetRating(RatingType type, string id, string userId, CancellationToken cancellationToken)

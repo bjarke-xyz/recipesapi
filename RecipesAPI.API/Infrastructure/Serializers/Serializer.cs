@@ -10,10 +10,10 @@ public interface ISerializer
 public class MyJsonSerializer : ISerializer
 {
     public const string Tag = "js";
-    public Task<T?> Deserialize<T>(byte[] bytes, CancellationToken ct) where T : class
+    public async Task<T?> Deserialize<T>(byte[] bytes, CancellationToken ct) where T : class
     {
-        var str = System.Text.Encoding.UTF8.GetString(bytes);
-        return Task.FromResult(Newtonsoft.Json.JsonConvert.DeserializeObject<T>(str));
+        using var stream = new MemoryStream(bytes);
+        return await System.Text.Json.JsonSerializer.DeserializeAsync<T>(stream, cancellationToken: ct);
     }
 
     public string GetTag()
@@ -21,10 +21,11 @@ public class MyJsonSerializer : ISerializer
         return Tag;
     }
 
-    public Task<byte[]> Serialize<T>(T obj, CancellationToken ct)
+    public async Task<byte[]> Serialize<T>(T obj, CancellationToken ct)
     {
-        var str = Newtonsoft.Json.JsonConvert.SerializeObject(obj);
-        return Task.FromResult(System.Text.Encoding.UTF8.GetBytes(str));
+        using var ms = new MemoryStream();
+        await System.Text.Json.JsonSerializer.SerializeAsync(ms, obj, cancellationToken: ct);
+        return ms.ToArray();
     }
 }
 
