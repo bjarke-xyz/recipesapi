@@ -49,6 +49,7 @@ public class PartnerAdsRepository(ILogger<PartnerAdsRepository> logger, SqliteDa
                 dtos.Add(dto);
             }
         }
+        conn.Close();
         return dtos.Select(x => x.ToFeedProduct()).ToList();
     }
 

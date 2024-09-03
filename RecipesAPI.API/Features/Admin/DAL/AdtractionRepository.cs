@@ -52,6 +52,7 @@ public class AdtractionRepository(SqliteDataContext context, ILogger<AdtractionR
                 dtos.Add(dto);
             }
         }
+        conn.Close();
         return dtos.Select(dto => dto.ToFeedProduct()).ToList();
     }
 
